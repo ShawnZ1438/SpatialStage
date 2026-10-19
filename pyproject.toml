@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stage-spatial-cue"
+version = "0.1.0"
+description = "A local-first, 4-channel spatial audio cue system for theatre research"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "fastapi>=0.110,<1",
+  "uvicorn>=0.28,<1",
+  "python-multipart>=0.0.9,<1",
+  "pydantic>=2.4,<3",
+  "numpy>=1.26,<3",
+  "scipy>=1.11,<2",
+  "soundfile>=0.12,<1",
+  "sounddevice>=0.4.7,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+stagespatialcue = "stagespatialcue.server:main"
+
+[tool.setuptools.packages.find]
+include = ["stagespatialcue*"]
+
+[tool.setuptools.package-data]
+stagespatialcue = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
