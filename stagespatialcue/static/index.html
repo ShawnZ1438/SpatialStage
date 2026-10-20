@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>StageSpatialCue — 4-channel theatre cue lab</title>
+  <title>SpatialStage — Four-channel stage sound control</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-icon">◎</div><div><strong>Stage<span>Spatial</span>Cue</strong><small>SPATIAL SHOW CONTROL / MAC LOCAL</small></div></div>
+    <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small>SPATIAL SHOW CONTROL / MAC LOCAL</small></div></div>
     <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
   </header>
 
@@ -25,9 +25,7 @@
         <label for="outputSelect" class="small-label">OUTPUT / 4 discrete channels required</label>
         <select id="outputSelect" aria-label="Choose four-channel audio interface"></select>
         <div class="inline-btn"><button id="connectAudio" class="secondary" title="Open selected output device">Connect audio</button><button id="refreshDevices" class="square" title="Refresh audio devices">↻</button></div>
-        <label for="inputSelect" class="small-label spaced">INPUT / metadata only in v0.1</label>
-        <select id="inputSelect" aria-label="Preferred input device (not routed)"></select>
-        <p class="micro">Live microphone routing is not active in this prototype.</p>
+        <p class="micro">Input is a numbered folder of local audio files. No live microphone capture is used.</p>
       </section>
       <section class="side-section">
         <div class="section-heading">MASTER OUTPUT <span id="masterDbLabel" class="value-label">−18 dB</span></div>
@@ -41,24 +39,27 @@
         <label class="small-label" for="globalRotation">Global rotation · live offset (°)</label>
         <input id="globalRotation" type="number" min="-3600" max="3600" step="0.01" value="0" />
         <label class="check"><input type="checkbox" id="distanceComp" /> Apply approximate distance compensation</label>
-        <p class="micro">Rotation affects all active sources. Distance ≠ full room acoustics.</p>
+        <label class="check"><input type="checkbox" id="globalEnvelopeEnabled" /> Enable show-wide direction envelope</label>
+        <div id="globalEnvelopeFields" class="global-keys"></div>
+        <button id="globalAddPoint" class="quiet" style="margin-top:8px;width:100%">＋ Global keyframe</button>
+        <p class="micro">Global keyframe time starts at the first GO. Values are angular offsets in degrees. Both global controls affect live sounds.</p>
       </section>
-      <div class="side-bottom"><b>LOCAL-FIRST</b><p>Show data stays in ~/.stagespatialcue/projects. No cloud or telemetry.</p></div>
+      <div class="side-bottom"><b>LOCAL-FIRST</b><p>Show data: ~/.spatialstage/projects · no telemetry or participant logging.</p></div>
     </aside>
 
     <main class="main">
-      <div class="workspace-header"><div><div class="eyebrow">SHOW CONTROL / LIVE OPERATOR</div><h1 id="showName">Untitled show</h1><button id="renameProject" class="linklike">✎ Rename show</button><div class="help-line">Space = GO · S = STOP · Alt+↓ = SKIP · Shift+Esc = PANIC</div></div><button id="preflight" class="secondary">✓ Preflight check</button></div>
+      <div class="workspace-header"><div><div class="eyebrow">SHOW CONTROL / LIVE OPERATOR</div><h1 id="showName">Untitled show</h1><button id="renameProject" class="linklike">✎ Rename show</button><div class="help-line">Space = FADE GO · C = CUT GO · S = STOP · Alt+↓ = SKIP · Shift+Esc = PANIC</div></div><button id="preflight" class="secondary">✓ Preflight check</button></div>
 
       <section class="transport">
         <div class="now-next"><span class="section-heading">NEXT TO FIRE</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted">Arm and connect a 4-output interface</div></div>
-        <div class="transport-buttons"><button id="goButton" class="go" title="Space">▶ <b>GO</b></button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
+        <div class="transport-buttons"><button id="goButton" class="go" title="Space / normal transition">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" title="C / bypass waits and transition">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
       </section>
 
       <div class="work-area">
         <section class="cue-panel">
           <div class="panel-title"><div><span class="section-heading">CUE STACK</span><span id="cueCount" class="count">0 cues</span></div><div class="panel-actions"><label class="import-button">＋ Import folder<input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button">Files<input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
           <div class="cue-list-scroller"><table class="cue-table"><thead><tr><th>STATUS</th><th>NO.</th><th>CUE / TRACK</th><th>START</th><th>BEARING</th><th>GAIN</th><th>TIME</th><th></th></tr></thead><tbody id="cueRows"></tbody></table><div id="emptyCues" class="empty"><div>◎</div><b>Your stage starts here.</b><p>Import a numbered folder of WAV / AIFF / FLAC / MP3 files to populate your cue sequence.</p></div></div>
-          <div class="cue-footer"><span id="queueSummary">No scheduled audio</span><span>Edits auto-save · Next playback uses new cue settings</span></div>
+          <div class="cue-footer"><span id="queueSummary">No scheduled audio</span><span>Live direction/gain edits update active voices · Media swap is next playback</span></div>
         </section>
 
         <section class="inspector" id="inspector">
@@ -71,7 +72,12 @@
   </div>
 </div>
 
-<dialog id="stageDialog"><div class="modal-head"><div><span class="eyebrow">CALIBRATION</span><h2>Speaker geometry & routing</h2></div><button class="square" id="closeSettings">✕</button></div><p>Enter angles clockwise from the top (0°) and distances from one fixed audience/actor reference point. Channel numbers map to physical outputs.</p><div id="speakerFields"></div><p class="micro">Speaker angles must enclose the center without a gap of 180° or more. Do not infer precise actor-level acoustics from distances alone.</p><div class="modal-footer"><button id="cancelSettings" class="secondary">Cancel</button><button id="saveSettings" class="primary">Save geometry</button></div></dialog>
+<dialog id="stageDialog"><div class="modal-head"><div><span class="eyebrow">STAGE-CENTER CALIBRATION</span><h2>Four loudspeakers · geometry and routing</h2></div><button class="square" id="closeSettings">✕</button></div>
+  <p>The <b>actor reference point is (0,0)</b>. +X points to 3 o'clock; +Y points to 12 o'clock. Enter measured speaker positions in metres. Angles and distances recalculate automatically. Each speaker should physically face the center. MAIN MUTE must be ON when changing routing.</p>
+  <div id="speakerFields"></div>
+  <div id="calibrationHints" class="calibration-hints"></div>
+  <p class="micro">Software computes geometry and theoretical air-path delay / relative gain suggestions ONLY. It does not apply the delay or measure SPL. Use a calibrated microphone/SPL meter and the four channel test tones for actual verification.</p>
+  <div class="modal-footer"><button id="cancelSettings" class="secondary">Cancel</button><button id="previewSettings" class="secondary">Preview calibration</button><button id="saveSettings" class="primary">Save geometry</button></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/static/app.js" defer></script>
 </body>

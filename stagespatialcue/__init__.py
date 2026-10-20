@@ -1,2 +1,2 @@
-"""StageSpatialCue rehearsal MVP (not safety-certified for live shows)."""
-__version__ = "0.1.0"
+"""SpatialStage local four-channel rehearsal prototype; not show safety certified."""
+__version__ = "0.2.0"

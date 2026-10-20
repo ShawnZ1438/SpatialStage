@@ -10,7 +10,7 @@ from stagespatialcue.storage import ProjectStore
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, default=Path("~/.stagespatialcue/projects").expanduser())
+    parser.add_argument("--data", type=Path, default=Path("~/.spatialstage/projects").expanduser())
     args = parser.parse_args()
     store = ProjectStore(args.data)
     project = store.create("DEMO — Spatial rehearsal")

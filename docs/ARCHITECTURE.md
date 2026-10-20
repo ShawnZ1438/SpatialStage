@@ -1,73 +1,84 @@
-# Architecture and decision log
+# SpatialStage v0.2 architecture and implementation notes
 
-## Design intent
+## Component graph
 
-The tool is intentionally split into (A) a **web interaction surface**, (B) a persistent **show model and operator scheduler**, and (C) the **4-channel audio renderer**. A browser audio-only prototype was avoided because four independent CoreAudio routes and repeatable device configuration are essential to this project. The API server remains local, the media is copied to the project data directory, and the output engine does not depend on browser tab audio output.
-
-```
-Browser /static/app.js
-    ├── cue stack & keyboard controls
-    ├── polar source dial / cue envelope editing
-    ├── speaker calibration / output and input preferences
-    └── REST calls + status polling
-             │ localhost 127.0.0.1:8765
-             ▼
-FastAPI /server.py
-    ├── ProjectStore /storage.py ── project.json + media/ + events.jsonl
-    └── StageController /audio.py
-             ├── decode cache (48 kHz mono float32, 700 MiB)
-             ├── frame-anchored auto chains / manual GO
-             └── Mixer /mixer.py
-                    ├── spatial.vbap_gains(...)
-                    ├── per-voice attack/release/crossfade
-                    ├── master gain/mute/output peak counter
-                    └── sounddevice / PortAudio / CoreAudio
-                               └── OUT 1–4 ── physical console ── speakers
+```text
+Chrome/Safari UI  ── 127.0.0.1:8765 ── FastAPI
+  Cue list                              │
+  360° dial                             ├── ProjectStore → project.json + media/
+  ADSR/keyframe inspector               └── StageController → Cue scheduler/decode cache
+  global angular envelope                                          │
+  output + master controls                                         └── Mixer
+                                                                        ├── frame clock (48k)
+                                                                        ├── per-voice fades / live edit smoothing
+                                                                        ├── cue offsets, global offsets, rotation
+                                                                        └── 2D VBAP → four channels
+                                                                                     │
+                                                        sounddevice PortAudio → CoreAudio device
+                                                                                     │
+                                                     console 4 independent buses → physical speakers
 ```
 
-## Timing ownership
+Software panning is centered at the fixed (0,0) stage reference point. Actor tracking and participant experimental logging are deliberately absent. The UI can run without attached output hardware, whereas GO is disallowed without a four-output device and deliberate unmute.
 
-The mixer's sample clock (`frame`) is incremented in the 48 kHz PortAudio callback. Cue voices carry `start_frame`, `end_frame` and optional stop-fade information. The control thread schedules voices; the callback renders frames. The current callback uses a Python re-entrant mutex protecting `voices` and `project`, which makes it **not** a hard-real-time architecture. File decoding happens before the new voices are queued. A native successor should use a lock-free single-producer/single-consumer command queue and a preallocated audio graph, with no allocation, file I/O, locks or logging from the render thread.
+## Deterministic project model
 
-There are two kinds of events: `operator_go` (message received via HTTP) and `cue_audio_start` (scheduled voice enters a rendered output buffer). Their timestamps are not the same as actual measured sound at the performer. The difference incorporates UI/network event latency, audio device output buffering, mixer and speaker/air travel delays. Hardware loopback and SPL testing are required for research-grade timings.
+`Project(schema_version=2)` includes speakers (canonical `angle_deg`, `distance_m`, `output_channel`, manual `trim_db`), `distance_compensation`, `global_rotation_deg`, an opt-in global keyframe envelope, and a Cue stack. The UI accepts `x_m/y_m` and converts to the canonical speaker polar representation with `angle=atan2(x,y)` clockwise from +Y. Saving old schema v1 projects sets schema v2 using new defaults. A valid configuration needs exactly four unique output channels and angular gaps under 180°.
 
-## Spatialization
+`Cue` holds file references, per-cue source volume, fade-in/out, replace style (`crossfade/cut`) and `transition_s`, source start mode (`replace/layer/queue`), chain mode (`manual/auto_continue/auto_follow`), pre/post waits, base bearing and either free angular keyframes or direction ADSR. Angular offsets may be unwrapped (e.g., +360 is a clockwise revolution). The engine currently downmixes every decoded clip to mono before panning. `stage.sync(project)` applies current cue direction/gain/curve to existing Voice references by `cue.id`; it does not reload PCM or reschedule already planned start/stop frames.
 
-The reference plane uses bearing `atan2(x,y)`, clockwise positive. `position` is source direction, not a listener head azimuth or Cartesian object location. Speaker pairs are sorted by actual bearing; the two that surround the desired direction are mixed with positive constant-power VBAP gains. Optional speaker-specific distance and gain trim multiply those coefficients. We deliberately do not include reverberation, early reflections, HRTF, Doppler, listener-specific head tracking or time-delay steering in v0.1.
+## Scheduler times and transitions
 
-**Important limitation:** the system assumes a reference point at the actor/listener center for sound-field planning. If multiple ADHD participants move independently around the stage, a single VBAP output cannot guarantee the same perceived direction for every person. Future acoustic calibration needs listener position and potentially multi-position measurements, not simply speaker distances.
+`Mixer.frame` increments per callback; cue voice `start_frame`, `end_frame`, and optional stop fade are measured in its sample domain, NOT acoustic output-time timestamps.
 
-### Modulation semantics
+- FADE GO: respects `start_mode`, `pre_wait_s`, per-Cue `replace_style` and `transition_s`. Replacing fades old audio over the transition, the new audio fades in with its own duration and a transition ramp capped at half the new clip length. Layer preserves other voices. Queue waits for existing voices, including pending ones.
+- CUT GO: `force_cut=True`, which overrides queue/layer/pre_wait, replaces active voices with 5ms de-click, cancels pending voices and only triggers one new Cue (doesn't auto follow the chain).
+- STOP: short soft stop, cancels pending voices; PANIC kills voices and applies main mute instantly.
+- `auto_continue`: anchor for next cue is outgoing voice's start frame + `post_wait_s`; `auto_follow`: outgoing voice's end frame + post-wait; next cue then adds its own pre-wait. Natural clip fade-in/out are internal and not subtracted from the intentional gap.
+- Global show keyframe clock initializes at first scheduled clip start after arm/new show; live rotation scalar is independent.
 
-Effective angle at time `t`:
+## Direction DSP
+
+At clip time `t` and show time `T`, we compute
 
 ```
-θ_effective(t) = wrap360(θ_cue + offset_cue(t) + rotation_global)
+theta = wrap360(cue.position_deg
+              + cue_direction_offset(t)
+              + project.global_rotation_deg
+              + project.global_show_offset(T))
 ```
 
-`offset_cue(t)` uses linear interpolation over unwrapped offset keys. A 360° signed offset means a full revolution, not a return to the same source bearing by the shortest path. Cue updates affect new voices; project-level rotation currently influences existing voices.
+For cue ADSR, the angular offset follows (attack: 0→peak; decay: peak→sustain; hold; release: sustain→release final), proportional-compressing stages if A+D+R exceeds clip duration. In free keyframe mode, linear interpolation is on unwrapped angular offsets. Show envelope uses the same keyframe interpolation with `T`. The currently requested direction is then mapped to adjacent speaker gains by 2D normalized VBAP; manually entered trims and optional approximate distance gain compensation are applied afterward. Because distance trim can affect normalization and perceived loudness, no objective equal-loudness guarantee is made.
 
-## Reliability constraints
+Stage calibration preview uses geometric formulas (speed of sound ~343 m/s at 20°C), *but does not apply delay compensation and does not measure actual latency or SPL*. The theoretical extra delay for nearer speakers is `(max(d)-d)/343` seconds. This figure could be used as a future DSP alignment control once actual delays have been measured.
 
-- Data model validation rejects overlapping 1–4 hardware channel assignments and speaker gaps >=180°.
-- Device connection requires >=4 discrete output channels, 48 kHz float32 support and forced mute.
-- Default master volume is -18 dB and startup/reconnection is muted.
-- PANIC discards voices and sets mute; STOP fades current voices with a short ramp.
-- Project JSON writes use a temporary file and atomic replace.
-- Media is copied into per-project storage, escaping paths are rejected, server is loopback-bound and browser Origin is restricted.
-- Safety controls and PortAudio capability checks are **insufficient** for certified live-show deployment. Add C++ audio thread, fail-quiet watchdog, redundant controls and systematic fault injection.
+## Device, data and operation boundaries
 
-## Proposed package boundaries for production
+- A physical ≥4-channel CoreAudio device is mandatory for GO. Mixer starts muted, master defaults to -18 dB. A tone test exercises only one software output at a time.
+- The server binds on 127.0.0.1 and uses loopback Host and browser Origin constraints; do not expose its endpoints to other hosts or port-forward it.
+- Operator commands execute on HTTP threads. `ProjectStore` writes atomic JSON via replace and copies media to per-project folders. Project exports include media. No participant data is collected. Optional operator-only JSONL diagnostic events can be enabled by environment flag.
+- `StageController.can_update()` rejects stage speaker geometry or physical channel reconfiguration when a connected stream is unmuted; only soft cue settings may update live.
+- Cue decodes happen before scheduling, with 30-minute clip cap and a 700 MiB cache; preflight checks files and whether a four-output device was connected.
 
-| Component | v0.1 | Planned production replacement |
-|---|---|---|
-| UI | Vanilla browser JS | Electron/Tauri or native SwiftUI wrapper around local UI |
-| Cue persistence | JSON files | Schema-versioned SQLite with backup/migration and transactional edit history |
-| Spatial audio | Python NumPy 2D VBAP | JUCE/Swift DSP graph with per-sample smooth interpolation and multi-source groups |
-| Audio output | PortAudio CoreAudio backend | CoreAudio via JUCE with explicit device/channel matrix |
-| Timing & sync | Callback frame counter | Buffer-scheduled real-time clock, timecode/MTC/OSC, measured latency |
-| Research logs | JSONL | Signed experiment manifest, protocol IDs, synchronized cue and response timestamps |
+## Why the current audio engine is not production-safe
 
-## Development acceptance checkpoints
+Python callback explicitly takes a re-entrant lock, creates NumPy arrays each render block, and merges control/audio state. PortAudio recommends the opposite for a real-time callback: **no blocking locks, memory allocation, file I/O or other unpredictable operations**. A heavy CPU load, concurrent save, decoder miss or a bug can cause audible underruns. `xruns` and `peak_over_count` are only software indicators; they do not measure actual acoustic output or peak SPL.
 
-M1 exit criteria: a real Mac and 4+ output interface, correct isolation on each output, repeatable 48 kHz operation, 0 XRUNs during an agreed maximum-load rehearsal, physical mute emergency access, and documented acoustic calibration at each planned participant position. Do not claim these exit criteria are already met by tests in CI.
+**Native transition roadmap:** move the mixer into JUCE/C++ or a carefully designed CoreAudio extension; preallocate voice buffers and channel matrices; use lock-free control events; preflight/decode on workers; add output loss/reconnect and redundant mute fail-safes, latency measurement, gain ceilings and hardware acceptance. Then consider multi-actor spatialization limitations, playback-device drift, cue snapshots and richer envelopes.
+
+## Acceptance criteria before actor rehearsal
+
+1. Physical device provides 4 separate outputs, with a diagram of USB bus and console routing.
+2. CH1→L, CH2→R, CH3→RR, CH4→RL (or explicitly documented permutation) verified at safe volume with solo tones.
+3. Local coordinate reference arrow/tape fixed, X/Y for each speaker measured.
+4. Reference-center gain trims determined with a calibrated meter, safe maximum level established by production sound team.
+5. GO/STOP/PANIC, global motion, fade/cut, file swap and recovery tested with actors absent.
+6. A stress run at representative polyphony passes without measured dropouts/xruns; if it does not, **do not use v0.2 as the sole live audio controller**.
+7. Non-center actor positions verified perceptually; no claim of uniform localization.
+
+## Useful references
+
+- Apple Audio MIDI Setup: https://support.apple.com/guide/audio-midi-setup/set-up-audio-devices-ams59f301fda/mac
+- Speaker output mapping: https://support.apple.com/guide/audio-midi-setup/set-up-external-speakers-for-stereo-or-surround-sound-ams1005/mac
+- Zotter & Frank, *Amplitude Panning Using Vector Bases*, 2019: https://link.springer.com/chapter/10.1007/978-3-030-17207-7_3
+- PortAudio callback considerations: https://portaudio.com/docs/v19-doxydocs/writing_a_callback.html

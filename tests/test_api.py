@@ -10,7 +10,7 @@ from stagespatialcue.models import Project
 
 def test_projects_and_upload_sort_and_export(tmp_path):
     app=create_app(tmp_path)
-    client=TestClient(app)
+    client=TestClient(app,base_url="http://127.0.0.1:8765")
     p=client.post('/api/projects',json={'name':'Experiment A'}).json()
     assert p['name']=='Experiment A'
     assert len(client.get('/api/projects').json())==1
@@ -38,7 +38,7 @@ def test_projects_and_upload_sort_and_export(tmp_path):
 
 
 def test_safe_validation_and_operator_state(tmp_path):
-    client=TestClient(create_app(tmp_path))
+    client=TestClient(create_app(tmp_path),base_url="http://127.0.0.1:8765")
     p=client.post('/api/projects',json={'name':'Show'}).json()
     pid=p['id']
     assert client.post('/api/audio/arm',json={'project_id':pid,'index':0}).status_code==200
@@ -77,6 +77,4 @@ def test_auto_continue_and_follow_are_scheduled_by_sample_frame(tmp_path):
     assert [v.start_frame for v in stage.mixer.voices]==[0,int(.02*fs),int(.15*fs)]
     stage.mixer.render(10000)
     stage.status()
-    log=(store.directory(project.id)/'events.jsonl').read_text()
-    assert 'operator_go' in log
-    assert 'cue_audio_start' in log
+    assert not (store.directory(project.id)/'events.jsonl').exists()  # default: no research/participant logs

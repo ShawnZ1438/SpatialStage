@@ -1,255 +1,244 @@
-# StageSpatialCue
+# SpatialStage
 
-**Local-first 4-channel theatre spatial sound cue controller for macOS**
+**Local-first four-channel spatial sound cue controller for actor-centered experimental theatre.**
 
-**Status: v0.1 rehearsal / research prototype. Not certified for a public performance, hearing-safety use, or clinical research.** Real four-channel CoreAudio output must be tested on the target Mac, mixer and sound interface. The Python callback is not hard-real-time; it can underrun under load. A native audio engine is the recommended next step before production.
+[简体中文安装与操作说明](README.zh-CN.md) · [Stage calibration](docs/CALIBRATION.md) · [Architecture](docs/ARCHITECTURE.md) · [Remaining decisions](docs/OPEN_QUESTIONS.md)
 
-StageSpatialCue combines a cue-stack operator console with 2D vector-base amplitude panning (VBAP), a draggable clockwise 360° direction dial, a per-cue modulation envelope and independent cue execution modes. The interface is a local browser page; audio is mixed by a separate Python engine and sent directly to four hardware output channels through PortAudio/CoreAudio.
+> **v0.2 — functional rehearsal prototype, NOT production-certified.** The software has automated tests but has **not** been validated with the actual Apple Silicon Mac, unknown mixing console, physical four-output interface or loudspeakers. Its Python/NumPy audio callback is not hard real-time. No clinical or acoustic benefit for ADHD participants is claimed. No participant data or research measurements are collected.
 
-## Features in this MVP
+## Why it exists
 
-| Feature | Status | Notes |
+SpatialStage is designed for sound designers and technical operators supporting theatre in which the **performers themselves** (not an audience) are the listeners. Four loudspeakers surround a circular acting area. Audio cues follow a script, and the operator can direct a prepared sound to any virtual clockwise angle, sweep it through the room, layer effects or move to a new cue. The performer can move **inside** the four-speaker perimeter; the panning geometry assumes one **fixed central reference**. This is a creative and acoustic-exploration tool, not an EEG/diagnostic system or spatial tracking solution.
+
+The web UI is a controller on `127.0.0.1:8765`; audio does not play through the browser's stereo output. Python sends four discrete PCM channels to an actual CoreAudio/PortAudio four-output device, normally through an audio interface or a USB multi-output console.
+
+### v0.2 capability matrix
+
+| Feature | Available | Behavior |
 |---|---|---|
-| 4 discrete audio outputs | Implemented, hardware-unverified | Select a CoreAudio/PortAudio device with at least 4 output channels; 48 kHz, float32, 512 frames |
-| Independent spatial bearing | Implemented | 0° = 12 o'clock, 90° = right, 180° = behind/bottom, 270° = left, 0.01° control precision |
-| Irregular 4-speaker layout | Implemented | 4 bearing angles, 4 distances, 4 output channel maps, speaker trim; geometry validation |
-| Distance compensation | Optional experimental | Simple linear-distance amplitude adjustment relative to median speaker distance; defaults off |
-| Draggable spatial dial | Implemented | Click/drag and two-decimal numeric input |
-| Modulation envelope | Implemented | Per-cue piecewise-linear **unwrapped angle offsets** in seconds, including multiple full turns |
-| GO / STOP / SKIP / PANIC | Implemented | Keyboard controls and UI; startup/reconnect defaults to main mute |
-| Replace / layer / wait start modes | Implemented | Replace crossfades existing voices; layer overlaps; wait queues after active voices finish |
-| Fade in / fade out / transitions | Implemented | Independent per cue, plus de-click stop; smooth sine-based intrinsic fades |
-| Manual / auto-continue / auto-follow | Implemented | Post-wait relative to cue start or end, respectively |
-| Global direction steering | Implemented, elementary | Live rotation offset added to all current spatial voices; scene/global modulation is future work |
-| Audio folder auto-import | Implemented | Browser folder upload; sequence sorted by numerical filename prefix |
-| Local multi-project save/export | Implemented | Independent show JSON/media folders; ZIP export including logs |
-| Device selection | Partial | Select real 4-output device; input device preference displayed/saved but **not routed** |
-| Per-channel meter/test | Implemented, hardware-unverified | Quiet 440 Hz tone to one specified channel; software output meters |
-| Experiment event logging | Basic | Operator and audio-frame events in `events.jsonl`; not latency-calibrated or participant-linked |
-| Looping, audio trim, live mic routing, timecode, OSC/MIDI | Not implemented | Future milestones |
-| Long-file streaming, hard real-time guarantees, peak limiter | Not implemented | Predecoded mono prototype with basic output clipping |
+| Spatial angle dial | ✅ | Clockwise 0.00–359.99°; 12 o'clock=0°, 3=90°, 6=180°, 9=270° |
+| Four physical outputs | ✅, **hardware validation pending** | Explicit channel mapping CH1/CH2/CH3/CH4; requires interface exposing ≥4 independent outputs |
+| Stage geometry | ✅ | Speaker X/Y (metres) relative to center automatically converted to angle/range |
+| Calibration preview | ✅, **not real acoustic calibration** | Calculates theoretical propagation delay and relative distance gain suggestions; does **not** apply delay or measure SPL |
+| VBAP directional panning | ✅ | Adjacent-speaker constant-power amplitude weighting for actor reference center |
+| Local folder / numbered cues | ✅ | `001_...wav`, `002_...wav` sorted by numeric filename; uploaded media copied per project |
+| Cue movement | ✅ | Free angular keyframes, plus a separate direction ADSR mode (attack/decay/sustain/release) |
+| Global direction control | ✅ | Live rotation + optional show-wide keyframe envelope, measured from first GO audio start |
+| FADE GO / CUT GO | ✅ | FADE GO follows cue start and transition config; CUT GO overrides queued/layer behavior to replace immediately with 5ms de-click |
+| Replace / layer / queue | ✅ | Replace existing sound, play concurrently or wait for existing sounds to finish |
+| Fades / pre/post intervals | ✅ | Gain envelope independent from angular modulation; pre- and post-wait do not subtract fade durations |
+| Active-Cue editing | ✅, prototype | Direction/gain/ADSR/keyframe edits propagate to an active/queued voice on next autosave (~300ms); prior PCM buffer stays fixed |
+| Change a Cue's file | ✅ | Replaces the selected cue's *future* media; playback already queued retains decoded samples |
+| Multi-project, local persistence | ✅ | JSON + per-project media + ZIP export, automatic saves |
+| Master mute / meters / STOP / PANIC / SKIP | ✅ | Mute starts ON; audio test runs a quiet 440Hz tone through only one channel |
+| Scientific participant event logging | **No, intentionally** | Disabled; optional local operator-only diagnostics (`SPATIALSTAGE_DIAGNOSTICS=1`) |
+| Mic input, listener tracking, HRTF, measured acoustic delays | ❌ | Not planned for the initial rehearsal build |
+| Native real-time engine / hearing-safety certification | ❌ | Required before a mission-critical production |
 
-## Quick start on Mac
+## 1. Stage geometry, speaker map and VBAP
 
-A Mac with **macOS, Python 3.11–3.13, Homebrew, and a USB/Thunderbolt interface that offers at least four independently addressable outputs** is required for physical four-channel playback. You may still run the editor without an audio interface.
+SpatialStage is **actor-centered**. There is no audience or audience-facing definition of front. Place the origin at the geometric midpoint of the four loudspeakers (or your taped center of the intended acting area). The flat floor has two coordinates: **+X to 3 o'clock/right**, **+Y to 12 o'clock/top**. Bearing is measured clockwise from the +Y axis, so **0° top**, **90° right**, **180° bottom**, **270° left**. Audio software does not know where the physical 12-o'clock arrow is: mark it on the actual stage.
+
+```text
+                              +Y / 0° / 12 o'clock
+                                      ↑
+      L / FRONT LEFT (CH1)             |              R / FRONT RIGHT (CH2)
+           ~315°  ◉                   |                  ◉ ~45°
+                    \                  |                /
+                     \                 |               /
+         270°  <------+---------- CENTER (0,0) --------+----> 90° / +X
+                     /            ACTOR AREA           \
+                    /                |                   \
+        RL / REAR LEFT (CH4)          |              RR / REAR RIGHT (CH3)
+           ~225°  ◉                   |                  ◉ ~135°
+                                      ↓
+                                   180°
+```
+
+Default positions are the four diagonal bearings **315°, 45°, 135°, 225°**, each 3 m from center, with editable distances and angular positions. This reflects loudspeakers near the middle of the 10–11, 1–2, 4–5 and 7–8 o'clock clock-face sectors. Speakers can move slightly behind the nominal circle as long as the actual X/Y readings are entered. They should **face the center** (the software previews an inward pointing direction equal to the speaker bearing + 180°).
+
+**Enter X/Y in metres** (recommended) or plan the equivalent polar bearing/range:
+
+```
+x = distance * sin(angle)
+y = distance * cos(angle)
+angle = atan2(x, y)  (degrees, wrapped to [0,360))
+distance = sqrt(x² + y²)
+```
+
+`Stage setup` has four speaker rows with name, X, Y, physical output channel (1–4, all unique), and per-output manual trim (dB). The app derives angle and distance automatically and rejects layouts with an angular gap ≥180° (which do not surround the center).
+
+**2D VBAP (Vector-Based Amplitude Panning)**: for each requested source angle, choose the two neighboring speakers containing the direction, solve the positive two-vector amplitude weights, and normalize to equal power (`gL²+gR²=1` before optional manual trim). The result maps to four physical outputs, usually only the neighboring pair carrying the source at a time. Distances may optionally be used for a *rough* center-point distance gain multiplier, but this is **not equal-loudness room calibration**. Width, timing, off-center perception, room modes, speaker frequency response and reflections are not corrected. At different actor positions, the perceived virtual source can shift or lose focus; there is no head tracking.
+
+### Geometry is not acoustic calibration
+
+`Preview calibration` calculates, for each speaker:
+
+- `angle_deg`, `distance_m`, `x_m`, `y_m`, inward orientation (angle + 180°).
+- Theoretical propagation time `1000 × distance / 343` milliseconds (20°C approximation).
+- Suggested additional delay `1000 × (maximum_distance − speaker_distance) / 343` milliseconds, **displayed only; not applied**.
+- Suggested relative amplitude trim `20 log10(speaker_distance / median_distance)` dB, **displayed only**, based on an idealized distance law. Independently entered manual trims are applied to the VBAP mix.
+
+Real calibration requires the actual console/output routing, channel isolation tests, speaker aiming, calibrated SPL measurements at the center and (ideally) multiple actor positions. Do not apply suggested delays or gain changes blindly. See [CALIBRATION.md](docs/CALIBRATION.md) for the measurement checklist, soundcheck procedure and pending data.
+
+## 2. Connect an Apple Silicon Mac to the four speakers
+
+```text
+                           USB-C / Thunderbolt or class-compliant USB
+  Mac (local SpatialStage) ────────> 4+ output audio interface
+                                     OUT 1 ───► Console line input 1 ─► isolated bus 1 ─► L (315°)
+                                     OUT 2 ───► Console line input 2 ─► isolated bus 2 ─► R ( 45°)
+                                     OUT 3 ───► Console line input 3 ─► isolated bus 3 ─► RR(135°)
+                                     OUT 4 ───► Console line input 4 ─► isolated bus 4 ─► RL(225°)
+```
+
+An alternative is direct Mac USB audio into a mixing console **if its USB driver advertises ≥4 independent CoreAudio output channels**, and if they can be routed to four isolated analog/AUX/matrix outputs. A generic **two-channel** USB mixer, Mac headphone port, AirPlay speaker pair or HDMI stereo endpoint is not enough. Do **not** combine all four software channels into the console's stereo main L/R bus; this destroys directional separation. Do not assume an aggregate of unrelated Bluetooth or AirPlay devices is a synchronized show solution.
+
+1. Confirm the mixer/audio-interface brand/model, available USB channels, routing matrix and physical OUT 1–4. Connect cables with amps/console muted.
+2. On macOS open **Applications → Utilities → Audio MIDI Setup**, inspect the device's independent channels, set **48,000 Hz** if supported. Apple references: [Audio device setup](https://support.apple.com/guide/audio-midi-setup/set-up-audio-devices-ams59f301fda/mac) and [Configure external multichannel speakers](https://support.apple.com/guide/audio-midi-setup/set-up-external-speakers-for-stereo-or-surround-sound-ams1005/mac).
+3. In SpatialStage select the 4+ output device and click **Connect audio**. On connection, **MAIN MUTE is automatically ON** and the master starts at **−18 dB**.
+4. Lower amplifier/console master gain, manually release mute, click **Test CH** and test channels 1→4 at a conservative level. Each test generates a brief approximately −22 dBFS 440 Hz sine in **one software channel**; this is a wiring test, **not** standardized SPL/pink-noise calibration.
+5. Inspect independent console input meters, output bus meters and speaker, then set manual trim using a calibrated meter as needed. Mute again for geometry/routing edits.
+6. Run **Preflight**, then rehearse FADE GO, CUT GO, STOP, SKIP, MAIN MUTE and PANIC before actors enter the stage.
+
+The output system uses a `sounddevice.OutputStream` with 4 float32 channels, fixed 48 kHz, 512-frame callback (about 10.7 ms at nominal sample rate). This is a **prototype**, and the Mac hardware/driver adds latency. If no ≥4-channel device appears, show design still works but actual playback is blocked.
+
+## 3. Install and run on Apple Silicon macOS
+
+Requires: macOS, Apple Silicon, **Python 3.11–3.13 (3.12 recommended)**, Homebrew, 4-channel audio device for actual playback, an up-to-date browser (Chrome is recommended for folder import). Recommended: WAV 48 kHz. FFmpeg provides MP3/AAC/M4A fallback.
 
 ```bash
-# Install dependencies (if you already have suitable Python, skip python@3.12)
+# Install third-party dependencies (Apple Silicon Homebrew typically /opt/homebrew)
 brew install python@3.12 portaudio libsndfile ffmpeg
 
-# From the repository directory
-cd StageSpatialCue
+# Clone YOUR repo
+git clone https://github.com/ShawnZ1438/SpatialStage.git
+cd SpatialStage
+
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
 
-# Optional: populate a synthetic 3-cue demo show
+# Optional: demo project and short synthetic FX (no copyrighted audio)
 python scripts/seed_demo.py
 
-# Run the local controller
-stagespatialcue
+# Launch loopback-only web controller
+spatialstage
 ```
 
-Open **http://127.0.0.1:8765** in Chrome. Use the **Import folder** control for directory selection. A double-clickable `run_mac.command` is also provided; it attempts to use your system `python3` and installs dependencies into `.venv`.
+Open **http://127.0.0.1:8765** in the Mac's browser. Run `python -m pytest -q` to check the DSP and API reference tests. The optional `run_mac.command` helps on macOS with Python installed. To stop the local service, `Ctrl+C` in Terminal. A file dialog cannot directly grant the browser arbitrary ongoing access to a folder; imported files are copied to the application's local project store so future runs do not depend on browser permissions.
 
-To quit, return to Terminal and press `Ctrl+C`. The local service listens only on `127.0.0.1`, not on the LAN. Projects are stored by default under `~/.stagespatialcue/projects/` (outside the source directory).
+The local project root is `~/.spatialstage/projects/`. Files remain local by default and the server is bound to `127.0.0.1`, not to the LAN.
 
-On a development or demo machine without 4-output hardware, the editor and project management still work; playback remains unavailable until an appropriate interface is connected.
+## 4. Add audio files, plan the Cue Stack
 
-### Audio hardware wiring (IMPORTANT)
+Name local audio files with leading cue numbers:
 
 ```text
-Mac USB-C / Thunderbolt
-       │
-       ▼
-4-or-more-output USB audio interface (CoreAudio)
-       ├── OUT 1 ──► mixing console input 1 ──► dedicated out / aux / matrix 1 ──► SPK 1
-       ├── OUT 2 ──► mixing console input 2 ──► dedicated out / aux / matrix 2 ──► SPK 2
-       ├── OUT 3 ──► mixing console input 3 ──► dedicated out / aux / matrix 3 ──► SPK 3
-       └── OUT 4 ──► mixing console input 4 ──► dedicated out / aux / matrix 4 ──► SPK 4
+Act-1-Audio/
+  001_Door_Opens.wav
+  002_Distant_Whisper.wav
+  003_Car_Pass_Left_to_Right.wav
+  004_Clock_Ring.wav
 ```
 
-The console **must retain four independent signal paths**. If its four mono input channels are mixed into a standard stereo L/R main bus, directional output will collapse to two channels. Most laptop headphone connectors are two-channel only; a 4×4 sound card, or a mixer that actually enumerates as a 4-channel USB audio output device, is required. Some digital desks expose stereo USB returns only; check the console's USB driver/routing matrix before rehearsal.
+Click **Import folder** (or Files) and select files. The app stores copies under the active show's `media/` directory and sorts the **new Cue rows** by the leading number before the first underscore/dash/space. You can subsequently reorder cues with ↑/↓. Existing media is not removed when a Cue row is deleted. File sizes are limited to 150 MiB per upload; an individual predecoded sound is limited to 30 minutes, and the decoded cache is bounded at 700 MiB. MP3 etc. must decode successfully on the Mac. Multichannel/stereo source files are downmixed to mono before positioning; do not use prerendered four-channel master files as though the app preserved their channels.
 
-1. Connect the hardware and power it on; keep PA amps/console masters down.
-2. Open **Applications → Utilities → Audio MIDI Setup**. Select the interface, set **48,000 Hz** when supported, and check that four output channels exist. You can inspect/configure the speaker/channel mapping here; the StageSpatialCue application also maps each speaker to output 1–4.
-3. On the physical console, create a discrete one-to-one signal path for each channel. Do **not** simply pan the four inputs across a stereo bus.
-4. Start StageSpatialCue; select the output device (minimum `4 out`), click **Connect audio**. This resets **MAIN MUTE to ON** by design.
-5. At safe console levels, cautiously unmute; use **Test CH** for channels 1, 2, 3 and 4. The one-second calibration tone is deliberately low level but is **not** a calibrated SPL signal.
-6. Enter/verify each speaker bearing, distance and physical output assignment under **Stage setup**.
-7. Import audio, click **Preflight**, rehearse all cue overlaps with the full speaker system, verify no unexpectedly hot peak and check xrun counter.
-8. Set the correct next cue with **ARM SELECTED** before the show begins. Keep a separate emergency stop accessible at the console.
+Each cue has an editable name, source media, bearing, source gain, fade-in, fade-out, replace transition length/style, pre-wait, post-wait and direction modulation curve. You can select any future row without arming/playing it; **ARM SELECTED** changes the next Cue pointer. To replace the file attached to a row, choose **Replace this Cue's audio file**. Playback already scheduled or active retains previously decoded audio, which is safer than swapping the buffer during playback.
 
-Apple's official multichannel configuration guide: <https://support.apple.com/guide/audio-midi-setup/set-external-speakers-stereo-surround-sound-ams1005/mac>
+### Live operator control — two GO buttons
 
-## Cue audio folders and filenames
-
-Use a numbered prefix. The folder's name is not part of the current cue identity; imported filenames are stored alongside the copied project media.
-
-```text
-Show_A_Act_1/
-  001_Opening_Ambience.wav
-  002_Left_Whisper.wav
-  003_Back_Rumble.wav
-  004_Orbit_Cue.flac
-  005_Transition_to_Scene_2.mp3
-```
-
-Accepted extensions: `.wav`, `.aif`, `.aiff`, `.flac`, `.ogg`, `.mp3`, `.m4a`, `.aac`. WAV/AIFF/FLAC generally decode with `libsndfile`; installing `ffmpeg` adds fallback support for compressed formats. **48 kHz PCM WAV is the strongly recommended show-prep format**, especially for repeatable boundaries and lower decoder unpredictability. Stereo/multichannel source audio is intentionally downmixed to mono before VBAP. If you need stereo beds to stay stereo or already-spatial multichannel masters, this requires a separate mode not present in v0.1.
-
-`001_Title.wav` / `001-Title.wav` / `001 Title.wav` all work. Unnumbered files are imported after numbered ones and can be reordered using the ↑ / ↓ controls in the Cue Stack. The uploader copies media **into the project directory**, rather than relying on an external folder remaining mounted. Maximum 250 files per batch, 150 MiB per uploaded file; decoding has a 30-minute per-clip limit and a 700 MiB decoded cache. Large shows currently need a streaming engine.
-
-## Operating the cue stack
-
-**Operator keys (when not editing an input field)**
-
-| Key | Action |
+| Operator control | Exact meaning |
 |---|---|
-| `Space` or click GO | Trigger the next armed cue (or a chain) |
-| `S` or STOP | Begin a short 40 ms de-click fade on all currently playing voices; cancels future voices |
-| `Alt+↓` or SKIP | Move the next-cue pointer forward **without playing audio** |
-| `Shift+Esc` or PANIC | Immediately kill all voices and set master mute ON |
-| ARM SELECTED | Set the next GO cue to the selected row (does not stop active playback) |
+| **FADE GO** / `Space` | Trigger next cue according to its stored `start_mode` (`replace`, `layer`, `queue`), pre-wait and transition style. Crossfade replaces active audio with the configured transition. |
+| **CUT GO** / `C` | Override next cue's start mode, **start now**, cancel pending cues and de-click active audio over **5 ms**. Trigger *only this* cue (automatic chain intentionally not followed for the cut operation). This is an immediate operational transition, not a sample-discontinuous zero-ms cut. |
+| **STOP** / `S` | Apply a brief 40 ms ramp to all active voices and cancel scheduled voices. It does **not** turn on main mute or reset the armed Cue pointer. |
+| **SKIP** / `Alt+↓` | Move the next-Cue pointer forward without firing the skipped Cue. |
+| **PANIC** / `Shift+Esc` | Immediately discard all voices and force MAIN MUTE ON. |
+| **MAIN MUTE** | Silence all outgoing PCM immediately; must be explicitly unmuted after connect/PANIC. |
+| **Master output** | Set global output level; gain changes are smoothed over short ramps. |
 
-**Each cue has these settings:**
+Start modes: `replace` fades out active voices according to `transition_s` (default **2.5 s**) or 5 ms for the Cue's `replace_style=cut`. Incoming sound uses its own fade-in at least as long as the chosen replacement fade, **capped at half the new clip duration** (short effects remain audible). `layer` mixes with the currently playing sounds. `queue` schedules after all currently/pending sounds end and then waits its own pre-wait. CUT GO always forces immediate replacement.
 
-- `position_deg`: static bearing, 0–359.99°, clockwise from 12 o'clock.
-- `gain_db`: cue volume level (-90 to +12 dB; use conservative gain staging).
-- `fade_in_s`: sine attack from silence starting at the cue's first sample.
-- `fade_out_s`: sine release to silence over the last portion of the **natural clip duration**.
-- `transition_s`: when this cue is `replace`, release previous active cues over this duration to prevent abrupt discontinuities; the new cue starts immediately (after its pre-wait) and overlaps the outgoing tail. This is **not** the new cue's fade-in.
-- `start_mode`: `replace` (fade out all earlier playing cues), `layer` (mix together), or `queue` (start only after **all current/scheduled voices** end).
-- `pre_wait_s`: extra wait after GO, or after the queue condition, before the cue begins. **It is not an absolute gap measured from the prior cue's end** if manually triggered while another cue is still playing.
-- `continue_mode`: `manual` (next cue needs another GO); `auto_continue` (auto-start next cue after `post_wait_s` measured from this cue's start); `auto_follow` (auto-start next cue after `post_wait_s` measured from this cue's natural/planned end).
-- `post_wait_s`: only used for auto modes. It is ignored for `manual`.
-- `modulation`: elapsed time in seconds plus a **relative unwrapped bearing offset**. Values beyond ±360 can represent complete revolutions.
+`fade_in_s` and `fade_out_s` are **volume gain envelopes** of each source. They are separate from the **direction** envelope and separate from the `transition_s` replacement fade. The `pre_wait_s` is applied **before** a newly triggered clip starts; it is *not* made shorter by the fade-in. `post_wait_s` is interpreted by the outgoing cue's auto-next rule:
 
-**Examples**
+- `manual`: only the operator triggers the next cue; post-wait is ignored.
+- `auto_continue`: next cue is scheduled at **this cue's actual audio start** + `post_wait_s` + **next cue's** `pre_wait_s`, so clips may overlap.
+- `auto_follow`: next cue is scheduled at **this cue's natural or previously determined end** + `post_wait_s` + **next cue's** `pre_wait_s`. A natural fade-out fits inside that clip and does **not** subtract time from the intentional gap. Replacing voices can overlap; cue fades are not a separate additional interval.
 
-- A normal scene transition: Cue A currently playing. Cue B `replace`, transition 1.5 s, fade-in 1.5 s → both overlap while A fades down and B fades up.
-- Whisper added during music: Cue B `layer`, fade-in 0.2 s → Whisper plays together with music; music remains active.
-- Door cue after rain ends: Cue B `queue`, pre-wait 0.5 s → Door waits for the last playing cue to finish and starts 0.5 s later.
-- Auto sequence: Cue A `auto_follow`, post-wait 1 s → Cue B triggers 1 s after A's end; Cue B's pre-wait is added.
-- Automated overlap: Cue A `auto_continue`, post-wait 2 s → Cue B triggers 2 s after A's start, whether A has ended or not (B's own start mode can still replace/wait).
+There is no automatic synchronization with a human script page, only the manually selected cue order and explicit auto rules. A sound designer should set those parameters for each script cue.
 
-**Limits:** Auto chains are pre-scheduled when GO is pressed; editing an already scheduled voice does not change its original playback settings. Master rotation does affect active voices. The voice starts are quantized to actual buffer rendering; real analog output timing needs loopback measurement.
+## 5. Design spatial direction and motion
 
-## 360° spatial model
+### Cue base angle + free keyframes
 
-Speaker labels and four channel numbers are **independent**. Speakers are described by bearing angles relative to a defined center point and distances in meters from that same point. The default is:
+Choose **Free keyframes** and drag points on the envelope: X is **clip elapsed seconds**, Y is **relative angular offset**, in signed degrees. For an effect that starts at 270° (left) and moves clockwise to 90° (right) over 4 seconds, set a `position_deg = 270.00` and keyframes `(0s, 0°) → (4s, +180°)`; the final bearing is `(270+180) % 360 = 90°`. If you want the opposite direction, use `−180°`. Keyframe offsets are **not forced to take the shortest angular path**; an offset of `+360°` makes an entire clockwise revolution. The inspector's cyan pointer marks the stored base angle and amber pointer the composed preview including the global controls.
 
-| Speaker | Bearing | Distance | Physical output |
-|---|---:|---:|---:|
-| Front left | 315° | 3 m | 1 |
-| Front right | 45° | 3 m | 2 |
-| Rear right | 135° | 3 m | 3 |
-| Rear left | 225° | 3 m | 4 |
+### Direction ADSR (not volume ADSR)
 
-Angles **must enclose the reference point** (no consecutive empty gap of 180° or more). For arbitrary stages, enter each measured bearing directly. **Four distances alone cannot reconstruct the layout.** Alternatively, if you have XY coordinates, convert with `bearing = (atan2(x,y) × 180/π + 360) % 360`, defining positive X toward the stage's right and positive Y toward 12 o'clock.
+Choose **ADSR direction offset** per Cue. Its attack ramps from **0° offset → peak offset**, decay ramps **peak → sustain offset**, sustain holds until the last release interval, and release ramps **sustain → final offset**. Durations for attack/decay/release are seconds and sustain is automatically the remaining portion of the audio clip. If attack+decay+release exceeds clip length, the stages are proportionally compressed. Offset values can be negative and can exceed ±360° up to the editor's configured limits for multi-revolution motions.
 
-Given a requested bearing θ, VBAP finds the two enclosing loudspeakers and calculates nonnegative gains, then normalizes their squared sum to one. It is an **amplitude panning approximation** and does not synthesize a real point source at a chosen location. It is not a binaural HRTF headphone renderer, wave-field synthesis, nor a model of wall reflections or a moving human subject. Four-channel equal-power VBAP does not guarantee identical loudness at every angle, particularly at low frequencies.
+### Global show-wide direction envelope
 
-The optional distance multiplier is `distance_i / median(distance)`, applied to each active speaker's gain. This crudely compensates for 1/r loss at **one reference point**, but can create extra peaks. It defaults OFF; prefer physical SPL measurement, channel trims and a speaker-system technician for actual calibration. No per-channel delay compensation is currently applied.
-
-For cue modulation, points are `[(elapsed_s, offset_deg), ...]`, linearly interpolated *without angle wrapping*. For example:
-
-- Base bearing **350°** with offsets `0° at 0 s` and `20° at 4 s` sweeps across 0° to finish at **10°**.
-- Base bearing **90°** with offsets `0° at 0 s` and `360° at 8 s` makes one full clockwise circle.
-- Multiple revolutions can be typed numerically as offsets such as `+720°`. The graph drag area is currently limited to `-360° … +360°`, while numeric editing supports `-2160° … +2160°`.
-
-The **Global rotation** control sums a signed angle to every current cue's `base position + cue modulation`. It is a deliberately simple global steering layer, not a competing timeline or automatic actor tracking solution.
-
-## Save, export, and event logging
-
-Each show lives under:
+Enable the **Global show-wide envelope** in the left sidebar. Add points `(show time seconds, angular offset degrees)`; this track starts at the **first scheduled audio start after ARM / new show** and is linearly interpolated. The **Global rotation** number is a separate live-adjustable scalar applied to every playing source. The final software direction, measured clockwise, is:
 
 ```text
-~/.stagespatialcue/projects/<project-id>/
-  project.json       # human-readable cue definitions, geometry, angles
-  media/
-    001_Opening_Ambience.wav
-    002_Left_Whisper.wav
-  events.jsonl       # non-identifying operator and engine frame events
+θ_output(t, T_show) = wrap360(
+    θ_cue_base + cue_direction_offset(t) + global_rotation
+    + global_show_offset(T_show)  # 0 when disabled
+)
 ```
 
-Cue edits are automatically persisted to `project.json` via atomic replace. `Export show ZIP` creates a ZIP including JSON, audio and logged events. Restoring a show currently requires copying an exported project folder back under the data root; an in-app import is planned. To change the data location:
+Edits to position/gain/direction ADSR/free keyframes or global motion propagate to currently playing audio after autosave, normally around 300 ms plus UI/device scheduling. The reference mixer smooths gain/direction at block boundaries to avoid sudden jumps, but **it does not guarantee glitch-free live edits**. Editing the stage speaker routing is blocked while connected and unmuted. If a show is armed and an auto chain has already queued several voices, changes to their direction/gain apply, but their already-scheduled start frames, sound buffer and cutoff times remain fixed.
 
-```bash
-STAGE_SPATIAL_DATA="$HOME/Documents/StageSpatialProjects" stagespatialcue
+## 6. Local projects and file persistence
+
+```text
+~/.spatialstage/projects/<12-character-show-ID>/
+  project.json            # cue ordering / audio references / speakers / global & per-cue envelopes
+  media/                  # copied and renamed audio source assets
+  events.jsonl            # ONLY if explicit SPATIALSTAGE_DIAGNOSTICS=1
 ```
 
-`events.jsonl` contains approximate UTC receipt timestamps and frame numbers from the 48 kHz engine clock. Logged events include arm, GO, skip, STOP, panic, mute changes, cue audio starts/ends and import. **Frame timestamps indicate software rendering relative to the current stream, not measured acoustic arrival time**; they are unsuitable as millisecond-accurate participant-exposure ground truth until device latency has been calibrated. This MVP does not store names, ADHD diagnoses, study scores or microphone recordings.
+**Export show ZIP** packages that show's data and media; the app doesn't upload your project to GitHub, iCloud or another server. Cue list changes are automatically saved with an atomic project.json replacement. Existing v0.1 JSON generally loads with new defaults; the next save writes `schema_version = 2`. Old `~/.stagespatialcue/projects` are **not automatically migrated** into the new default directory; copy them manually while SpatialStage is shut down if you want to reuse old projects. Preserve project IDs and media subfolders.
 
-## Validation & development
+`.gitignore` excludes local audio, ZIP exports, `.venv`, secrets and runtime project stores. Do **not** commit participant names, recordings or copyrighted audio to the public repository.
+
+## 7. Reliability and current limitations
+
+- **Requires hardware tests before an actual rehearsal**. CI tests validate Python logic and API schemas, not physical Mac+console routing, speaker pressure, sample clock drift or actor perception.
+- The current PortAudio callback takes Python locks and allocates NumPy buffers; this is not compliant with hard real-time audio callback design. Dropouts may occur. For performance deployment, port the mixer and command queue to **JUCE/CoreAudio C++**, with preallocated signal paths and lock-free control messages.
+- Measured latency calibration (including buffer/console/amplifier/air propagation) is **not implemented**. Theoretical center-point extra delay is *preview only*. Speaker trim is a manually applied parameter; an SPL meter is needed to determine safe actual gains.
+- One virtual source is rendered from the reference center, not independently for every moving actor. Off-center listener localization is neither uniform nor guaranteed.
+- Speaker frequency response, directivity, reflections, bass management, speed-of-sound changes, playback-device clock domains and hearing safety are not modeled. Do not infer ADHD effects from the software's direction degrees.
+- No experiment participant logs are collected. Optional operator diagnostics are disabled by default.
+- No OSC/MIDI, DAW timeline, looping, waveform cuts, external timecode, real-time mic input, HRTF or 3D height yet.
+
+## 8. Project layout, testing and contribution
+
+```text
+stagespatialcue/                 # internal Python module retained for v0.1 project compatibility
+  models.py                     # Pydantic project/cue/speaker schemas
+  spatial.py                    # stage XY/polar conversion + VBAP + direction ADSR
+  mixer.py                      # frame mixer; GO transitions, global motion, live updates
+  audio.py                      # decode/cache, device selection, preflight, stage controller
+  server.py                     # FastAPI localhost endpoints
+  storage.py                    # atomic project JSON, import/export
+  static/index.html, app.js, style.css
+scripts/seed_demo.py            # synthetic demo audio
+scripts/browser_smoke.py        # developer-only browser mock/testing example
+scripts/                         # historical UI migration scripts (not needed at runtime)
+tests/                           # automated DSP/API checks
+.github/workflows/ci.yml
+run_mac.command
+```
 
 ```bash
 python -m pytest -q
-python -m compileall -q stagespatialcue
+node --check stagespatialcue/static/app.js  # optional Node syntax check
 ```
 
-Hardware smoke-test checklist:
+**Development path:** v0.2 geometry, envelopes and live edits → in-situ speaker/output soundcheck → UX improvements, stage-safe sound level controls and playback snapshots → native audio engine → reproducible show release and hardware acceptance testing.
 
-1. CoreAudio lists the chosen interface with `max_output_channels >= 4`; startup/reconnect is muted.
-2. Each test channel goes to **only** its intended speaker, not to a console stereo bus or duplicated PA send.
-3. 0/90/180/270° virtual bearings sweep clockwise in the expected stage orientation.
-4. 350→10° is a short clockwise sweep with correct unwrap; `0→360°` is one revolution.
-5. `replace`, `layer`, `queue`, auto-follow, auto-continue and post-wait behave correctly under a full 20–30 minute trial.
-6. Stop/replace near a zero crossing and a full-scale transient are auditioned for audible clicks.
-7. No xrun, clipped block, memory exhaustion or late GO under the maximum expected number of simultaneously playing cues.
-8. Stop/reconnect device, unplug/replug interface, switch sample rate, sleep/wake the Mac, refresh UI and restart server; test safe failure modes.
-9. Measure sound level at all relevant participant locations using suitable instrumentation; do not expose participants until the study protocol is approved.
-10. Keep a conventional mixer emergency mute; never rely solely on the browser's PANIC control.
-
-## Known constraints / technical debt
-
-- **Python + PortAudio callback is not hard-real-time.** Mixer math and Python locks can cause underruns; this version is for prototyping and rehearsal only. Upgrade to native JUCE C++ or Swift/CoreAudio (and lock-free command queues) for performance-grade reliability.
-- The program decodes entire files to mono in RAM; no streaming for hour-long tracks, time stretching, loop regions, fades between arbitrary sections or output bus presets yet.
-- A USB interface that *only* advertises two stereo channels may require driver/routing changes to expose four independent outputs. A four-speaker console alone does not mean the Mac can address four channels.
-- 48 kHz is fixed for now. Some interfaces may reject it; matching hardware clock/source and sample rate is required.
-- No automatic feedback prevention, calibrated peak limiter, hardware mute relay, redundancy computer, actor tracking or scientific participant scheduler.
-- One local operator browser tab is assumed. Simultaneous multiple tabs can issue competing GO/ARM commands.
-- HTTP on loopback is not a general remote-operator server. Do not expose port 8765 to a network or use port forwarding.
-- `preflight` checks clips/cache/device selection but is not a complete live-show risk test.
-- Audio output testing is **not performed** in this source-only build environment; the supplied editor has browser-level visual checks and unit/API tests, not a Mac PA certification.
-
-## Suggested roadmap
-
-1. **M1 — Hardware validation:** test on intended Mac/interface/mixer; four output channels, routing matrix, SPL calibration, drift/xruns, robust setup wizard.
-2. **M2 — Cue design:** individual stop targets and groups, native waveform previews and trim, draggable keyframe editor with smoothing/easing, independent per-channel level meter and channel mute.
-3. **M3 — Research mode:** scene-based global steering lanes, deterministic condition presets, counterbalanced trials, task IDs (pseudonymous), time-aligned response/event ingestion with explicit consent workflows.
-4. **M4 — Production engine:** native low-latency CoreAudio/JUCE audio thread, file streaming, precache limits, sample-accurate scheduler, output limiter, channel delays, verified dropout handling, redundancy.
-5. **M5 — Integrations:** OSC/MIDI/QLab interoperability, hardware GO button, rehearsal/live/locked modes and a signed macOS `.app` distribution.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/RESEARCH_PROTOCOL.md`](docs/RESEARCH_PROTOCOL.md) for decisions, experiment-design safeguards and questions for the stage research team.
-
-## Publish to GitHub
-
-This archive is a **local git-ready repository**. The ChatGPT environment used to prepare it has no destination repository specified and no create-repository action, so a remote push has **not** been claimed.
-
-```bash
-cd StageSpatialCue
-git status
-git log -1 --oneline
-
-# Install GitHub CLI if needed
-brew install gh
-gh auth login
-
-# For this type of exploratory human-subjects work, consider private until reviewed
-gh repo create StageSpatialCue --private --source . --remote origin --push
-
-# Or, if you create a remote in the GitHub website first:
-# git remote add origin git@github.com:YOUR_USERNAME/StageSpatialCue.git
-# git push -u origin main
-```
-
-Do not commit participant identifiers, consent records, private sound files you lack redistribution rights for, or confidential study documents. The `.gitignore` intentionally ignores most standalone audio file extensions. Project data is kept outside the source repository.
-
-## References
-
-- [Zotter and Frank: Amplitude Panning Using Vector Bases](https://link.springer.com/chapter/10.1007/978-3-030-17207-7_3)
-- [Apple: Set up external speakers for surround sound in Audio MIDI Setup](https://support.apple.com/guide/audio-midi-setup/set-external-speakers-stereo-surround-sound-ams1005/mac)
-- [QLab 5: Cue sequences](https://reference.qlab.app/docs/v5/fundamentals/cue-sequences/), inspiration for but not an implementation of QLab's cue semantics
-
-MIT license. No QLab affiliation. No patient information is required by StageSpatialCue.
+**License:** MIT. Independent tool; not affiliated with QLab.

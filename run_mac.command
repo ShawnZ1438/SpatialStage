@@ -1,15 +1,15 @@
 #!/bin/zsh
 set -e
 cd "$(dirname "$0")"
-if ! command -v python3 >/dev/null 2>&1; then
-  echo 'Python 3.11-3.13 is required. Install it via Homebrew or python.org.'
+if ! command -v python3.12 >/dev/null 2>&1; then
+  echo 'Install supported Python 3.12 first: brew install python@3.12'
   exit 1
 fi
 if [ ! -d .venv ]; then
-  python3 -m venv .venv
+  python3.12 -m venv .venv
 fi
 source .venv/bin/activate
 python -m pip install -e .
-echo 'Open http://127.0.0.1:8765 in Chrome or Safari.'
+echo 'SpatialStage running at http://127.0.0.1:8765'
 (open 'http://127.0.0.1:8765' >/dev/null 2>&1 || true) &
-exec stagespatialcue
+exec spatialstage

@@ -3,11 +3,12 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stage-spatial-cue"
-version = "0.1.0"
-description = "A local-first, 4-channel spatial audio cue system for theatre research"
+name = "spatialstage"
+version = "0.2.0"
+description = "Local-first four-channel theatre spatial audio Cue controller"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
+license = "MIT"
 dependencies = [
   "fastapi>=0.110,<1",
   "uvicorn>=0.28,<1",
@@ -23,7 +24,7 @@ dependencies = [
 dev = ["pytest>=8", "httpx>=0.27"]
 
 [project.scripts]
-stagespatialcue = "stagespatialcue.server:main"
+spatialstage = "stagespatialcue.server:main"
 
 [tool.setuptools.packages.find]
 include = ["stagespatialcue*"]

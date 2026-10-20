@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from .audio import StageController, audio_duration
 from .models import Cue, Project
+from .spatial import calibration_preview
 from .storage import AUDIO_EXT, ProjectStore
 
 MAX_UPLOAD_BYTES = 150 * 1024 * 1024
@@ -31,6 +32,10 @@ class ArmPayload(BaseModel):
 
 class ProjectPayload(BaseModel):
     project_id: str
+
+
+class GoPayload(ProjectPayload):
+    cut: bool = False
 
 
 class DevicePayload(BaseModel):
@@ -52,7 +57,7 @@ def filename_key(cue: Cue):
 
 
 def create_app(data_root: Path | None = None) -> FastAPI:
-    root = Path(data_root or os.environ.get("STAGE_SPATIAL_DATA", "~/.stagespatialcue/projects"))
+    root = Path(data_root or os.environ.get("STAGE_SPATIAL_DATA", "~/.spatialstage/projects"))
     store = ProjectStore(root)
     stage = StageController(store)
     @asynccontextmanager
@@ -61,20 +66,23 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         stage.status()  # flush buffered render events from the audio callback
         stage.disconnect()
 
-    app = FastAPI(title="StageSpatialCue", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="SpatialStage", version="0.2.0", lifespan=lifespan)
     app.state.store = store
     app.state.stage = stage
 
     @app.middleware("http")
     async def local_only(request: Request, call_next):
         origin = request.headers.get("origin", "")
+        host = request.headers.get("host", "")
+        if host and not re.fullmatch(r"(?:127\.0\.0\.1|localhost)(?::\d+)?", host):
+            return Response("Only loopback hosts are allowed", status_code=403)
         if origin and not re.fullmatch(r"https?://(?:127\.0\.0\.1|localhost)(?::\d+)?", origin):
             return Response("Only localhost browser origins are allowed", status_code=403)
         return await call_next(request)
 
     @app.get("/api/health")
     def health():
-        return {"version": "0.1.0", "mode": "local", "sample_rate": 48000}
+        return {"version": "0.2.0", "mode": "local", "sample_rate": 48000}
 
     @app.get("/api/projects")
     def projects():
@@ -97,6 +105,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         for cue in project.cues:
             if cue.media_relpath:
                 store.media_path(project_id, cue.media_relpath)  # validate only; missing file allowed in editor
+        stage.can_update(project)
+        project.schema_version = 2
         saved = store.save(project)
         stage.sync(saved)
         stage.log("project_saved", cue_count=len(saved.cues))
@@ -138,11 +148,47 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         stage.log("media_import", added=len(added), ignored=len(ignored))
         return {"added": len(added), "ignored": ignored, "project": project}
 
+    @app.post("/api/projects/{project_id}/cues/{cue_id}/replace-media")
+    async def replace_cue_media(project_id: str, cue_id: str, file: UploadFile = File(...)):
+        project = store.get(project_id)
+        cue = next((c for c in project.cues if c.id == cue_id), None)
+        if cue is None:
+            raise HTTPException(status_code=404, detail="Cue not found")
+        name = Path((file.filename or "").replace("\\", "/")).name
+        if Path(name).suffix.lower() not in AUDIO_EXT:
+            raise HTTPException(status_code=400, detail="Unsupported audio format")
+        with tempfile.NamedTemporaryFile(prefix="spatialstage-media-", delete=False) as temp:
+            path = Path(temp.name)
+            size = 0
+            try:
+                while chunk := await file.read(1024 * 1024):
+                    size += len(chunk)
+                    if size > MAX_UPLOAD_BYTES:
+                        raise HTTPException(status_code=413, detail="Audio exceeds 150 MiB")
+                    temp.write(chunk)
+                temp.flush()
+                relative, display = store.add_file(project_id, path, name)
+            finally:
+                path.unlink(missing_ok=True)
+        cue.filename = display
+        cue.media_relpath = relative
+        cue.duration_s = audio_duration(store.media_path(project_id, relative))
+        saved = store.save(project)
+        stage.sync(saved)
+        return {"cue": cue, "project": saved,
+                "note": "Playing/pre-scheduled voices retain their original audio samples; fresh GO uses replacement."}
+
+    @app.post("/api/calibration/preview")
+    def preview_calibration(project: Project):
+        return {"reference": "stage_center_0_0", "speaker_hints": calibration_preview(project.speakers),
+                "measured": False, "delay_applied": False,
+                "warning": "Geometry is calculated. SPL, latency and acoustic localization are NOT measured."}
+
     @app.get("/api/projects/{project_id}/export")
     def export_project(project_id: str):
         stream = store.export_zip(project_id)
         return StreamingResponse(stream, media_type="application/zip", headers={
-            "Content-Disposition": f'attachment; filename="StageSpatialCue-{project_id}.zip"'
+            "Content-Disposition": f'attachment; filename="SpatialStage-{project_id}.zip"'
         })
 
     @app.get("/api/devices")
@@ -176,8 +222,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         return stage.status()
 
     @app.post("/api/audio/go")
-    def go(payload: ProjectPayload):
-        return stage.go(payload.project_id)
+    def go(payload: GoPayload):
+        return stage.go(payload.project_id, cut=payload.cut)
 
     @app.post("/api/audio/skip")
     def skip():

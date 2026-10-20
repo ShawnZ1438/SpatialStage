@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import os
 import json
 from datetime import datetime, timezone
 import shutil
@@ -83,7 +84,9 @@ class StageController:
         self.cache: OrderedDict[str, np.ndarray] = OrderedDict()
 
     def log(self, event: str, **fields) -> None:
-        """Store non-identifying operator actions; call only outside audio callback."""
+        """Operator-only diagnostics disabled by default; no participant research log."""
+        if os.environ.get("SPATIALSTAGE_DIAGNOSTICS") != "1":
+            return
         if not self.project_id:
             return
         path = self.store.directory(self.project_id) / "events.jsonl"
@@ -122,6 +125,9 @@ class StageController:
                 self.next_index = index
             else:
                 self.mixer.update_project(project)
+                # Selecting a future cue during playback does not restart the show clock.
+                if not self.mixer.voices:
+                    self.mixer.reset_show_clock()
                 self.next_index = index
             self.log("operator_arm", next_index=index)
             return self.status()
@@ -215,7 +221,7 @@ class StageController:
             problems.append("Select and connect a 4-output sound interface")
         return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1), "count": len(project.cues)}
 
-    def go(self, project_id: str) -> dict:
+    def go(self, project_id: str, *, cut: bool = False) -> dict:
         with self.lock:
             if not self.stream:
                 raise ValueError("Connect a 4-channel output device first")
@@ -234,11 +240,11 @@ class StageController:
                 cue = project.cues[idx]
                 chain.append((cue, self._clip(project, cue)))
                 idx += 1
-                if cue.continue_mode == "manual":
+                if cut or cue.continue_mode == "manual":
                     break
             anchor = None
             for n, (cue, clip) in enumerate(chain):
-                voice = self.mixer.queue(cue, clip, anchored_frame=anchor)
+                voice = self.mixer.queue(cue, clip, anchored_frame=anchor, force_cut=(cut and n == 0))
                 if cue.continue_mode == "auto_continue":
                     anchor = voice.start_frame + int(round(cue.post_wait_s * SAMPLE_RATE))
                 elif cue.continue_mode == "auto_follow":
@@ -246,11 +252,19 @@ class StageController:
                 else:
                     anchor = None
             self.next_index = idx
-            self.log("operator_go", first_index=self.next_index-len(chain),
+            self.log("operator_cut_go" if cut else "operator_fade_go", first_index=self.next_index-len(chain),
                      scheduled=[{"cue_id": c.id, "title": c.title,
                                  "bearing_deg": c.position_deg, "mode": c.start_mode}
                                 for c, _ in chain])
             return self.status()
+
+    def can_update(self, project: Project) -> None:
+        """Reject hot speaker channel remapping while an output is unmuted."""
+        with self.lock:
+            if self.mixer and self.project_id == project.id and self.stream is not None:
+                old = self.mixer.project
+                if old.speakers != project.speakers and not self.mixer.master_mute:
+                    raise ValueError("MAIN MUTE first before changing stage speaker geometry/routing")
 
     def skip(self) -> dict:
         with self.lock:
