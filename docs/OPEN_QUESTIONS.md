@@ -13,14 +13,14 @@
 - Do not collect research participant or experimental response records.
 - Public GitHub destination: `https://github.com/ShawnZ1438/SpatialStage`.
 
-## Unresolved — these are not blockers for v0.2 software exploration
+## Unresolved — these are not blockers for v0.3 software exploration
 
 | ID | Detail to confirm on-site | Current fallback |
 |---|---|---|
 | P1 | The four exact measured speaker X/Y coordinates (m), actor circular area radius and reference top arrow | Default symmetric 3m diagonal speakers; no real calibration claim |
 | P2 | Exact mixing console, interface, cabling, 4-output CoreAudio route and physical patch chart | Output selector only accepts a device with ≥4 channels; no stereo downmix fallback |
 | P3 | Measured speaker levels at reference center and actor walk-test locations | No measured SPL; manual per-speaker trim at 0dB; software master defaults −18dB and mute ON |
-| P4 | Any measured per-channel latency and whether the hardware console can set isolated bus delays | Theoretical delay shown but **not applied** |
+| P4 | Any measured per-channel latency and whether the hardware console can set isolated bus delays | Geometry delay remains preview-only; optional single-point XLR AutoCal measures relative arrival and can apply delay **after manual approval** (not hardware-verified) |
 | P5 | Should CUT GO cancel a previously scheduled auto-next chain? | **Yes**: cut overrides queue/layer, cancels pending voices and fires one Cue; re-arm as necessary |
 | P6 | If speaker geometry is changed mid-playback, should control surface allow it? | **No** while an output device is connected and unmuted |
 | P7 | When should global envelope clock restart? | After new ARM with no voices, on first new GO audio start; selecting a Cue during active playback does not reset it |
@@ -34,4 +34,10 @@
 
 - No patient profile, ADHD diagnosis, clinical recommendations, or experimental logging.
 - No assumption that walls, floor reflections, off-center hearing, near-field SPL or actual physical loudspeaker directivity have been corrected.
-- No automated time-delay DSP or calibrated sound pressure measurement from mere position input.
+- No automatically enabled measured-delay DSP or calibrated absolute sound pressure measurement from mere speaker position input. AutoCal v0.3 enables relative measured corrections only with manual approval, and does not measure dB SPL.
+
+## AutoCal v0.3 scope/remaining decisions (2026-10-20)
+
+- **Confirmed:** 1 measurement at stage center; `balanced` mode (with one point, center-only); XLR input through audio interface; experimental EQ explicitly OFF; persistence, result plots, explicit APPLY approval before processing output.
+- **Still TBD (hardware):** exact XLR measurement mic, preamp/interface models, matching input/output hardware clocks, four console bus mappings, measured physical stage center, speaker coordinates, output gain ceiling, on-site acceptance criteria.
+- **Future only:** 5/9-point area coverage, multiple mic spatial weighting, SPL calibration, verified phase/polarity check, hardware clock drift checks, adaptive EQ. None implemented or implicitly enabled.

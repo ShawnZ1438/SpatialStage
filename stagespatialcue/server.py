@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .audio import StageController, audio_duration
+from .autocal import AutoCalConfig, AutoCalManager, geometry_signature
 from .models import Cue, Project
 from .spatial import calibration_preview
 from .storage import AUDIO_EXT, ProjectStore
@@ -51,6 +52,14 @@ class TestPayload(BaseModel):
     channel: int = Field(ge=1, le=4)
 
 
+class AutoCalStartPayload(BaseModel):
+    hardware_ready: bool = False
+
+
+class AutoCalApplyPayload(BaseModel):
+    confirm: str = ""
+
+
 def filename_key(cue: Cue):
     match = re.match(r"^(\d{1,5})[-_ ]", cue.filename)
     return (0, int(match.group(1)), cue.filename.lower()) if match else (1, cue.filename.lower(), "")
@@ -60,15 +69,17 @@ def create_app(data_root: Path | None = None) -> FastAPI:
     root = Path(data_root or os.environ.get("STAGE_SPATIAL_DATA", "~/.spatialstage/projects"))
     store = ProjectStore(root)
     stage = StageController(store)
+    autocal = AutoCalManager(store, stage)
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         stage.status()  # flush buffered render events from the audio callback
         stage.disconnect()
 
-    app = FastAPI(title="SpatialStage", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="SpatialStage", version="0.3.0", lifespan=lifespan)
     app.state.store = store
     app.state.stage = stage
+    app.state.autocal = autocal
 
     @app.middleware("http")
     async def local_only(request: Request, call_next):
@@ -82,7 +93,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"version": "0.2.0", "mode": "local", "sample_rate": 48000}
+        return {"version": "0.3.0", "mode": "local", "sample_rate": 48000}
 
     @app.get("/api/projects")
     def projects():
@@ -106,7 +117,16 @@ def create_app(data_root: Path | None = None) -> FastAPI:
             if cue.media_relpath:
                 store.media_path(project_id, cue.media_relpath)  # validate only; missing file allowed in editor
         stage.can_update(project)
-        project.schema_version = 2
+        previous = store.get(project_id)
+        # Never let a general project editor bypass deliberate AutoCal approval.
+        project.active_calibration_id = previous.active_calibration_id
+        project.calibration_enabled = previous.calibration_enabled
+        # Any geometry/routing/trim modification invalidates acoustic measurement.
+        if (geometry_signature(project.speakers) != geometry_signature(previous.speakers)
+                or project.distance_compensation != previous.distance_compensation):
+            project.active_calibration_id = None
+            project.calibration_enabled = False
+        project.schema_version = 3
         saved = store.save(project)
         stage.sync(saved)
         stage.log("project_saved", cue_count=len(saved.cues))
@@ -184,6 +204,42 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 "measured": False, "delay_applied": False,
                 "warning": "Geometry is calculated. SPL, latency and acoustic localization are NOT measured."}
 
+    @app.get("/api/projects/{project_id}/autocal")
+    def autocal_overview(project_id: str):
+        project = store.get(project_id)
+        return {"config": autocal.config(project_id),
+                "sessions": autocal.sessions(project_id),
+                "run": autocal.status(project_id),
+                "enabled": project.calibration_enabled,
+                "active_calibration_id": project.active_calibration_id,
+                "note": "One point: balanced means stage-center matching only; no multi-position correction or EQ."}
+
+    @app.put("/api/projects/{project_id}/autocal/config")
+    def autocal_update_config(project_id: str, config: AutoCalConfig):
+        return autocal.save_config(project_id, config)
+
+    @app.post("/api/projects/{project_id}/autocal/start")
+    def autocal_start(project_id: str, payload: AutoCalStartPayload):
+        return autocal.start(project_id, hardware_ready=payload.hardware_ready)
+
+    @app.get("/api/projects/{project_id}/autocal/run")
+    def autocal_run_status(project_id: str):
+        store.get(project_id)
+        return autocal.status(project_id)
+
+    @app.get("/api/projects/{project_id}/autocal/sessions/{session_id}")
+    def autocal_report(project_id: str, session_id: str):
+        store.get(project_id)
+        return autocal.session(project_id, session_id)
+
+    @app.post("/api/projects/{project_id}/autocal/sessions/{session_id}/apply")
+    def autocal_apply(project_id: str, session_id: str, payload: AutoCalApplyPayload):
+        return autocal.apply(project_id, session_id, confirm=payload.confirm)
+
+    @app.post("/api/projects/{project_id}/autocal/disable")
+    def autocal_disable(project_id: str):
+        return autocal.disable(project_id)
+
     @app.get("/api/projects/{project_id}/export")
     def export_project(project_id: str):
         stream = store.export_zip(project_id)
@@ -213,6 +269,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     @app.post("/api/audio/master")
     def master(payload: MasterPayload):
+        if stage.measurement_active:
+            raise ValueError("Master output is locked while AutoCal measurement runs")
         if stage.mixer is None:
             raise ValueError("Arm a project first")
         with stage.mixer.lock:
@@ -245,6 +303,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     @app.post("/api/audio/test")
     def test(payload: TestPayload):
+        if stage.measurement_active:
+            raise ValueError("AutoCal currently owns the sound hardware")
         if stage.stream is None:
             raise ValueError("Connect a 4-channel interface first")
         if stage.mixer is None or stage.mixer.master_mute:

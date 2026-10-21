@@ -81,6 +81,7 @@ class StageController:
         self.stream = None
         self.audio_error: str | None = None
         self.xruns = 0
+        self.measurement_active = False
         self.cache: OrderedDict[str, np.ndarray] = OrderedDict()
 
     def log(self, event: str, **fields) -> None:
@@ -113,6 +114,8 @@ class StageController:
 
     def arm(self, project_id: str, index: int = 0) -> dict:
         with self.lock:
+            if self.measurement_active:
+                raise ValueError("AutoCal measurement active; do not arm playback")
             project = self.store.get(project_id)
             if not 0 <= index <= len(project.cues):
                 raise ValueError("Cue index out of range")
@@ -121,10 +124,12 @@ class StageController:
                     self.mixer.panic()
                 self.project_id = project_id
                 self.mixer = Mixer(project)
+                self._apply_calibration(project)
                 self.cache.clear()
                 self.next_index = index
             else:
                 self.mixer.update_project(project)
+                self._apply_calibration(project)
                 # Selecting a future cue during playback does not restart the show clock.
                 if not self.mixer.voices:
                     self.mixer.reset_show_clock()
@@ -136,13 +141,42 @@ class StageController:
         with self.lock:
             if project.id == self.project_id and self.mixer:
                 self.mixer.update_project(project)
+                self._apply_calibration(project)
                 self.next_index = min(self.next_index, len(project.cues))
+
+    def _apply_calibration(self, project: Project) -> None:
+        """Resolve saved approved profiles on arm, restart, and every project sync."""
+        if not self.mixer:
+            return
+        if not project.calibration_enabled or not project.active_calibration_id:
+            self.mixer.set_calibration([0.0] * 4, [0.0] * 4)
+            return
+        from .autocal import geometry_signature
+        sid = project.active_calibration_id
+        path = self.store.directory(project.id) / "autocal" / f"{sid}.json"
+        if not path.is_file():
+            raise ValueError("Active AutoCal profile is missing. Disable AutoCal first")
+        profile = json.loads(path.read_text())
+        if (profile.get("status") != "applied" or not profile.get("quality_ok") or
+                profile.get("speaker_signature") != geometry_signature(project.speakers) or
+                project.distance_compensation or any(s.trim_db != 0 for s in project.speakers)):
+            raise ValueError("Active AutoCal is invalid for current speaker routing. Disable it")
+        recommendation = profile["recommendations"]
+        self.mixer.set_calibration(recommendation["channel_gain_db"], recommendation["channel_delay_ms"])
 
     def connect(self, device_index: int) -> dict:
         import sounddevice as sd
         with self.lock:
             if self.mixer is None:
                 raise ValueError("Create/arm a project first")
+            if self.measurement_active:
+                raise ValueError("AutoCal measurement active; wait before connecting live audio")
+            if self.mixer.project.calibration_enabled:
+                profile_path = self.store.directory(self.mixer.project.id) / "autocal" / f"{self.mixer.project.active_calibration_id}.json"
+                profile = json.loads(profile_path.read_text())
+                device_name = str(sd.query_devices(device_index)["name"])
+                if device_name != profile["output_device_name"]:
+                    raise ValueError("Output interface differs from approved AutoCal profile; disable it or use measured interface")
             if self.stream is not None:
                 self.disconnect()
             details = sd.query_devices(device_index)
@@ -223,6 +257,8 @@ class StageController:
 
     def go(self, project_id: str, *, cut: bool = False) -> dict:
         with self.lock:
+            if self.measurement_active:
+                raise ValueError("AutoCal measurement active")
             if not self.stream:
                 raise ValueError("Connect a 4-channel output device first")
             if self.mixer and self.mixer.master_mute:
@@ -288,5 +324,6 @@ class StageController:
                 "connected": self.stream is not None and self.stream.active,
                 "error": self.audio_error,
                 "xruns": self.xruns,
+                "measurement_active": self.measurement_active,
                 "mixer": mix,
             }

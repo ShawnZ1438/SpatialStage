@@ -86,7 +86,7 @@ class Cue(BaseModel):
 
 class Project(BaseModel):
     # v1 projects migrate automatically via Pydantic defaults; old data remains loadable.
-    schema_version: int = 2
+    schema_version: int = 3
     id: str = Field(default_factory=uid)
     name: str = "Untitled show"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -97,6 +97,9 @@ class Project(BaseModel):
     global_envelope_enabled: bool = False
     global_modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])
     preferred_input_device: int | None = None  # legacy; not used or shown in the UI
+    # Only managed by the AutoCal approval API. Ordinary project PUT cannot enable it.
+    active_calibration_id: str | None = None
+    calibration_enabled: bool = False
     cues: list[Cue] = Field(default_factory=list)
 
     @field_validator("global_modulation")

@@ -530,7 +530,7 @@ $('inspectorContent').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(e.repeat || e.metaKey || e.ctrlKey || e.altKey && e.code!=='ArrowDown')return;
   const tag=e.target.tagName;
-  if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
   if(e.code==='Space'){e.preventDefault();$('goButton').click();}
   else if(e.key.toLowerCase()==='c' && !e.shiftKey){e.preventDefault();$('cutGoButton').click();}
   else if(e.key.toLowerCase()==='s' && !e.shiftKey){e.preventDefault();$('stopButton').click();}
@@ -576,4 +576,172 @@ async function boot(){
   try {await loadProjectList();await switchProject(state.projects[0].id);await loadDevices();setInterval(poll,450);notify('Ready for design. Connect the output interface when prepared.');}
   catch(e){report(e);}
 }
+
+/* AutoCal: explicit XLR measurements with local JSON sessions and review gate. */
+const ac = {report:null, overview:null, run:null, loading:false, lastState:'', projectId:null};
+const acDialog = $('autocalDialog');
+const acPath = () => `/projects/${encodeURIComponent(state.project.id)}/autocal`;
+const acPalette = ['#71baf6','#62d5b2','#f2ba76','#b9a3fa'];
+function acRenderDevices(config) {
+  const inputs=state.devices.inputs||[], outputs=(state.devices.outputs||[]).filter(d=>d.channels>=4);
+  $('acInputDevice').innerHTML='<option value="">Choose an XLR input interface</option>'+inputs.map(d=>`<option value="${d.index}">${h(d.name)} (${d.channels} inputs)</option>`).join('');
+  $('acOutputDevice').innerHTML='<option value="">Choose a 4-output interface</option>'+outputs.map(d=>`<option value="${d.index}">${h(d.name)} (${d.channels} outputs)</option>`).join('');
+  $('acInputDevice').value=config.input_device_index==null?'':String(config.input_device_index);
+  const out=config.output_device_index??(state.outputChoice!==''?Number(state.outputChoice):null);
+  $('acOutputDevice').value=out==null?'':String(out);
+  $('acInputChannel').value=config.input_channel??1;
+  $('acLevel').value=String(config.stimulus_dbfs??-30);
+}
+function acCurrentConfig() {
+  return {
+    measurement_points:1, optimization:'balanced', microphone_type:'xlr', experimental_eq:false,
+    input_device_index:$('acInputDevice').value===''?null:Number($('acInputDevice').value),
+    input_channel:Number($('acInputChannel').value),
+    output_device_index:$('acOutputDevice').value===''?null:Number($('acOutputDevice').value),
+    stimulus_dbfs:Number($('acLevel').value)
+  };
+}
+function acBars(values,units,zeroMin=false) {
+  if(!values?.length)return '<span class="micro">No data</span>';
+  const min=zeroMin?0:Math.min(...values,-65), max=zeroMin?Math.max(...values,1):Math.max(...values,-12);
+  const width=100;
+  return `<svg viewBox="0 0 540 126" role="img" aria-label="Relative channel measurement values">
+    ${values.map((v,i)=>{
+      const y=9+i*29;
+      const x=70,available=340;
+      const norm=Math.max(0,Math.min(1,(v-min)/(max-min||1)));
+      return `<text x="6" y="${y+12}" fill="#bad1dc" font-size="11">CH${i+1}</text><rect x="${x}" y="${y}" width="${available}" height="17" rx="4" fill="#2e3f4d"/><rect x="${x}" y="${y}" width="${Math.max(2,norm*available)}" height="17" rx="4" fill="${acPalette[i]}"/><text x="${x+available+12}" y="${y+13}" fill="#c8d6e1" font-size="11">${fmt(v,2)} ${units}</text>`;
+    }).join('')}
+  </svg>`;
+}
+function acResponseCurve(results) {
+  if(!results?.length)return '<span class="micro">No response curves yet</span>';
+  const width=540, height=210, left=45,right=13,top=15,bottom=29, x=(i)=>left+i*(width-left-right)/6;
+  const y=(db)=>top+(24-Math.max(-24,Math.min(24,db)))/48*(height-top-bottom);
+  return `<svg viewBox="0 0 ${width} ${height+15}" role="img" aria-label="Per-channel diagnostic frequency responses relative to 1 kilohertz">
+    ${[-24,-12,0,12,24].map(v=>`<line x1="${left}" x2="${width-right}" y1="${y(v)}" y2="${y(v)}" stroke="#405565" stroke-dasharray="3 5"/><text x="3" y="${y(v)+4}" font-size="10" fill="#9db0bc">${v}dB</text>`).join('')}
+    ${[125,250,500,1000,2000,4000,8000].map((v,i)=>`<text x="${x(i)}" y="${height+7}" font-size="9" fill="#9db0bc" text-anchor="middle">${v>=1000?v/1000+'k':v}</text>`).join('')}
+    ${results.map((r,i)=>`<polyline fill="none" stroke-width="2.6" stroke="${acPalette[i]}" points="${(r.frequency_db_relative_to_1khz||[]).map((v,j)=>x(j)+','+y(v)).join(' ')}"/>`).join('')}
+    ${results.map((r,i)=>`<circle cx="${left+12+i*74}" cy="${height+22}" r="4" fill="${acPalette[i]}"/><text x="${left+23+i*74}" y="${height+26}" font-size="10" fill="#bccfd9">CH${r.channel}</text>`).join('')}
+  </svg>`;
+}
+function acRenderReport() {
+  const r=ac.report;
+  if(!r) {
+    $('acMetrics').innerHTML='<p class="micro">No selected measurement session. Start by measuring all four outputs.</p>';
+    $('acLevelChart').innerHTML='';$('acDelayChart').innerHTML='';$('acFrequencyChart').innerHTML='';
+  } else {
+    const rows=r.results||[], rec=r.recommendations||{};
+    const quality=r.quality_ok ? '<p class="ac-success">✓ All channels pass automated checks. Human verification is still required.</p>' : '<p class="ac-alert">⚠ Some quality or range checks failed — remeasure; cannot apply.</p>';
+    $('acMetrics').innerHTML=`<p class="micro">Session ${h(r.id)} · ${h(r.created_at)} · ${h(r.status)}</p>`+
+      `<table class="ac-metric-table"><thead><tr><th>Channel</th><th>Arrival†</th><th>Relative level‡</th><th>SNR</th><th>Proposed trim</th><th>Extra delay</th><th>Result</th></tr></thead><tbody>`+
+      rows.map((a,i)=>`<tr><td>CH${a.channel}</td><td>${fmt(a.arrival_ms,2)} ms</td><td>${fmt(a.relative_input_dbfs,1)} dBFS</td><td>${fmt(a.snr_db,1)} dB</td><td>${fmt(rec.channel_gain_db?.[i]??0)} dB</td><td>${fmt(rec.channel_delay_ms?.[i]??0,3)} ms</td><td>${a.passed?'✓':'⚠'}</td></tr>`).join('')+
+      `</tbody></table>${quality}`+
+      (rec.warnings||[]).map(w=>`<p class="ac-alert">${h(w)}</p>`).join('')+
+      `<p class="micro">† Absolute arrival includes I/O latency; only relative offsets inform compensation. ‡ Mic input dBFS is not acoustic dB SPL. 1 measurement point cannot assess whole-stage consistency.</p>`;
+    $('acLevelChart').innerHTML=acBars(rows.map(a=>a.relative_input_dbfs),'dBFS');
+    $('acDelayChart').innerHTML=acBars(rows.map(a=>a.arrival_ms),'ms',true);
+    $('acFrequencyChart').innerHTML=acResponseCurve(rows);
+  }
+  const overview=ac.overview;
+  $('acActive').textContent=overview?.enabled?`✓ ACTIVE / ${overview.active_calibration_id}: saved profile applied to four playback outputs. Disable requires disconnected/muted audio.`:'AutoCal compensation currently OFF. Measurement sessions do not affect playback until approved.';
+  acUpdateApplyButton();
+}
+function acUpdateApplyButton() {
+  const r=ac.report, running=ac.run?.state==='running';
+  $('acApply').disabled=!(r?.status==='review_required' && r.quality_ok &&
+    $('acApproveCheck').checked && $('acApproveText').value.trim()==='APPLY' &&
+    !running && !state.status?.connected && state.status?.mixer?.master_mute !== false &&
+    !(state.status?.mixer?.voices||[]).length);
+  $('acDisable').disabled=!ac.overview?.enabled || !!state.status?.connected || running;
+  $('acStart').disabled=running;
+  $('acSaveConfig').disabled=running;
+  $('acProgress').textContent=running ? `● ${ac.run.message}. Please do not move the microphone.` :
+    ac.run?.state==='failed' ? `⚠ Measurement failed: ${ac.run.message}` :
+    ac.run?.state==='completed' ? '✓ Four measurements saved. Review plots and proposed corrections; nothing has been applied.' :
+    'No measurement in progress.';
+}
+async function acLoad(selectedId=null) {
+  if(!state.project)return;
+  const id=state.project.id;
+  const overview=await api(`/projects/${id}/autocal`);
+  if(state.project?.id!==id)return;
+  ac.overview=overview; ac.run=overview.run; ac.projectId=id;
+  const menu=$('acSessionSelect'), choice=selectedId||menu.value||overview.sessions[0]?.id||'';
+  menu.innerHTML='<option value="">Choose saved measurement</option>'+overview.sessions.map(s=>
+    `<option value="${h(s.id)}">${h(s.created_at?.slice(0,19))} · ${h(s.status)} · ${h(s.id.slice(0,5))}</option>`).join('');
+  const chosen=overview.sessions.some(s=>s.id===choice)?choice:(overview.sessions[0]?.id||'');
+  menu.value=chosen;
+  ac.report=chosen?await api(`/projects/${id}/autocal/sessions/${chosen}`):null;
+  acRenderReport();
+  return overview;
+}
+async function acOpen() {
+  if(!state.project)return;
+  try {
+    await saveNow();await loadDevices();
+    const v=await acLoad();
+    acRenderDevices(v.config);
+    $('acSafe').checked=false;$('acApproveCheck').checked=false;$('acApproveText').value='';
+    acDialog.showModal();acUpdateApplyButton();
+  } catch(e){report(e);}
+}
+$('autocalOpen').addEventListener('click',acOpen);
+$('autocalClose').addEventListener('click',()=>acDialog.close());
+$('acSessionSelect').addEventListener('change',async e=>{
+  try {ac.report=e.target.value?await api(acPath()+`/sessions/${e.target.value}`):null;
+    $('acApproveCheck').checked=false;$('acApproveText').value='';acRenderReport();}catch(err){report(err);}
+});
+async function acSave(){
+  if(!state.project)throw Error('No project selected');
+  const config=acCurrentConfig();
+  if(config.input_device_index===null||config.output_device_index===null)throw Error('Select both input and 4-output interface.');
+  const selected=(state.devices.inputs||[]).find(d=>d.index===config.input_device_index);
+  if(!selected||selected.channels<config.input_channel)throw Error('XLR microphone input channel not present on selected interface.');
+  const val=await api(acPath()+'/config',{method:'PUT',body:JSON.stringify(config)});
+  ac.overview.config=val;return val;
+}
+$('acSaveConfig').addEventListener('click',async()=>{try{await acSave();notify('AutoCal setup stored locally for this show.');}catch(e){report(e);}});
+$('acStart').addEventListener('click',async()=>{
+  try {
+    if(!$('acSafe').checked)throw Error('Confirm the stage is empty, show output disconnected, and hardware output level is low.');
+    if(state.status?.connected)throw Error('Disconnect show output before measuring.');
+    await acSave();
+    ac.run=await post(acPath()+'/start',{hardware_ready:true});
+    $('acApproveCheck').checked=false;$('acApproveText').value='';acUpdateApplyButton();
+    notify('AutoCal started. Four separate low-level sweeps are being measured.');
+  }catch(e){report(e);}
+});
+async function acPoll(){
+  if(!acDialog.open||!state.project||ac.projectId!==state.project.id||ac.run?.state!=='running')return;
+  try{
+    const fresh=await api(acPath()+'/run');
+    const prev=ac.run?.state;ac.run=fresh;acUpdateApplyButton();
+    if(prev==='running'&&fresh.state!=='running'){
+      await acLoad(fresh.state==='completed'?fresh.session_id:null);
+      if(fresh.state==='failed')report(new Error(fresh.message));
+    }
+  }catch(e){report(e);}
+}
+setInterval(acPoll,800);
+$('acApproveCheck').addEventListener('change',acUpdateApplyButton);
+$('acApproveText').addEventListener('input',acUpdateApplyButton);
+$('acApply').addEventListener('click',async()=>{
+  if(!ac.report||$('acApply').disabled)return;
+  try {
+    const r=await post(acPath()+`/sessions/${ac.report.id}/apply`,{confirm:'APPLY'});
+    state.project=r.project;
+    await acLoad(r.session.id);
+    notify('AutoCal corrections enabled. The next connection remains master-muted.');
+  }catch(e){report(e);}
+});
+$('acDisable').addEventListener('click',async()=>{
+  if(!ac.overview?.enabled)return;
+  try {
+    const r=await post(acPath()+'/disable');
+    state.project=r.project;await acLoad();
+    notify('AutoCal corrections disabled; stored measurements retained.');
+  }catch(e){report(e);}
+});
+
 boot();

@@ -43,9 +43,9 @@
 7. Walk the actor's allowed positions around the center, confirm there are no unexpectedly loud hotspots or major dropouts, and re-check directional perception. A single center calibration does not make off-center localization uniform.
 8. Store the speaker coordinates + channel mapping in the project's JSON and preserve the cable patch sheet.
 
-## D. Time alignment is a *future* audio DSP feature
+## D. Time alignment — geometry suggestion and v0.3 measured AutoCal
 
-At ~20°C, air propagation is about 343 m/s. If CH1 is at 2 m and CH2 at 3 m, CH1 sound theoretically arrives roughly `2.92 ms` earlier at the center. A **candidate** extra delay for the closer speaker is `(3-2)/343 ≈ 2.92 ms`. The app displays this candidate but **does not currently add it to the output**. Real timing also contains USB/CoreAudio buffering and possible per-bus console DSP latency. Accurate compensation requires synchronized arrival-time measurement, ideally a calibrated mic + appropriate loopback/sweep procedure. Whether these distances are acoustically worthwhile to compensate is TBD and should not be guessed.
+At ~20°C, air propagation is about 343 m/s. If CH1 is at 2 m and CH2 at 3 m, CH1 sound theoretically arrives roughly `2.92 ms` earlier at the center. A **candidate** extra delay for the closer speaker is `(3-2)/343 ≈ 2.92 ms`. The app displays the geometrical candidate but **never automatically applies geometry-based delay**. AutoCal v0.3 adds a separate **measured, approval-gated** per-channel delay/attenuation stage using single-point XLR swept-sine measurements. It estimates relative microphone lag including I/O buffering and optional console DSP; unverified multi-interface clocks may cause drift. The operator can review and explicitly enable only passing profiles. **This is not a proof of time-aligned sound for all moving actor positions, nor an absolute dB SPL calibration.** Consult [AUTOCAL.md](AUTOCAL.md) for the exact workflow and quality checks.
 
 ## E. Minimum send-back checklist / 需补充给开发者的数据
 
@@ -55,4 +55,4 @@ At ~20°C, air propagation is about 343 m/s. If CH1 is at 2 m and CH2 at 3 m, CH
 - If available: actual center-point SPL readings under one consistent safe calibration signal, and optional measured delay arrival times.
 - Target safe volume limits / production sound safety procedure. The tool has no medically validated ADHD-stimulus limits.
 
-All these are **pending physical site information**. Software geometry is functional; acoustic calibration is not completed.
+All these are **pending physical site information**. Software geometry and AutoCal's measured workflow are implemented with synthetic capture tests, but actual stage acoustic calibration has **not** been performed.

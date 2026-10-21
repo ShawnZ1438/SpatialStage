@@ -31,6 +31,7 @@
         <div class="section-heading">MASTER OUTPUT <span id="masterDbLabel" class="value-label">−18 dB</span></div>
         <input type="range" min="-60" max="0" step="1" value="-18" id="masterSlider" aria-label="Master volume dB" />
         <div class="master-actions"><button id="muteButton" class="mute on">● MAIN MUTE · ON</button><button id="speakerTests" class="quiet" title="One-second 440 Hz calibration tone">Test CH</button></div>
+        <button id="autocalOpen" class="autocal-open">◉ AutoCal · XLR measurement</button>
         <div id="meters" class="meter-area"><div><b>1</b><div class="meter"><i></i></div></div><div><b>2</b><div class="meter"><i></i></div></div><div><b>3</b><div class="meter"><i></i></div></div><div><b>4</b><div class="meter"><i></i></div></div></div>
         <p class="micro" id="audioInfo">Muted by default. Never test channels at performance volume.</p>
       </section>
@@ -76,8 +77,42 @@
   <p>The <b>actor reference point is (0,0)</b>. +X points to 3 o'clock; +Y points to 12 o'clock. Enter measured speaker positions in metres. Angles and distances recalculate automatically. Each speaker should physically face the center. MAIN MUTE must be ON when changing routing.</p>
   <div id="speakerFields"></div>
   <div id="calibrationHints" class="calibration-hints"></div>
-  <p class="micro">Software computes geometry and theoretical air-path delay / relative gain suggestions ONLY. It does not apply the delay or measure SPL. Use a calibrated microphone/SPL meter and the four channel test tones for actual verification.</p>
+  <p class="micro">This panel computes geometry only. For physical measurements, use AutoCal with an XLR measurement microphone. AutoCal measures relative latency/level (NOT absolute SPL) and never applies corrections without explicit confirmation.</p>
   <div class="modal-footer"><button id="cancelSettings" class="secondary">Cancel</button><button id="previewSettings" class="secondary">Preview calibration</button><button id="saveSettings" class="primary">Save geometry</button></div></dialog>
+<dialog id="autocalDialog" class="autocal-dialog" aria-labelledby="autocalTitle">
+  <div class="modal-head"><div><span class="eyebrow">SPATIALSTAGE · SINGLE-POINT AUTOCAL</span><h2 id="autocalTitle">XLR measurement & compensation review</h2></div><button class="square" id="autocalClose" aria-label="Close AutoCal">✕</button></div>
+  <p class="autocal-notice">One measurement at the stage center (0,0). <b>Balanced mode is center-only with one point</b>; it cannot optimize the moving-actor area. Experimental EQ is OFF. No participant audio is retained.</p>
+  <div class="autocal-grid">
+    <section class="autocal-config">
+      <h3>1 · Configure hardware</h3>
+      <label>XLR microphone input interface<select id="acInputDevice"></select></label>
+      <label>Microphone input channel<input id="acInputChannel" type="number" min="1" max="16" value="1" step="1"/></label>
+      <label>Independent four-channel output<select id="acOutputDevice"></select></label>
+      <label>Test stimulus peak level (digital dBFS)<select id="acLevel"><option value="-36">−36 dBFS · quietest</option><option value="-33">−33 dBFS</option><option value="-30">−30 dBFS · default</option><option value="-27">−27 dBFS</option><option value="-24">−24 dBFS · maximum</option></select></label>
+      <div class="autocal-facts">1 point · balanced · XLR · 48 kHz · EQ disabled. Measure each speaker separately in CH1 → CH4 order.</div>
+      <button id="acSaveConfig" class="secondary">Save AutoCal setup</button>
+      <h3>2 · Capture four loudspeakers</h3>
+      <p class="micro">Place XLR measurement microphone at center at actor ear height; point it as its manufacturer specifies. Phantom power only when microphone requires it. Fixed preamp gain and no AGC. Disconnect show output and MAIN MUTE before capture; use minimal analogue amp level, no actors on stage.</p>
+      <label class="check"><input id="acSafe" type="checkbox"/> I confirm the stage is empty, mic is connected, show audio is disconnected, analogue output level is low.</label>
+      <button id="acStart" class="primary">◉ Measure CH1–CH4</button>
+      <p class="ac-progress" id="acProgress" role="status" aria-live="polite">No measurement running.</p>
+    </section>
+    <section class="autocal-results">
+      <div class="ac-results-head"><h3>3 · Inspect measurement results</h3><select id="acSessionSelect" aria-label="Select saved AutoCal session"></select></div>
+      <div id="acMetrics"><p class="micro">No measurement yet. Save a configuration, then measure all four outputs.</p></div>
+      <h4>Relative microphone levels</h4><div id="acLevelChart" class="ac-chart"></div>
+      <h4>Measured relative arrival time</h4><div id="acDelayChart" class="ac-chart"></div>
+      <h4>Response curves · normalized to 1 kHz (diagnostic only)</h4><div id="acFrequencyChart" class="ac-chart"></div>
+      <div class="ac-review"><h3>4 · Human approval gate</h3>
+        <p class="micro">Recommendations only: attenuate louder channels to match quietest; optionally delay earlier arrivals to the latest. Compensation never boosts gains. No EQ, no absolute SPL calibration. Stop all cues, disconnect performance audio, and keep MAIN MUTE on before applying.</p>
+        <label class="check"><input id="acApproveCheck" type="checkbox"/> I inspected the four channel measurements and understand their limitations.</label>
+        <label>Type <b>APPLY</b> to enable these compensation values<input id="acApproveText" autocomplete="off" placeholder="APPLY"/></label>
+        <div class="ac-actions"><button id="acApply" class="primary" disabled>Apply approved profile</button><button id="acDisable" class="danger">Disable AutoCal</button></div>
+        <p id="acActive" class="micro">Calibration currently disabled.</p>
+      </div>
+    </section>
+  </div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/static/app.js" defer></script>
 </body>

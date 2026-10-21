@@ -56,6 +56,38 @@ class Mixer:
         self.meters = [0.0] * 4
         self.peak_over_count = 0
         self.lifecycle_events = deque(maxlen=1000)  # optional diagnostics only
+        self.calibration_gain_db = [0.0] * 4
+        self.calibration_delay_samples = [0] * 4
+        self._delay_buffers = [np.zeros(0, dtype=np.float32) for _ in range(4)]
+
+    def set_calibration(self, gains_db: list[float], delays_ms: list[float]) -> None:
+        """Only invoke after confirmed AutoCal approval, while safe/muted.
+
+        Gain is attenuation-only. Channel delays are bounded by 30 ms.
+        Buffered audio is cleared when the calibration values change.
+        """
+        with self.lock:
+            if len(gains_db) != 4 or len(delays_ms) != 4:
+                raise ValueError("Calibration must have exactly four outputs")
+            if any(not np.isfinite(x) or not -12 <= x <= 0 for x in gains_db):
+                raise ValueError("AutoCal gain is limited to -12..0 dB")
+            if any(not np.isfinite(x) or not 0 <= x <= 30 for x in delays_ms):
+                raise ValueError("AutoCal delay is limited to 0..30 ms")
+            frames = [int(round(ms * self.sample_rate / 1000)) for ms in delays_ms]
+            if list(gains_db) != self.calibration_gain_db or frames != self.calibration_delay_samples:
+                self.calibration_gain_db = list(gains_db)
+                self.calibration_delay_samples = frames
+                self._delay_buffers = [np.zeros(n, dtype=np.float32) for n in frames]
+
+    def _calibrated_output(self, output: np.ndarray) -> None:
+        """In-place 4-channel gain and causal delay, continuous across blocks."""
+        for channel in range(4):
+            output[:, channel] *= np.float32(10 ** (self.calibration_gain_db[channel] / 20))
+            delay = self.calibration_delay_samples[channel]
+            if delay:
+                combined = np.concatenate((self._delay_buffers[channel], output[:, channel]))
+                output[:, channel] = combined[:len(output)]
+                self._delay_buffers[channel] = combined[-delay:].copy()
 
     def update_project(self, project: Project) -> None:
         """Live direction/gain/envelope edits apply to PLAYING and queued voices.
@@ -219,6 +251,11 @@ class Mixer:
             self._last_master_gain=target_master
             if self.master_mute:
                 out.fill(0)
+                # Never emit a previously buffered delayed sample after unmute.
+                for buffer in self._delay_buffers:
+                    buffer.fill(0)
+            else:
+                self._calibrated_output(out)
             if np.max(np.abs(out)) > 1.0:
                 self.peak_over_count+=1
             np.clip(out,-1,1,out=out)
@@ -240,6 +277,9 @@ class Mixer:
                     'show_elapsed_s':round(elapsed,3),
                     'master_mute':self.master_mute,'master_db':self.master_db,
                     'meters':self.meters[:],'peak_over_count':self.peak_over_count,
+                    'autocal_enabled':self.project.calibration_enabled,
+                    'autocal_gain_db':self.calibration_gain_db[:],
+                    'autocal_delay_ms':[round(1000*x/self.sample_rate,3) for x in self.calibration_delay_samples],
                     'voices':[{'cue_id':v.cue.id,'title':v.cue.title,
                                'state':'queued' if v.start_frame>self.frame else 'playing',
                                'elapsed_s':round(max(0,self.frame-v.start_frame)/self.sample_rate,2),

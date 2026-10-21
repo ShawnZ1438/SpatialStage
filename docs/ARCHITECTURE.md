@@ -1,4 +1,4 @@
-# SpatialStage v0.2 architecture and implementation notes
+# SpatialStage v0.3 architecture and implementation notes
 
 ## Component graph
 
@@ -50,7 +50,7 @@ theta = wrap360(cue.position_deg
 
 For cue ADSR, the angular offset follows (attack: 0→peak; decay: peak→sustain; hold; release: sustain→release final), proportional-compressing stages if A+D+R exceeds clip duration. In free keyframe mode, linear interpolation is on unwrapped angular offsets. Show envelope uses the same keyframe interpolation with `T`. The currently requested direction is then mapped to adjacent speaker gains by 2D normalized VBAP; manually entered trims and optional approximate distance gain compensation are applied afterward. Because distance trim can affect normalization and perceived loudness, no objective equal-loudness guarantee is made.
 
-Stage calibration preview uses geometric formulas (speed of sound ~343 m/s at 20°C), *but does not apply delay compensation and does not measure actual latency or SPL*. The theoretical extra delay for nearer speakers is `(max(d)-d)/343` seconds. This figure could be used as a future DSP alignment control once actual delays have been measured.
+Geometry preview uses speed-of-sound approximation (~343 m/s at 20°C) and **never** applies its theoretical delay `(max(d)-d)/343` automatically. **Separately**, v0.3 AutoCal measures microphone response through an XLR input and proposes per-channel *relative* delay/attenuation, only applied after manual approval; it neither measures absolute dB SPL nor establishes localization for moving actors.
 
 ## Device, data and operation boundaries
 
@@ -73,7 +73,7 @@ Python callback explicitly takes a re-entrant lock, creates NumPy arrays each re
 3. Local coordinate reference arrow/tape fixed, X/Y for each speaker measured.
 4. Reference-center gain trims determined with a calibrated meter, safe maximum level established by production sound team.
 5. GO/STOP/PANIC, global motion, fade/cut, file swap and recovery tested with actors absent.
-6. A stress run at representative polyphony passes without measured dropouts/xruns; if it does not, **do not use v0.2 as the sole live audio controller**.
+6. A stress run at representative polyphony passes without measured dropouts/xruns; if it does not, **do not use v0.3 as the sole live audio controller**.
 7. Non-center actor positions verified perceptually; no claim of uniform localization.
 
 ## Useful references
@@ -82,3 +82,7 @@ Python callback explicitly takes a re-entrant lock, creates NumPy arrays each re
 - Speaker output mapping: https://support.apple.com/guide/audio-midi-setup/set-up-external-speakers-for-stereo-or-surround-sound-ams1005/mac
 - Zotter & Frank, *Amplitude Panning Using Vector Bases*, 2019: https://link.springer.com/chapter/10.1007/978-3-030-17207-7_3
 - PortAudio callback considerations: https://portaudio.com/docs/v19-doxydocs/writing_a_callback.html
+
+## v0.3 AutoCal module (new)
+
+See [AUTOCAL.md](AUTOCAL.md) for operator steps, safety gates and analysis limitations. `stagespatialcue/autocal.py` contains locked single-point XLR config, bounded swept-sine stimulus, `sounddevice.playrec` duplex acquisition (one output channel at a time), `scipy.signal` cross-correlation and normalized diagnostic frequency response, temporary run-progress state and atomic project-local JSON persistence. No mic raw PCM is persisted. `server.py` exposes the AutoCal API and refuses to enable a profile through normal project PUT requests. `mixer.py` owns a post-VBAP post-master physical-channel attenuation and delay FIFO, initially identity/disabled. Only a passing report plus explicit operator `APPLY`, stopped/disconnected sound engine, MAIN MUTE and identical geometry/routing enables it. The v0.3 profile never generates EQ, and one-point balanced reduces to center-only. This is non-real-time Python reference DSP, not validated against a real Mac/console/microphone.

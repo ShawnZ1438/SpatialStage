@@ -2,9 +2,9 @@
 
 **Local-first four-channel spatial sound cue controller for actor-centered experimental theatre.**
 
-[简体中文安装与操作说明](README.zh-CN.md) · [Stage calibration](docs/CALIBRATION.md) · [Architecture](docs/ARCHITECTURE.md) · [Remaining decisions](docs/OPEN_QUESTIONS.md)
+[简体中文安装与操作说明](README.zh-CN.md) · [AutoCal setup and methodology](docs/AUTOCAL.md) · [Stage calibration](docs/CALIBRATION.md) · [Architecture](docs/ARCHITECTURE.md) · [Remaining decisions](docs/OPEN_QUESTIONS.md)
 
-> **v0.2 — functional rehearsal prototype, NOT production-certified.** The software has automated tests but has **not** been validated with the actual Apple Silicon Mac, unknown mixing console, physical four-output interface or loudspeakers. Its Python/NumPy audio callback is not hard real-time. No clinical or acoustic benefit for ADHD participants is claimed. No participant data or research measurements are collected.
+> **v0.3 — AutoCal + rehearsal prototype, NOT production-certified.** The software has automated tests but has **not** been validated with the actual Apple Silicon Mac, unknown mixing console, physical four-output interface or loudspeakers. Its Python/NumPy audio callback is not hard real-time. No clinical or acoustic benefit for ADHD participants is claimed. No participant data or research measurements are collected.
 
 ## Why it exists
 
@@ -12,14 +12,16 @@ SpatialStage is designed for sound designers and technical operators supporting 
 
 The web UI is a controller on `127.0.0.1:8765`; audio does not play through the browser's stereo output. Python sends four discrete PCM channels to an actual CoreAudio/PortAudio four-output device, normally through an audio interface or a USB multi-output console.
 
-### v0.2 capability matrix
+### v0.3 capability matrix
 
 | Feature | Available | Behavior |
 |---|---|---|
 | Spatial angle dial | ✅ | Clockwise 0.00–359.99°; 12 o'clock=0°, 3=90°, 6=180°, 9=270° |
 | Four physical outputs | ✅, **hardware validation pending** | Explicit channel mapping CH1/CH2/CH3/CH4; requires interface exposing ≥4 independent outputs |
 | Stage geometry | ✅ | Speaker X/Y (metres) relative to center automatically converted to angle/range |
-| Calibration preview | ✅, **not real acoustic calibration** | Calculates theoretical propagation delay and relative distance gain suggestions; does **not** apply delay or measure SPL |
+| Calibration preview | ✅, geometry only | Calculates theoretical propagation delay and relative distance gain suggestions, not measured SPL |
+| AutoCal XLR measurements | ✅, **actual hardware unverified** | One center position, four sequential low-level sweeps, measured relative arrival/level/SNR/diagnostic frequency plots. Balanced label reduces to center-only. |
+| AutoCal review / approval | ✅ | No DSP changes until explicit human review + `APPLY`; attenuation-only level correction, ≤30 ms postmix relative delay; never EQ |
 | VBAP directional panning | ✅ | Adjacent-speaker constant-power amplitude weighting for actor reference center |
 | Local folder / numbered cues | ✅ | `001_...wav`, `002_...wav` sorted by numeric filename; uploaded media copied per project |
 | Cue movement | ✅ | Free angular keyframes, plus a separate direction ADSR mode (attack/decay/sustain/release) |
@@ -32,7 +34,7 @@ The web UI is a controller on `127.0.0.1:8765`; audio does not play through the 
 | Multi-project, local persistence | ✅ | JSON + per-project media + ZIP export, automatic saves |
 | Master mute / meters / STOP / PANIC / SKIP | ✅ | Mute starts ON; audio test runs a quiet 440Hz tone through only one channel |
 | Scientific participant event logging | **No, intentionally** | Disabled; optional local operator-only diagnostics (`SPATIALSTAGE_DIAGNOSTICS=1`) |
-| Mic input, listener tracking, HRTF, measured acoustic delays | ❌ | Not planned for the initial rehearsal build |
+| Live mic input, listener tracking, HRTF, area-wide spatial correction | ❌ | XLR microphone is only a temporary pre-show measurement input, not live audio or participant recording |
 | Native real-time engine / hearing-safety certification | ❌ | Required before a mission-critical production |
 
 ## 1. Stage geometry, speaker map and VBAP
@@ -79,7 +81,18 @@ distance = sqrt(x² + y²)
 - Suggested additional delay `1000 × (maximum_distance − speaker_distance) / 343` milliseconds, **displayed only; not applied**.
 - Suggested relative amplitude trim `20 log10(speaker_distance / median_distance)` dB, **displayed only**, based on an idealized distance law. Independently entered manual trims are applied to the VBAP mix.
 
-Real calibration requires the actual console/output routing, channel isolation tests, speaker aiming, calibrated SPL measurements at the center and (ideally) multiple actor positions. Do not apply suggested delays or gain changes blindly. See [CALIBRATION.md](docs/CALIBRATION.md) for the measurement checklist, soundcheck procedure and pending data.
+**AutoCal v0.3** adds an optional, separate *measured* center-point workflow using one XLR microphone and four sequential low-level sweeps. It displays relative arrival times, microphone digital levels, SNR and diagnostic frequency curves. It does **not** measure absolute SPL or correct for off-center listening. Applying any proposed attenuation and channel delay requires affirmative human approval. See [AUTOCAL.md](docs/AUTOCAL.md) for exact hardware wiring, user steps, measurement/quality method, APIs and safety limitations. See [CALIBRATION.md](docs/CALIBRATION.md) for the venue checklist.
+
+## AutoCal quick start (new in v0.3)
+
+1. On the stage setup page, enter four physical X/Y speaker locations and confirm CH1=L, CH2=R, CH3=RR, CH4=RL. **Set manual trims to 0 dB and disable rough geometric distance compensation** before measuring (the wizard rejects other settings to avoid double correction).
+2. Use an XLR measurement microphone connected to an input interface, ideally **the same clocked device** with four separate outputs. Place it at the taped center `(0,0)` at ear height, away from actors and people. Set interface preamp gain manually; disable AGC, mic effects and console DSP. Phantom power only if the particular microphone needs it.
+3. In the UI, STOP all cues, disconnect ordinary playback, leave MAIN MUTE active and turn down the hardware amplifier/console. Open **◉ AutoCal · XLR measurement** in the sidebar. Choose mic input device/channel, output interface and test level (−30 dBFS default). Save the configuration to the selected local project.
+4. Acknowledge that the stage is clear/level low, then press **Measure CH1–CH4**. AutoCal temporarily opens a full-duplex stream, emits one low-level chirp on each physical channel, records the selected XLR input, and saves summary metrics after each four-channel run. A 1-point `balanced` choice means **center-only matching**, not spatial optimization.
+5. Review measured levels (mic dBFS, **not SPL**), arrival times (including interface latency), signal-to-noise results and frequency curves. **No EQ** is generated. If all quality checks pass, explicitly check the review acknowledgement, type `APPLY` and click **Apply approved profile**. The server independently checks audio disconnected/muted and geometry unchanged. Suggested correction values only attenuate (−12..0 dB) and add bounded delay (0..30ms). They affect future playback only after this approval.
+6. To turn off the approved settings, disconnect and mute and click **Disable AutoCal**. Changing speaker geometry, speaker trim, routing or distance compensation invalidates the existing active profile. Recheck actual sound at center *and around the actor movement zone* before rehearsal.
+
+[Read the complete AutoCal engineering and operator guide →](docs/AUTOCAL.md)
 
 ## 2. Connect an Apple Silicon Mac to the four speakers
 
@@ -198,10 +211,12 @@ Edits to position/gain/direction ADSR/free keyframes or global motion propagate 
 ~/.spatialstage/projects/<12-character-show-ID>/
   project.json            # cue ordering / audio references / speakers / global & per-cue envelopes
   media/                  # copied and renamed audio source assets
+  autocal/config.json      # XLR mic/interface setup, per project
+  autocal/<session>.json   # compact, microphone-audio-free measurement summaries
   events.jsonl            # ONLY if explicit SPATIALSTAGE_DIAGNOSTICS=1
 ```
 
-**Export show ZIP** packages that show's data and media; the app doesn't upload your project to GitHub, iCloud or another server. Cue list changes are automatically saved with an atomic project.json replacement. Existing v0.1 JSON generally loads with new defaults; the next save writes `schema_version = 2`. Old `~/.stagespatialcue/projects` are **not automatically migrated** into the new default directory; copy them manually while SpatialStage is shut down if you want to reuse old projects. Preserve project IDs and media subfolders.
+**Export show ZIP** packages that show's data and media; the app doesn't upload your project to GitHub, iCloud or another server. Cue list changes are automatically saved with an atomic project.json replacement. Existing v0.1 JSON generally loads with new defaults; the next save writes `schema_version = 3`. Old `~/.stagespatialcue/projects` are **not automatically migrated** into the new default directory; copy them manually while SpatialStage is shut down if you want to reuse old projects. Preserve project IDs and media subfolders.
 
 `.gitignore` excludes local audio, ZIP exports, `.venv`, secrets and runtime project stores. Do **not** commit participant names, recordings or copyrighted audio to the public repository.
 
@@ -209,7 +224,7 @@ Edits to position/gain/direction ADSR/free keyframes or global motion propagate 
 
 - **Requires hardware tests before an actual rehearsal**. CI tests validate Python logic and API schemas, not physical Mac+console routing, speaker pressure, sample clock drift or actor perception.
 - The current PortAudio callback takes Python locks and allocates NumPy buffers; this is not compliant with hard real-time audio callback design. Dropouts may occur. For performance deployment, port the mixer and command queue to **JUCE/CoreAudio C++**, with preallocated signal paths and lock-free control messages.
-- Measured latency calibration (including buffer/console/amplifier/air propagation) is **not implemented**. Theoretical center-point extra delay is *preview only*. Speaker trim is a manually applied parameter; an SPL meter is needed to determine safe actual gains.
+- AutoCal v0.3 implements experimental **single-point XLR relative measurements** and **operator-approved physical-channel attenuation/delay**, but no field verification, clock-drift compensation, mic calibration-file support, multi-position correction or absolute SPL measurement. The theoretical *geometry preview* remains preview-only. A calibrated SPL meter and on-site verification are still needed to determine safe actual gains.
 - One virtual source is rendered from the reference center, not independently for every moving actor. Off-center listener localization is neither uniform nor guaranteed.
 - Speaker frequency response, directivity, reflections, bass management, speed-of-sound changes, playback-device clock domains and hearing safety are not modeled. Do not infer ADHD effects from the software's direction degrees.
 - No experiment participant logs are collected. Optional operator diagnostics are disabled by default.
@@ -221,6 +236,7 @@ Edits to position/gain/direction ADSR/free keyframes or global motion propagate 
 stagespatialcue/                 # internal Python module retained for v0.1 project compatibility
   models.py                     # Pydantic project/cue/speaker schemas
   spatial.py                    # stage XY/polar conversion + VBAP + direction ADSR
+  autocal.py                    # XLR swept-sine measurement, diagnostics, sessions, approval
   mixer.py                      # frame mixer; GO transitions, global motion, live updates
   audio.py                      # decode/cache, device selection, preflight, stage controller
   server.py                     # FastAPI localhost endpoints
@@ -239,6 +255,6 @@ python -m pytest -q
 node --check stagespatialcue/static/app.js  # optional Node syntax check
 ```
 
-**Development path:** v0.2 geometry, envelopes and live edits → in-situ speaker/output soundcheck → UX improvements, stage-safe sound level controls and playback snapshots → native audio engine → reproducible show release and hardware acceptance testing.
+**Development path:** v0.3 geometry, envelopes, live edits, one-point AutoCal → in-situ speaker/output soundcheck → UX improvements, stage-safe sound level controls and playback snapshots → native audio engine → reproducible show release and hardware acceptance testing.
 
 **License:** MIT. Independent tool; not affiliated with QLab.

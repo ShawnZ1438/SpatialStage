@@ -16,3 +16,36 @@
 .swap-button{margin-top:10px;display:block;text-align:center;padding:9px;border:1px dashed #597487;color:#afd9e6;cursor:pointer;font-size:11px;border-radius:7px}
 .swap-button input{display:none}
 @media(max-width:1330px){.transport-buttons{flex-wrap:wrap;justify-content:flex-end}.transport-buttons button{height:42px}.transport-buttons .go{min-width:108px}}
+
+/* AutoCal v0.3 — local-only measurement wizard */
+.autocal-open {width:100%; margin:8px 0 10px; padding:10px; border:1px solid #438a9b; border-radius:8px; background:rgba(40,160,172,.12); color:#9ae6e5; text-align:center; cursor:pointer; font-size:12px; font-weight:650}
+.autocal-open:hover {background:rgba(40,160,172,.23)}
+.autocal-dialog {width:min(1120px,96vw); max-height:92vh; overflow:auto; border:1px solid #3a5064; border-radius:14px; padding:24px; color:#dbe7ee; background:#101d2a; box-shadow:0 18px 80px #0009}
+.autocal-dialog::backdrop {background:rgba(0,0,0,.78)}
+.autocal-dialog h3 {margin:18px 0 12px; font-size:14px; color:#9fdadf}
+.autocal-dialog h4 {margin:18px 0 7px; font-size:12px; color:#a3b9c6}
+.autocal-dialog label:not(.check) {display:block; margin:10px 0; font-size:12px; color:#b2c7d3}
+.autocal-dialog label:not(.check) input,.autocal-dialog label:not(.check) select {display:block; width:100%; padding:9px; margin:6px 0; border:1px solid #3b5265; border-radius:6px; background:#142a38; color:#edf7ff}
+.autocal-dialog button {cursor:pointer; min-height:36px; padding:8px 12px; border-radius:7px}
+.autocal-dialog button:disabled {opacity:.4; cursor:not-allowed}
+.autocal-dialog .check {display:flex; align-items:flex-start; gap:8px; margin:14px 0; font-size:12px; color:#b2c7d3; line-height:1.5}
+.autocal-dialog .check input {width:auto; margin-top:3px}
+.autocal-dialog .modal-head {align-items:start; display:flex; justify-content:space-between; gap:12px}
+.autocal-grid {display:grid; grid-template-columns:minmax(235px, .82fr) minmax(420px,1.45fr); gap:28px}
+.autocal-notice {font-size:12px; line-height:1.55; padding:12px; border:1px solid #7f6738; border-radius:8px; background:#45392130; color:#ecd9b5}
+.autocal-config {border-right:1px solid #364658; padding-right:20px}
+.autocal-facts,.ac-progress {border:1px solid #304c60; border-radius:7px; margin:12px 0; padding:11px; font-size:12px; line-height:1.5; color:#c0d4df; background:#1a3040}
+.ac-progress {min-height:40px}
+.ac-results-head {display:flex; align-items:center; gap:15px; justify-content:space-between}
+.ac-results-head h3 {flex:1}
+.ac-results-head select {min-width:180px; max-width:55%; background:#142a38; color:#dbe7ee; border:1px solid #3b5265; padding:8px}
+.ac-chart {min-height:42px; padding:9px; margin:5px 0; border-radius:8px; background:#152837; overflow:hidden}
+.ac-chart svg {width:100%;height:auto;display:block}
+.ac-metric-table {border-collapse:collapse; width:100%; text-align:right; font-size:11px; color:#d7e6ee}
+.ac-metric-table th,.ac-metric-table td {padding:7px 4px; border-bottom:1px solid #3a4c5d}
+.ac-metric-table th:first-child,.ac-metric-table td:first-child {text-align:left}
+.ac-alert {font-size:12px; color:#f4bd76; margin:10px 0}
+.ac-success {font-size:12px; color:#8adac0; margin:10px 0}
+.ac-review {border-top:1px solid #3d5568; margin-top:20px; padding-top:5px}
+.ac-actions {display:flex; gap:10px; flex-wrap:wrap; margin:10px 0}
+@media(max-width:860px){.autocal-grid{grid-template-columns:1fr}.autocal-config{border:0; border-bottom:1px solid #364658; padding:0 0 16px}.autocal-dialog{padding:14px}.ac-results-head{display:block}}

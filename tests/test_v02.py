@@ -112,7 +112,7 @@ def test_server_calibration_preview_and_cue_audio_swap(tmp_path):
     assert res.status_code==200,res.text
     assert res.json()['cue']['duration_s']==.2
     assert res.json()['project']['cues'][0]['filename']=='engine.wav'
-    assert client.get('/api/health').json()['version']=='0.2.0'
+    assert client.get('/api/health').json()['version']=='0.3.0'
 
 
 def test_hot_repatch_requires_mute(tmp_path):
