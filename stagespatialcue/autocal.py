@@ -12,7 +12,7 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import RLock, Thread
+from threading import RLock, Thread, Event
 from uuid import uuid4
 
 import numpy as np
@@ -213,12 +213,17 @@ def recommendations(results: list[dict]) -> dict:
     }
 
 
+class MeasurementCancelled(Exception):
+    pass
+
+
 class AutoCalManager:
     def __init__(self, store: ProjectStore, stage, capture=None):
         self.store = store
         self.stage = stage
         self.capture = capture or capture_xlr
         self.lock = RLock()
+        self._cancel = Event()
         self._status: dict = {"state": "idle", "channel": None, "message": "Not started", "session_id": None}
 
     def _folder(self, project_id: str) -> Path:
@@ -246,7 +251,7 @@ class AutoCalManager:
     def save_config(self, project_id: str, config: AutoCalConfig) -> AutoCalConfig:
         self.store.get(project_id)
         with self.lock:
-            if self._status["state"] == "running":
+            if self._status["state"] in {"running", "cancelling"}:
                 raise ValueError("Cannot change AutoCal setup during a measurement")
             self._atomic_json(self._folder(project_id) / "config.json", config.model_dump(mode="json"))
         return config
@@ -282,6 +287,24 @@ class AutoCalManager:
         with self.lock:
             self._status.update(fields)
 
+    def cancel(self) -> bool:
+        """Best-effort device stop; ownership stays locked until worker acknowledges."""
+        with self.lock:
+            if self._status["state"] not in {"running", "cancelling"}:
+                return False
+            self._cancel.set()
+            self._status.update(state="cancelling", message="Cancellation requested; stop hardware output if needed")
+        try:
+            import sounddevice as sd
+            sd.stop()  # interrupts the active playrec convenience stream
+        except Exception:
+            pass  # worker still checks the cancellation flag between captures
+        return True
+
+    def _check_cancelled(self):
+        if self._cancel.is_set():
+            raise MeasurementCancelled("Measurement cancelled; no profile saved or applied")
+
     def start(self, project_id: str, *, hardware_ready: bool) -> dict:
         if not hardware_ready:
             raise ValueError("Confirm that the stage is empty and analogue output level is low")
@@ -307,6 +330,7 @@ class AutoCalManager:
                 raise ValueError("Disconnect performance output and STOP all cues before calibration")
             if self.stage.mixer and not self.stage.mixer.master_mute:
                 raise ValueError("MAIN MUTE must be ON before starting AutoCal")
+            self._cancel.clear()
             self.stage.measurement_active = True
             session_id = uuid4().hex[:16]
             self._status = {"state": "running", "project_id": project_id,
@@ -322,10 +346,12 @@ class AutoCalManager:
             reference = make_stimulus(config.stimulus_dbfs)
             results = []
             for channel in range(1, 5):
+                self._check_cancelled()
                 self._update(channel=channel, message=f"Measuring CH {channel} of 4")
                 signal = np.zeros((len(reference), 4), dtype=np.float32)
                 signal[:, channel - 1] = reference
                 recording = self.capture(signal, config, SAMPLE_RATE)
+                self._check_cancelled()
                 result = analyze_channel(reference, recording, channel)
                 results.append(result)
             profile = recommendations(results)
@@ -344,10 +370,14 @@ class AutoCalManager:
                            "Mic gain must remain constant for all four captures. "
                            "Interface latency is included in absolute arrival; ONLY differences are used.",
             }
-            self._atomic_json(self._folder(project.id) / f"{session_id}.json", summary)
-            self._update(state="completed", channel=4, message="Four measurements saved; review required")
+            with self.lock:
+                self._check_cancelled()
+                self._atomic_json(self._folder(project.id) / f"{session_id}.json", summary)
+                self._update(state="completed", channel=4, message="Four measurements saved; review required")
+        except MeasurementCancelled as exc:
+            self._update(state="cancelled", message=str(exc))
         except Exception as exc:
-            self._update(state="failed", message=str(exc))
+            self._update(state="cancelled" if self._cancel.is_set() else "failed", message=str(exc))
         finally:
             with self.stage.lock:
                 self.stage.measurement_active = False

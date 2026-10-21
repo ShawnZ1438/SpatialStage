@@ -178,3 +178,29 @@ def test_mic_config_api_validation(tmp_path, monkeypatch):
     assert client.put(url+'/config',json={'experimental_eq':True}).status_code==422
     assert client.put(url+'/config',json={'measurement_points':9}).status_code==422
     assert client.put(url+'/config',json={'microphone_type':'usb'}).status_code==422
+
+
+def test_panic_cancels_measurement_and_never_saves_a_partial_profile(tmp_path, monkeypatch):
+    from threading import Event
+    client, app, pid = client_and_app(tmp_path, monkeypatch)
+    entered, release = Event(), Event()
+    def slow_capture(out, config, rate):
+        entered.set()
+        assert release.wait(3)
+        return np.zeros(len(out))
+    app.state.autocal.capture = slow_capture
+    monkeypatch.setattr(sys.modules['sounddevice'], 'stop', release.set, raising=False)
+    config = AutoCalConfig(input_device_index=0, output_device_index=0).model_dump()
+    client.put(f'/api/projects/{pid}/autocal/config',json=config)
+    result=client.post(f'/api/projects/{pid}/autocal/start',json={'hardware_ready':True})
+    assert result.status_code==200
+    assert entered.wait(2)
+    assert client.post('/api/audio/panic',json={}).status_code==200
+    deadline=time.monotonic()+3
+    while app.state.stage.measurement_active and time.monotonic()<deadline:
+        time.sleep(.01)
+    assert not app.state.stage.measurement_active
+    status=client.get(f'/api/projects/{pid}/autocal/run').json()
+    assert status['state']=='cancelled'
+    assert not app.state.autocal.sessions(pid)
+    assert not app.state.store.get(pid).calibration_enabled

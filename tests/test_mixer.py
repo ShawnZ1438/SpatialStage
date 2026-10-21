@@ -15,7 +15,9 @@ def test_four_channel_render_and_mute():
     assert np.count_nonzero(out)==0  # conservative mute on startup
     mx.master_mute=False
     out=mx.render(20)
-    assert np.allclose(out[:,1],1)
+    assert out[0,1] == 0
+    assert np.all(np.diff(out[:,1]) >= 0)
+    assert np.allclose(out[15:,1],1)
     assert np.count_nonzero(out[:,[0,2,3]])==0
 
 
@@ -43,6 +45,7 @@ def test_queue_waits_for_ends_and_prewait():
 def test_modulation_moves_power_between_speakers():
     mx=Mixer(Project(),sample_rate=1000)
     mx.master_mute=False;mx.master_db=-18
+    mx.render(20)  # settle master unmute independently of spatial motion
     c=cue(position_deg=45,modulation=[ModPoint(time_s=0,offset_deg=0),ModPoint(time_s=1,offset_deg=90)])
     mx.queue(c,np.ones(1000,dtype=np.float32))
     out=mx.render(1000)

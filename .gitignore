@@ -19,3 +19,5 @@ __pycache__/
 projects/
 SpatialStage-test-data/
 *.jsonl
+.ruff_cache/
+test-output/

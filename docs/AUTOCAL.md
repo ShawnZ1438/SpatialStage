@@ -60,7 +60,7 @@ The plotted frequency response is a **rough diagnostic** from the regularized de
 - Stored fields include channel correspondence, original speaker geometry checksum, device names, tested configuration, quality diagnostics, response plot points, proposed correction arrays, and approval timestamp. **No raw microphone sound is written to disk** and no personal/participant information is gathered.
 - Session lifecycle: `review_required` → manually `applied`, or stay pending. Failed-quality profiles cannot be applied. A new measurement is stored as a separate reviewable session. An approved profile is bound to the four-speaker stage geometry and named output device, and can be disabled; changes in patch/routing require remeasurement.
 - API `POST /api/projects/{id}/autocal/sessions/{sid}/apply` requires `{ "confirm": "APPLY" }` and validates safe engine state, stored quality and geometry. A regular project PUT request **cannot** forge approval or inject arbitrary correction arrays.
-- Corrections (per physical CH1..CH4) are a bounded attenuation stage and causal output delay FIFO **after VBAP/master gain**. Muting flushes all queued delayed samples. DSP is still prototype Python/NumPy on an audio callback, not hard real-time.
+- Corrections (per physical CH1..CH4) are a bounded attenuation stage and causal output delay FIFO **after VBAP but before the final master gain/mute ramp**. A completed 15 ms mute ramp flushes delayed samples; PANIC clears them immediately. DSP is still prototype Python/NumPy on an audio callback, not hard real-time.
 - Untrusted local operators with direct filesystem access can manipulate local JSON: this is **not** a security/authentication boundary. Keep show projects under a trusted macOS account.
 
 ## API routes
@@ -70,6 +70,7 @@ The plotted frequency response is a **rough diagnostic** from the regularized de
 | GET | `/api/projects/{id}/autocal` | Config, list of sessions, current run and active state |
 | PUT | `/api/projects/{id}/autocal/config` | Validate/save exact v0.3 one-point balanced XLR no-EQ config |
 | POST | `/api/projects/{id}/autocal/start` | Explicit safety acknowledgement starts background capture worker |
+| POST | `/api/projects/{id}/autocal/cancel` | Request cancellation; discard incomplete measurement, wait for worker acknowledgement |
 | GET | `/api/projects/{id}/autocal/run` | Current run progress/failure/completion |
 | GET | `/api/projects/{id}/autocal/sessions/{sid}` | Channel metrics and plot data; no raw microphone PCM |
 | POST | `/api/projects/{id}/autocal/sessions/{sid}/apply` | Manual approval and persistent postmix trims/delays |
@@ -80,3 +81,8 @@ The plotted frequency response is a **rough diagnostic** from the regularized de
 `python -m pytest -q` uses deterministic synthetic microphone captures and mock devices, checks actual channel-lag measurements, clipping rejection, config validation, no-boost recommendations, persistent profiles, geometry invalidation and tamper-resistant API approval. `node --check stagespatialcue/static/app.js` checks browser script syntax. **These are not measurements of your actual microphones or speakers.** Prior to live use, verify four independent hardware outputs, intended XLR input, phase/polarity by trusted equipment, swept-sine non-clipping, correct matched route clocks, gain limits and actor-space coverage.
 
 **Pending site details:** actual four-speaker XY coordinates, console/interface make/model, selected XLR microphone + preamp, mapping of Mac audio channels to isolated buses, playback/recording clock compatibility, safe sound pressure monitoring, manual centre and off-centre validation. Nothing here supplies Audyssey's proprietary MultEQ algorithms or licensed EQ databases.
+
+
+## v0.3.1 cancellation and ownership
+
+The AutoCal dialog includes **Cancel measurement**. PANIC also requests cancellation, including when a dialog/input has keyboard focus. Cancelling retains measurement ownership until the worker returns, invokes best-effort `sounddevice.stop()` and checks the cancellation flag before storing a complete report. A partial cancelled run cannot be applied. Driver interruption is not a hard real-time acoustic guarantee; physical console mute must remain available. Normal show MAIN MUTE does not mute the separate intentional measurement stream. Refer to [reliability tests](RELIABILITY.md) before hardware use.

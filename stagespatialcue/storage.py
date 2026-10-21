@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import zipfile
 from datetime import datetime, timezone
-from io import BytesIO
+from typing import BinaryIO
 from pathlib import Path
 
 from .models import Project
@@ -92,13 +92,25 @@ class ProjectStore:
         shutil.copyfile(incoming_file, candidate)
         return "media/" + candidate.name, Path(name).name
 
-    def export_zip(self, project_id: str) -> BytesIO:
+    def export_zip(self, project_id: str) -> BinaryIO:
+        """Bounded-memory backup: current media + project + acoustic profiles only."""
         folder = self.directory(project_id)
-        self.get(project_id)
-        file = BytesIO()
-        with zipfile.ZipFile(file, "w", zipfile.ZIP_DEFLATED) as archive:
-            for path in folder.rglob("*"):
-                if path.is_file():
-                    archive.write(path, path.relative_to(folder).as_posix())
-        file.seek(0)
-        return file
+        project = self.get(project_id)
+        stream = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024, mode="w+b")
+        try:
+            members = {"project.json": folder / "project.json"}
+            for cue in project.cues:
+                if cue.media_relpath:
+                    members[cue.media_relpath] = self.media_path(project_id, cue.media_relpath)
+            for path in (folder / "autocal").glob("*.json"):
+                if not path.name.startswith('.') and path.resolve().is_relative_to(folder.resolve()):
+                    members[path.relative_to(folder).as_posix()] = path
+            with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
+                for name, path in sorted(members.items()):
+                    if path.is_file():
+                        archive.write(path, name)
+            stream.seek(0)
+            return stream
+        except Exception:
+            stream.close()
+            raise

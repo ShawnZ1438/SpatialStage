@@ -6,13 +6,14 @@ hard real-time safe. A native JUCE/CoreAudio engine is planned for production.
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import RLock
 from typing import Optional
 
 import numpy as np
 
 from .models import Cue, Project
+from .ramps import LinearRamp
 from .spatial import cue_direction_offsets, envelope_offsets, vbap_gains, wrap_deg
 
 SAMPLE_RATE = 48_000
@@ -31,6 +32,33 @@ class Voice:
     start_fade_frames: Optional[int] = None
     last_gains: Optional[np.ndarray] = None
     last_level: Optional[float] = None
+    chain_id: str | None = None
+    stop_ramps: list[tuple[int, int, float]] = field(default_factory=list)
+    last_fade: float | None = None
+    fade_edit_frame: int | None = None
+    fade_edit_from: float = 1.0
+
+    def stop_gain(self, index: np.ndarray) -> np.ndarray:
+        gain = np.ones(index.shape, dtype=np.float64)
+        for start, end, initial in self.stop_ramps:
+            ramp = initial * np.clip((end - index) / max(1, end - start), 0, 1)
+            gain = np.minimum(gain, np.where(index < start, 1.0, ramp))
+        return gain
+
+    def request_stop(self, at: int, fade_frames: int) -> None:
+        """Never resurrect/extend a stop; retain earlier scheduled ramp history."""
+        if at >= self.end_frame:
+            return
+        if self.start_frame >= at:  # a pending voice is deliberately cancelled
+            self.stop_frame, self.stop_fade_frames = at, 0
+            self.stop_ramps.append((at, at, 0.0))
+            return
+        proposed_end = at + max(1, fade_frames)
+        if self.stop_frame is not None and proposed_end >= self.end_frame:
+            return
+        initial = float(self.stop_gain(np.array([at]))[0])
+        self.stop_ramps.append((at, proposed_end, initial))
+        self.stop_frame, self.stop_fade_frames = at, max(1, fade_frames)
 
     @property
     def end_frame(self) -> int:
@@ -38,7 +66,7 @@ class Voice:
         if self.stop_frame is None:
             return natural
         if self.stop_frame <= self.start_frame:
-            return self.start_frame
+            return self.stop_frame
         return min(natural, self.stop_frame + self.stop_fade_frames)
 
 
@@ -52,7 +80,7 @@ class Mixer:
         self.voices: list[Voice] = []
         self.master_mute = True
         self.master_db = -18.0
-        self._last_master_gain: float | None = None
+        self._master_ramp = LinearRamp(0.0)
         self.meters = [0.0] * 4
         self.peak_over_count = 0
         self.lifecycle_events = deque(maxlen=1000)  # optional diagnostics only
@@ -101,6 +129,11 @@ class Mixer:
             for voice in self.voices:
                 fresh = lookup.get(voice.cue.id)
                 if fresh is not None and voice.test_channel is None:
+                    if ((fresh.fade_in_s, fresh.fade_out_s) !=
+                            (voice.cue.fade_in_s, voice.cue.fade_out_s)
+                            and voice.last_fade is not None):
+                        voice.fade_edit_frame = self.frame
+                        voice.fade_edit_from = voice.last_fade
                     voice.cue = fresh.model_copy(deep=True)
 
     def reset_show_clock(self) -> None:
@@ -110,7 +143,7 @@ class Mixer:
             self.show_start_frame = None
 
     def queue(self, cue: Cue, samples: np.ndarray, *, anchored_frame: int | None = None,
-              force_cut: bool = False) -> Voice:
+              force_cut: bool = False, chain_id: str | None = None) -> Voice:
         """Queue a voice; CUT GO overrides start behavior and all pre-waits.
 
         FADE GO honors replace/layer/queue and the cue's configured transition.
@@ -130,13 +163,13 @@ class Mixer:
                 for voice in self.voices:
                     if voice.end_frame <= start:
                         continue
-                    if voice.start_frame >= start:  # pending sound cancelled
-                        voice.stop_frame = start
-                        voice.stop_fade_frames = 0
-                    else:
+                    # Equal-start automatic siblings are an intentional simultaneous
+                    # group, not pending manual GO events to cancel.
+                    if chain_id is not None and voice.chain_id == chain_id and voice.start_frame == start:
+                        continue
+                    if voice.start_frame < start:
                         had_active_replacement = True
-                        voice.stop_frame = start
-                        voice.stop_fade_frames = transition_frames
+                    voice.request_stop(start, transition_frames)
                 if force_cut or cue.replace_style == 'cut':
                     fade_override = max(1, round(DECLICK_S * self.sample_rate))
                 elif had_active_replacement and transition_s:
@@ -144,7 +177,7 @@ class Mixer:
                     fade_override = min(round(transition_s * self.sample_rate),
                                         max(1, len(samples) // 2))
             voice = Voice(cue=cue.model_copy(deep=True), samples=samples,
-                          start_frame=start, start_fade_frames=fade_override)
+                          start_frame=start, start_fade_frames=fade_override, chain_id=chain_id)
             self.voices.append(voice)
             if self.show_start_frame is None:
                 self.show_start_frame = start
@@ -166,19 +199,16 @@ class Mixer:
         with self.lock:
             fade_frames = max(1, round(max(DECLICK_S, fade_s) * self.sample_rate))
             for voice in self.voices:
-                if voice.start_frame >= self.frame:
-                    voice.stop_frame = self.frame
-                    voice.stop_fade_frames = 0
-                else:
-                    voice.stop_frame = self.frame
-                    voice.stop_fade_frames = fade_frames
+                voice.request_stop(self.frame, fade_frames)
 
     def panic(self) -> None:
         with self.lock:
             self.voices.clear()
             self.meters = [0.0] * 4
             self.master_mute = True
-            self._last_master_gain = None
+            self._master_ramp = LinearRamp(0.0)
+            for buffer in self._delay_buffers:
+                buffer.fill(0)
 
     def render(self, frames: int) -> np.ndarray:
         if frames <= 0:
@@ -209,14 +239,21 @@ class Mixer:
                 if voice.start_fade_frames is not None:
                     fadein = max(fadein,voice.start_fade_frames)
                 fadeout = int(round(cue.fade_out_s * self.sample_rate))
+                natural_fade = np.ones(len(samples), dtype=np.float32)
                 if fadein:
-                    samples *= np.sin(0.5*np.pi*np.minimum(1,positions/fadein)).astype(np.float32)
+                    natural_fade *= np.sin(0.5*np.pi*np.minimum(1,positions/fadein)).astype(np.float32)
                 if fadeout:
                     remaining = len(voice.samples)-positions-1
-                    samples *= np.sin(0.5*np.pi*np.minimum(1,remaining/fadeout)).astype(np.float32)
-                if voice.stop_frame is not None and voice.stop_fade_frames:
-                    remaining_stop = voice.stop_frame + voice.stop_fade_frames - index[valid]
-                    samples *= np.minimum(1,remaining_stop/voice.stop_fade_frames).astype(np.float32)
+                    natural_fade *= np.sin(0.5*np.pi*np.minimum(1,remaining/fadeout)).astype(np.float32)
+                if voice.fade_edit_frame is not None:
+                    blend = np.clip((index[valid] - voice.fade_edit_frame) /
+                                    max(1, round(SMOOTH_S*self.sample_rate)), 0, 1)
+                    natural_fade = voice.fade_edit_from * (1-blend) + natural_fade * blend
+                    if blend[-1] >= 1:
+                        voice.fade_edit_frame = None
+                voice.last_fade = float(natural_fade[-1])
+                samples *= natural_fade
+                samples *= voice.stop_gain(index[valid]).astype(np.float32)
                 target_level = float(10**(cue.gain_db/20))
                 if voice.last_level is not None and not np.isclose(target_level,voice.last_level):
                     n=min(len(samples),max(1,round(SMOOTH_S*self.sample_rate)))
@@ -240,22 +277,16 @@ class Mixer:
                         gains[:n]=voice.last_gains[None,:]*(1-blend)+gains[:n]*blend
                     voice.last_gains=gains[-1,:].copy()
                     out[valid] += samples[:,None]*gains
-            target_master=float(10**(self.master_db/20))
-            if self._last_master_gain is not None and not np.isclose(target_master,self._last_master_gain):
-                n=min(frames,max(1,round(SMOOTH_S*self.sample_rate)))
-                gain=np.full(frames,target_master,dtype=np.float32)
-                gain[:n]=np.linspace(self._last_master_gain,target_master,n,dtype=np.float32)
-                out *= gain[:,None]
-            else:
-                out *= np.float32(target_master)
-            self._last_master_gain=target_master
-            if self.master_mute:
-                out.fill(0)
-                # Never emit a previously buffered delayed sample after unmute.
+            # Physical channel delay precedes final mute. Otherwise delayed PCM
+            # could emerge after mute or PANIC, independently of the master ramp.
+            self._calibrated_output(out)
+            target_master = 0.0 if self.master_mute else float(10**(self.master_db/20))
+            gain = self._master_ramp.render(target_master, frames,
+                                           max(1, round(SMOOTH_S*self.sample_rate)))
+            out *= gain[:, None]
+            if self.master_mute and self._master_ramp.value == 0:
                 for buffer in self._delay_buffers:
                     buffer.fill(0)
-            else:
-                self._calibrated_output(out)
             if np.max(np.abs(out)) > 1.0:
                 self.peak_over_count+=1
             np.clip(out,-1,1,out=out)
@@ -276,6 +307,7 @@ class Mixer:
             return {'frame':self.frame,'seconds':round(self.frame/self.sample_rate,3),
                     'show_elapsed_s':round(elapsed,3),
                     'master_mute':self.master_mute,'master_db':self.master_db,
+                    'mute_settled':self.master_mute and self._master_ramp.value == 0,
                     'meters':self.meters[:],'peak_over_count':self.peak_over_count,
                     'autocal_enabled':self.project.calibration_enabled,
                     'autocal_gain_db':self.calibration_gain_db[:],

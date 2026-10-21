@@ -55,6 +55,7 @@ def test_global_show_offset_and_manual_rotation_affect_live_voice():
     p.cues=[plain_cue(position_deg=45,start_mode='layer')]
     mx=Mixer(p,sample_rate=1000)
     mx.master_mute=False;mx.master_db=0
+    mx.render(20)  # master ramp is distinct from cue transition
     mx.queue(p.cues[0],tone(1000))
     out=mx.render(150)
     assert out[0,1]>.99 and np.count_nonzero(out[0,[0,2,3]])==0
@@ -91,6 +92,7 @@ def test_cut_go_bypasses_queue_and_prewait_with_short_declick():
 
 def test_no_transition_applied_when_starting_into_silence():
     mx=Mixer(Project(),sample_rate=1000);mx.master_mute=False;mx.master_db=0
+    mx.render(20)  # master ramp is distinct from cue transition
     mx.queue(plain_cue(position_deg=45,start_mode='replace',transition_s=2.5),tone(100))
     out=mx.render(10)
     assert out[0,1]>.99
@@ -112,7 +114,8 @@ def test_server_calibration_preview_and_cue_audio_swap(tmp_path):
     assert res.status_code==200,res.text
     assert res.json()['cue']['duration_s']==.2
     assert res.json()['project']['cues'][0]['filename']=='engine.wav'
-    assert client.get('/api/health').json()['version']=='0.3.0'
+    from stagespatialcue import __version__
+    assert client.get('/api/health').json()['version']==__version__
 
 
 def test_hot_repatch_requires_mute(tmp_path):

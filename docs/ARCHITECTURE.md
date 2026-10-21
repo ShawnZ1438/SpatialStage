@@ -1,88 +1,69 @@
-# SpatialStage v0.3 architecture and implementation notes
-
-## Component graph
+# SpatialStage v0.3.1 architecture
 
 ```text
-Chrome/Safari UI  ── 127.0.0.1:8765 ── FastAPI
-  Cue list                              │
-  360° dial                             ├── ProjectStore → project.json + media/
-  ADSR/keyframe inspector               └── StageController → Cue scheduler/decode cache
-  global angular envelope                                          │
-  output + master controls                                         └── Mixer
-                                                                        ├── frame clock (48k)
-                                                                        ├── per-voice fades / live edit smoothing
-                                                                        ├── cue offsets, global offsets, rotation
-                                                                        └── 2D VBAP → four channels
-                                                                                     │
-                                                        sounddevice PortAudio → CoreAudio device
-                                                                                     │
-                                                     console 4 independent buses → physical speakers
+Browser UI (one editing window)
+  ├─ keyed cue rows, angle dial, cue/global envelopes
+  ├─ revisioned single-flight save queue / retry state
+  └─ HTTP, exact loopback origin:8765
+       FastAPI factory (no import-time data directory)
+       ├─ byte-limited request receive / project path validation
+       ├─ ProjectStore: atomic JSON / project media / disk-spooled ZIP
+       ├─ AutoCal worker: explicit test stream, capture/analyze/review
+       └─ StageController
+           ├─ NEXT cue ID, readiness, latched output errors
+           ├─ one background decode worker + separately locked LRU cache
+           └─ atomic chain scheduling → Mixer (48 kHz frame clock)
+                PCM → natural fades + stop envelope → cue gain
+                → cue/global angular modulation → VBAP → four channels
+                → approved physical-channel AutoCal trim/delay
+                → persistent final master gain/mute ramp → clip guard
+                → PortAudio/CoreAudio → four discrete console buses
 ```
 
-Software panning is centered at the fixed (0,0) stage reference point. Actor tracking and participant experimental logging are deliberately absent. The UI can run without attached output hardware, whereas GO is disallowed without a four-output device and deliberate unmute.
+## Data and geometry
 
-## Deterministic project model
+`Project(schema_version=3)` preserves existing data compatibility. Speakers store bearing, distance, output channel and optional manual trim. The UI converts X/Y relative to the taped center using clockwise `atan2(x,y)`. Four unique outputs and adjacent bearing gaps below 180° are validated. The center is fixed; software does not locate actors, infer a new origin or model room reflections. Perceptual accuracy differs from the 0.01° input resolution.
 
-`Project(schema_version=2)` includes speakers (canonical `angle_deg`, `distance_m`, `output_channel`, manual `trim_db`), `distance_compensation`, `global_rotation_deg`, an opt-in global keyframe envelope, and a Cue stack. The UI accepts `x_m/y_m` and converts to the canonical speaker polar representation with `angle=atan2(x,y)` clockwise from +Y. Saving old schema v1 projects sets schema v2 using new defaults. A valid configuration needs exactly four unique output channels and angular gaps under 180°.
+Cue IDs are immutable navigation identities. The NEXT index is derived for display/API compatibility; reorder/import preserves identity. Deleting NEXT enters `needs_rearm`. Clicking a row is selection only; ARM SELECTED is a distinct action. The UI's BEFORE badge means list position, not observed playback history.
 
-`Cue` holds file references, per-cue source volume, fade-in/out, replace style (`crossfade/cut`) and `transition_s`, source start mode (`replace/layer/queue`), chain mode (`manual/auto_continue/auto_follow`), pre/post waits, base bearing and either free angular keyframes or direction ADSR. Angular offsets may be unwrapped (e.g., +360 is a clockwise revolution). The engine currently downmixes every decoded clip to mono before panning. `stage.sync(project)` applies current cue direction/gain/curve to existing Voice references by `cue.id`; it does not reload PCM or reschedule already planned start/stop frames.
+Cue parameters include start behavior, waits, fades, replace style/transition, continue mode, base bearing, angular ADSR/keyframes. Live sync updates voice cue parameters by ID but never swaps decoded PCM or rewrites a previously scheduled start. Live fade edits blend from the last rendered natural-envelope value for 15 ms. Existing v0.3 gain/direction smoothing remains a prototype, not a fully sample-accurate automation subsystem.
 
-## Scheduler times and transitions
+## Timeline and stop envelopes
 
-`Mixer.frame` increments per callback; cue voice `start_frame`, `end_frame`, and optional stop fade are measured in its sample domain, NOT acoustic output-time timestamps.
+GO first validates that every linked clip is already decoded, then schedules the complete chain under one mixer lock. No partial chain is emitted if a file is missing. `auto_continue` anchors to start+post-wait; `auto_follow` anchors to scheduled end+post-wait; the incoming pre-wait is added. Fades run inside these intervals, not subtracted from waits. Queue mode may further postpone the incoming voice until existing voices end.
 
-- FADE GO: respects `start_mode`, `pre_wait_s`, per-Cue `replace_style` and `transition_s`. Replacing fades old audio over the transition, the new audio fades in with its own duration and a transition ramp capped at half the new clip length. Layer preserves other voices. Queue waits for existing voices, including pending ones.
-- CUT GO: `force_cut=True`, which overrides queue/layer/pre_wait, replaces active voices with 5ms de-click, cancels pending voices and only triggers one new Cue (doesn't auto follow the chain).
-- STOP: short soft stop, cancels pending voices; PANIC kills voices and applies main mute instantly.
-- `auto_continue`: anchor for next cue is outgoing voice's start frame + `post_wait_s`; `auto_follow`: outgoing voice's end frame + post-wait; next cue then adds its own pre-wait. Natural clip fade-in/out are internal and not subtracted from the intentional gap.
-- Global show keyframe clock initializes at first scheduled clip start after arm/new show; live rotation scalar is independent.
+A per-GO chain ID protects equal-start automatic siblings from replacing one another. This explicit simultaneous-group exception fixes zero-wait chains without breaking manual replacement or CUT GO. Nonzero-start replacements still stop older voices at their incoming start time.
 
-## Direction DSP
+Each voice keeps scheduled stop segments. A new stop starts from the current stop-envelope value and can only shorten the existing deadline. Taking the minimum of applicable segments preserves past fade history when future replacements are planned. Pending voices can be cancelled without ever emitting PCM. The monotonic guarantee concerns the **stop envelope**, not every sample of arbitrary audio or independently edited volume.
 
-At clip time `t` and show time `T`, we compute
+MAIN MUTE uses a sample-counted 15 ms ramp which survives callback boundaries. AutoCal delays are upstream of this final gate. Fully muted blocks clear delayed PCM; PANIC clears buffers immediately, clears voices and resets the ramp to zero. PANIC prioritizes immediate digital silence over a click-free tail. It cannot undo hardware-buffered samples. MAIN MUTE keeps both cue and global clocks running; true pause is not implemented.
 
-```
-theta = wrap360(cue.position_deg
-              + cue_direction_offset(t)
-              + project.global_rotation_deg
-              + project.global_show_offset(T))
-```
+## Decode and output state
 
-For cue ADSR, the angular offset follows (attack: 0→peak; decay: peak→sustain; hold; release: sustain→release final), proportional-compressing stages if A+D+R exceeds clip duration. In free keyframe mode, linear interpolation is on unwrapped angular offsets. Show envelope uses the same keyframe interpolation with `T`. The currently requested direction is then mapped to adjacent speaker gains by 2D normalized VBAP; manually entered trims and optional approximate distance gain compensation are applied afterward. Because distance trim can affect normalization and perceived loudness, no objective equal-loudness guarantee is made.
+ARM/sync starts background preload of the next automatic group. Cache operations use a separate lock; decoding/FFmpeg uses a worker/decode lock, not the controller/mixer lock. Cached buffers are immutable and keyed by project/path/size/mtime. GO is cache-only and rejects a not-ready command without moving NEXT. Preflight warms all assets but reports shows above 700 MiB. Cache eviction and large automatic groups remain capacity limits, not streaming support.
 
-Geometry preview uses speed-of-sound approximation (~343 m/s at 20°C) and **never** applies its theoretical delay `(max(d)-d)/343` automatically. **Separately**, v0.3 AutoCal measures microphone response through an XLR input and proposes per-channel *relative* delay/attenuation, only applied after manual approval; it neither measures absolute dB SPL nor establishes localization for moving actors.
+A stream object alone does not mean active output. Status/GO checks stream.active; inactive/finished/error paths latch mute, clear voices and require manual reconnect. A software callback failure emits zero for that block and latches an error. There is deliberately no automatic unmute/replay after reconnect. Stream hardware indices/names are not permanent universal device identifiers.
 
-## Device, data and operation boundaries
+Control still performs some filesystem reads/stat checks and acquires locks; the prototype does **not** provide a hard real-time latency bound. Callback NumPy allocation, Python/GIL scheduling, repeated control sync and hardware-driver behavior require load testing. Native preallocated DSP and lock-free control events are the production migration path.
 
-- A physical ≥4-channel CoreAudio device is mandatory for GO. Mixer starts muted, master defaults to -18 dB. A tone test exercises only one software output at a time.
-- The server binds on 127.0.0.1 and uses loopback Host and browser Origin constraints; do not expose its endpoints to other hosts or port-forward it.
-- Operator commands execute on HTTP threads. `ProjectStore` writes atomic JSON via replace and copies media to per-project folders. Project exports include media. No participant data is collected. Optional operator-only JSONL diagnostic events can be enabled by environment flag.
-- `StageController.can_update()` rejects stage speaker geometry or physical channel reconfiguration when a connected stream is unmuted; only soft cue settings may update live.
-- Cue decodes happen before scheduling, with 30-minute clip cap and a 700 MiB cache; preflight checks files and whether a four-output device was connected.
+## Persistence, concurrency and web boundary
 
-## Why the current audio engine is not production-safe
+Project PUT uses atomic file replacement. The browser snapshots each save revision, serializes PUTs and drains newer edits before resolving explicit Save. Save errors retain dirty state, display Retry and keep the settings dialog open. Transport preparation awaits saves; a STOP/PANIC epoch cancels GO still waiting on save acknowledgement. Requests already dispatched cannot be recalled by this client-side mechanism.
 
-Python callback explicitly takes a re-entrant lock, creates NumPy arrays each render block, and merges control/audio state. PortAudio recommends the opposite for a real-time callback: **no blocking locks, memory allocation, file I/O or other unpredictable operations**. A heavy CPU load, concurrent save, decoder miss or a bug can cause audible underruns. `xruns` and `peak_over_count` are only software indicators; they do not measure actual acoustic output or peak SPL.
+Keyed cue row elements survive periodic status polling. Import only sorts new rows. Single browser ownership is an operational restriction: there is no server compare-and-swap revision/ETag, project-wide transaction or cross-tab conflict merge. Media import/replacement/project-switch requests can still race with simultaneous editor changes; avoid editing during these operations. This is tracked, not silently declared fixed by the save queue.
 
-**Native transition roadmap:** move the mixer into JUCE/C++ or a carefully designed CoreAudio extension; preallocate voice buffers and channel matrices; use lock-free control events; preflight/decode on workers; add output loss/reconnect and redundant mute fail-safes, latency measurement, gain ceilings and hardware acceptance. Then consider multi-actor spatialization limitations, playback-device drift, cue snapshots and richer envelopes.
+ASGI limits whole request receipt to 256 MiB, including chunked requests; per-file upload checks remain 150 MiB/250-file limits. JSON/media paths are constrained to a project. Export streams a spooled ZIP, includes only current referenced media/project/AutoCal JSON and excludes logs/temporary files. ZIP import is not implemented.
 
-## Acceptance criteria before actor rehearsal
+Host and browser Origin allow only localhost/127.0.0.1:8765 (HTTP); absent Origin is allowed for CLI/API use. These controls restrict foreign browser pages, not local untrusted processes. There is no LAN auth model. `create_app` constructs storage explicitly; `server.main` uses Uvicorn factory mode.
 
-1. Physical device provides 4 separate outputs, with a diagram of USB bus and console routing.
-2. CH1→L, CH2→R, CH3→RR, CH4→RL (or explicitly documented permutation) verified at safe volume with solo tones.
-3. Local coordinate reference arrow/tape fixed, X/Y for each speaker measured.
-4. Reference-center gain trims determined with a calibrated meter, safe maximum level established by production sound team.
-5. GO/STOP/PANIC, global motion, fade/cut, file swap and recovery tested with actors absent.
-6. A stress run at representative polyphony passes without measured dropouts/xruns; if it does not, **do not use v0.3 as the sole live audio controller**.
-7. Non-center actor positions verified perceptually; no claim of uniform localization.
+## AutoCal boundary
 
-## Useful references
+One center point, balanced, XLR, experimental EQ off. A separate measurement worker owns temporary duplex audio while show output is disconnected/muted. Report JSON is persisted atomically, raw microphone audio is not. Approval requires a passing unchanged profile and explicit APPLY. Only bounded attenuation/relative delays are applied, upstream of final mute. Recalibrate after external console gain/routing changes which the software cannot detect.
 
-- Apple Audio MIDI Setup: https://support.apple.com/guide/audio-midi-setup/set-up-audio-devices-ams59f301fda/mac
-- Speaker output mapping: https://support.apple.com/guide/audio-midi-setup/set-up-external-speakers-for-stereo-or-surround-sound-ams1005/mac
-- Zotter & Frank, *Amplitude Panning Using Vector Bases*, 2019: https://link.springer.com/chapter/10.1007/978-3-030-17207-7_3
-- PortAudio callback considerations: https://portaudio.com/docs/v19-doxydocs/writing_a_callback.html
+Cancellation marks cancelling, requests sounddevice.stop and retains measurement ownership until the worker acknowledges. Before saving a report the cancellation flag is checked under lock. A cancelled partial run cannot become an applied profile. Driver interruption is best-effort; physical mute remains the emergency boundary.
 
-## v0.3 AutoCal module (new)
+## Validation and limits
 
-See [AUTOCAL.md](AUTOCAL.md) for operator steps, safety gates and analysis limitations. `stagespatialcue/autocal.py` contains locked single-point XLR config, bounded swept-sine stimulus, `sounddevice.playrec` duplex acquisition (one output channel at a time), `scipy.signal` cross-correlation and normalized diagnostic frequency response, temporary run-progress state and atomic project-local JSON persistence. No mic raw PCM is persisted. `server.py` exposes the AutoCal API and refuses to enable a profile through normal project PUT requests. `mixer.py` owns a post-VBAP post-master physical-channel attenuation and delay FIFO, initially identity/disabled. Only a passing report plus explicit operator `APPLY`, stopped/disconnected sound engine, MAIN MUTE and identical geometry/routing enables it. The v0.3 profile never generates EQ, and one-point balanced reduces to center-only. This is non-real-time Python reference DSP, not validated against a real Mac/console/microphone.
+See [RELIABILITY.md](RELIABILITY.md) for regression evidence and real-hardware acceptance. Software tests use synthetic buffers and mocked output; they do not certify absolute dB SPL, sound localization, aggregate-device clock compatibility, native Mac performance or participant outcomes.
+
+Reference: [PortAudio callback requirements](https://portaudio.com/docs/v19-doxydocs/writing_a_callback.html). No blocking operations or unpredictable allocation should be in a production callback; this prototype still violates that objective.

@@ -18,7 +18,7 @@
       <section class="side-section">
         <div class="section-heading">SHOW PROJECT <span class="mini">01 / STAGE</span></div>
         <div class="project-picker"><select id="projectSelect" aria-label="Select show project"></select><button id="newProject" class="square" title="Create new show">＋</button></div>
-        <div class="subactions"><button id="exportProject" class="linklike">⇩ Export show ZIP</button><span id="saveIndicator">Saved locally</span></div>
+        <div class="subactions"><button id="exportProject" class="linklike">⇩ Export show ZIP</button><span id="saveIndicator">Saved locally</span><button id="retrySave" class="linklike" hidden>Retry save</button></div>
       </section>
       <section class="side-section">
         <div class="section-heading">AUDIO DEVICES</div>
@@ -60,6 +60,7 @@
         <section class="cue-panel">
           <div class="panel-title"><div><span class="section-heading">CUE STACK</span><span id="cueCount" class="count">0 cues</span></div><div class="panel-actions"><label class="import-button">＋ Import folder<input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button">Files<input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
           <div class="cue-list-scroller"><table class="cue-table"><thead><tr><th>STATUS</th><th>NO.</th><th>CUE / TRACK</th><th>START</th><th>BEARING</th><th>GAIN</th><th>TIME</th><th></th></tr></thead><tbody id="cueRows"></tbody></table><div id="emptyCues" class="empty"><div>◎</div><b>Your stage starts here.</b><p>Import a numbered folder of WAV / AIFF / FLAC / MP3 files to populate your cue sequence.</p></div></div>
+
           <div class="cue-footer"><span id="queueSummary">No scheduled audio</span><span>Live direction/gain edits update active voices · Media swap is next playback</span></div>
         </section>
 
@@ -95,6 +96,7 @@
       <p class="micro">Place XLR measurement microphone at center at actor ear height; point it as its manufacturer specifies. Phantom power only when microphone requires it. Fixed preamp gain and no AGC. Disconnect show output and MAIN MUTE before capture; use minimal analogue amp level, no actors on stage.</p>
       <label class="check"><input id="acSafe" type="checkbox"/> I confirm the stage is empty, mic is connected, show audio is disconnected, analogue output level is low.</label>
       <button id="acStart" class="primary">◉ Measure CH1–CH4</button>
+      <button id="acCancel" class="danger" disabled>Cancel measurement</button>
       <p class="ac-progress" id="acProgress" role="status" aria-live="polite">No measurement running.</p>
     </section>
     <section class="autocal-results">
@@ -114,6 +116,7 @@
   </div>
 </dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/static/save-queue.js"></script>
 <script src="/static/app.js" defer></script>
 </body>
 </html>

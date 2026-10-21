@@ -72,6 +72,7 @@ def test_auto_continue_and_follow_are_scheduled_by_sample_frame(tmp_path):
     stage.arm(project.id)
     stage.stream=type('FakeStream',(),{'active':True})()
     stage.mixer.master_mute=False
+    stage.preflight(project.id)
     status=stage.go(project.id)
     assert status['next_index']==3
     assert [v.start_frame for v in stage.mixer.voices]==[0,int(.02*fs),int(.15*fs)]

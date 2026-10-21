@@ -1,10 +1,10 @@
-/* SpatialStage v0.2 — localhost control; multichannel output rendered in Python. */
+/* SpatialStage v0.3.1 — localhost control; multichannel output rendered in Python. */
 'use strict';
 const $ = (id) => document.getElementById(id);
 const h = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const fmt = (v, d=2) => num(v).toFixed(d);
-const state = {project:null, projects:[], selectedCueId:null, devices:{outputs:[],inputs:[]}, status:null, saveTimer:null, saveBusy:false, editSpeakers:null, selectedPoint:0, draggingDial:false, draggingPoint:-1, lastError:'', outputChoice:'', inputChoice:''};
+const state = {project:null, projects:[], selectedCueId:null, devices:{outputs:[],inputs:[]}, status:null, saveTimer:null, transportEpoch:0, editSpeakers:null, selectedPoint:0, draggingDial:false, draggingPoint:-1, lastError:'', outputChoice:'', inputChoice:''};
 let toastTimer;
 
 async function api(path, options={}) {
@@ -37,7 +37,7 @@ async function loadProjectList() {
   $('projectSelect').innerHTML = state.projects.map(p=>`<option value="${h(p.id)}">${h(p.name)}</option>`).join('');
 }
 async function switchProject(projectId) {
-  if (state.saveTimer) await saveNow();
+  await saveNow();
   const incoming=await api('/projects/'+encodeURIComponent(projectId));
   const currentStatus=await api('/audio/status');
   if(currentStatus.project_id!==incoming.id && currentStatus.mixer?.voices?.length){
@@ -66,24 +66,36 @@ async function refreshProjectsPreservingSelection() {
   await loadProjectList();
   if (id) $('projectSelect').value = id;
 }
+const saveQueue = new ProjectSaveQueue({
+  snapshot:()=>state.project,
+  persist:project=>api('/projects/'+project.id,{method:'PUT',body:JSON.stringify(project)}),
+  onState:status=>{$('saveIndicator').textContent={dirty:'Unsaved changes',saving:'Saving…',saved:'Saved locally',error:'Save failed — changes retained'}[status];$('retrySave').hidden=status!=='error';},
+  onSaved:(snapshot,result,latest)=>{
+    if(state.project?.id!==snapshot.id)return;
+    state.project.updated_at=result.updated_at;
+    if(latest){
+      state.project.active_calibration_id=result.active_calibration_id??null;
+      state.project.calibration_enabled=!!result.calibration_enabled;
+    }
+  }
+});
 function scheduleSave() {
   if (!state.project) return;
-  $('saveIndicator').textContent='Unsaved changes';
+  saveQueue.changed();
   clearTimeout(state.saveTimer);
   state.saveTimer = setTimeout(()=>saveNow().catch(report),280);
 }
 async function saveNow() {
   clearTimeout(state.saveTimer);
   state.saveTimer=null;
-  if (!state.project || state.saveBusy) return;
-  state.saveBusy=true;
-  try {
-    const result = await api('/projects/'+state.project.id,{method:'PUT',body:JSON.stringify(state.project)});
-    state.project.updated_at=result.updated_at;
-    $('saveIndicator').textContent='Saved locally';
-  } catch (e) { $('saveIndicator').textContent='Save failed'; report(e); }
-  finally { state.saveBusy=false; }
+  if (!state.project) return;
+  saveQueue.changed(); // explicit Save also captures edits without a debounce
+  await saveQueue.flush();
 }
+$('retrySave').addEventListener('click',()=>saveNow().catch(report));
+window.addEventListener('beforeunload',e=>{
+  if(saveQueue.dirty || saveQueue.running){e.preventDefault();e.returnValue='';}
+});
 async function loadDevices() {
   const old = state.outputChoice || $('outputSelect').value;
   state.devices=await api('/devices');
@@ -132,14 +144,18 @@ function renderTransport() {
   const idx=state.status?.next_index ?? 0;
   const next=p.cues[idx];
   $('showName').textContent=p.name;
-  $('nextCue').textContent=next ? `${String(idx+1).padStart(3,'0')}  ·  ${next.title}` : '— END OF SHOW —';
+  $('nextCue').textContent=state.status?.needs_rearm ? 'NEXT REMOVED — SELECT AND ARM' : next ? `${String(idx+1).padStart(3,'0')}  ·  ${next.title}` : '— END OF SHOW —';
   const connected=!!state.status?.connected;
   const mute=state.status?.mixer?.master_mute ?? true;
   $('playbackHint').textContent= !connected ? 'Connect a 4-output CoreAudio device' : mute ? 'OUTPUT MUTED · unmute deliberately before GO' : next ? `${next.start_mode.toUpperCase()} · ${fmt(next.pre_wait_s)} s pre-wait` : 'Select a row and ARM to play it again';
+  if(state.status?.needs_rearm)$('playbackHint').textContent='NEXT was deleted. Select and ARM a cue explicitly.';
+  else if(state.status?.prepare_error)$('playbackHint').textContent=state.status.prepare_error;
+  else if(state.status?.preparing)$('playbackHint').textContent='Preparing NEXT audio… GO waits for ready buffers.';
+  if(state.status?.error)$('playbackHint').textContent=state.status.error;
   $('systemState').innerHTML=`<i></i> ${connected ? (mute ? 'Connected / muted':'Engine ready') : 'Engine offline'}`;
   $('systemState').className='status'+(connected && !mute?' ready':'');
-  $('goButton').disabled=!next || !connected || mute;
-  $('cutGoButton').disabled=!next || !connected || mute;
+  $('goButton').disabled=!next || !connected || mute || state.status?.ready===false || !!state.status?.error;
+  $('cutGoButton').disabled=!next || !connected || mute || !!state.status?.error;
   $('cueCount').textContent=`${p.cues.length} cues`;
 }
 function cueState(c, i) {
@@ -149,24 +165,34 @@ function cueState(c, i) {
   if(active) return ['playing','LIVE'];
   if(pending) return ['queued','WAIT'];
   if(i===(state.status?.next_index ?? 0)) return ['next','NEXT'];
-  if(i<(state.status?.next_index ?? 0)) return ['done','FIRED'];
+  if(i<(state.status?.next_index ?? 0)) return ['done','BEFORE'];
   return ['idle','STBY'];
 }
 function renderRows() {
   if(!state.project) return;
-  const cues=state.project.cues;
+  const cues=state.project.cues, body=$('cueRows');
   $('emptyCues').style.display=cues.length?'none':'block';
-  $('cueRows').innerHTML=cues.map((c,i)=>{
-    const [s,txt]=cueState(c,i);
-    const sel=c.id===state.selectedCueId?' selected':'';
-    const duration = c.duration_s ? `${fmt(c.duration_s,1)} s` : '—';
-    return `<tr class="${sel}" data-id="${h(c.id)}" aria-selected="${!!sel}">
-      <td><span class="cue-state ${s}"><i></i>${txt}</span></td><td class="number">${String(i+1).padStart(3,'0')}</td>
-      <td><span class="cue-title" title="${h(c.title)}">${h(c.title)}</span><span class="cue-subtitle" title="${h(c.filename)}">${h(c.filename)}</span></td>
-      <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${fmt(c.position_deg)}°</td><td>${fmt(c.gain_db,1)} dB</td><td>${duration}</td>
-      <td><div class="row-btns"><button data-move="-1" title="Move up" ${i===0?'disabled':''}>↑</button><button data-move="1" title="Move down" ${i===cues.length-1?'disabled':''}>↓</button></div></td>
-    </tr>`;
-  }).join('');
+  const rows=new Map([...body.children].map(row=>[row.dataset.id,row]));
+  cues.forEach((c,i)=>{
+    let row=rows.get(c.id);
+    if(!row){row=document.createElement('tr');row.dataset.id=c.id;}
+    rows.delete(c.id);
+    const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.gain_db,c.duration_s,cues.length]);
+    if(row.dataset.signature!==signature){
+      row.innerHTML=`<td><span class="cue-state"><i></i><b></b></span></td><td class="number">${String(i+1).padStart(3,'0')}</td>
+        <td><span class="cue-title" title="${h(c.title)}">${h(c.title)}</span><span class="cue-subtitle" title="${h(c.filename)}">${h(c.filename)}</span></td>
+        <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${fmt(c.position_deg)}°</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
+        <td><div class="row-btns"><button data-move="-1" title="Move up" ${i===0?'disabled':''}>↑</button><button data-move="1" title="Move down" ${i===cues.length-1?'disabled':''}>↓</button></div></td>`;
+      row.dataset.signature=signature;
+    }
+    const [status,label]=cueState(c,i), selected=c.id===state.selectedCueId;
+    row.className=selected?'selected':'';
+    row.setAttribute('aria-selected',String(selected));
+    const badge=row.querySelector('.cue-state');badge.className='cue-state '+status;
+    badge.querySelector('b').textContent=label;
+    if(body.children[i]!==row)body.insertBefore(row,body.children[i]??null);
+  });
+  rows.forEach(row=>row.remove());
   const voices=state.status?.mixer?.voices??[];
   $('queueSummary').textContent=voices.length?voices.map(v=>`${v.title} (${v.state} ${fmt(v.elapsed_s,1)} s)`).join(' · '):'No scheduled audio';
 }
@@ -332,7 +358,16 @@ async function poll() {
   } catch(e){ if(state.lastError!==e.message){state.lastError=e.message;report(e);} }
 }
 async function action(path,payload={},message=''){
-  try {state.status=await post(path,payload);renderTransport();renderRows();renderMaster();if(message)notify(message);}
+  const safetyCommand=['/audio/stop','/audio/panic','/audio/disconnect'].includes(path);
+  if(safetyCommand)state.transportEpoch++;
+  const epoch=state.transportEpoch;
+  try {
+    if(['/audio/go','/audio/arm','/audio/skip'].includes(path)){
+      await saveNow();
+      if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
+    }
+    state.status=await post(path,payload);renderTransport();renderRows();renderMaster();if(message)notify(message);
+  }
   catch(e){report(e);}
 }
 async function uploadFiles(files) {
@@ -348,7 +383,8 @@ async function uploadFiles(files) {
     await refreshProjectsPreservingSelection();
     renderEverything();
     notify(`Imported ${data.added} audio file(s)${data.ignored.length ? `; skipped ${data.ignored.length}`:''}.`);
-  } catch(e){report(e);}finally{$('saveIndicator').textContent='Saved locally';}
+    $('saveIndicator').textContent='Saved locally';
+  } catch(e){report(e);$('saveIndicator').textContent='Import failed — check saved project';}
 }
 
 $('projectSelect').addEventListener('change',e=>switchProject(e.target.value).catch(report));
@@ -358,16 +394,14 @@ $('renameProject').addEventListener('click',async()=>{
   if(!name?.trim())return;
   state.project.name=name.trim().slice(0,100);
   $('showName').textContent=state.project.name;
-  await saveNow();
-  await refreshProjectsPreservingSelection();
-  notify('Project renamed.');
+  try {await saveNow();await refreshProjectsPreservingSelection();notify('Project renamed.');}catch(e){report(e);}
 });
 $('newProject').addEventListener('click',async()=>{
   const name=prompt('Name this show / project:','New stage session');if(!name?.trim())return;
   try {await saveNow();const p=await post('/projects',{name:name.trim()});await refreshProjectsPreservingSelection();await switchProject(p.id);notify(`Created project: ${p.name}`);}catch(e){report(e);}
 });
-$('exportProject').addEventListener('click',()=>{
-  if(state.project) window.location.href=`/api/projects/${state.project.id}/export`;
+$('exportProject').addEventListener('click',async()=>{
+  try {await saveNow();if(state.project) window.location.href=`/api/projects/${state.project.id}/export`;}catch(e){report(e);}
 });
 $('refreshDevices').addEventListener('click',()=>loadDevices().then(()=>notify('Audio devices refreshed')).catch(report));
 $('outputSelect').addEventListener('change',e=>state.outputChoice=e.target.value);
@@ -429,11 +463,11 @@ $('skipButton').addEventListener('click',()=>action('/audio/skip',{},'SKIP — m
 $('panicButton').addEventListener('click',()=>action('/audio/panic',{},'PANIC — all audio killed and master muted.'));
 $('armSelected').addEventListener('click',()=>{
   const idx=state.project?.cues.findIndex(c=>c.id===state.selectedCueId);
-  if(idx>=0)action('/audio/arm',{project_id:state.project.id,index:idx},`Armed cue ${idx+1}.`);
+  if(idx>=0)action('/audio/arm',{project_id:state.project.id,cue_id:state.selectedCueId},`Armed cue ${idx+1}.`);
 });
 $('preflight').addEventListener('click',async()=>{
   if(!state.project)return;
-  try {const r=await api('/projects/'+state.project.id+'/preflight');notify(r.ok?`Preflight OK: ${r.count} cues, ${r.decoded_mib} MiB decoded.`:`Preflight issues: ${r.issues.join(' | ')}`,!r.ok);}
+  try {await saveNow();const r=await api('/projects/'+state.project.id+'/preflight');notify(r.ok?`Preflight OK: ${r.count} cues, ${r.decoded_mib} MiB decoded.`:`Preflight issues: ${r.issues.join(' | ')}`,!r.ok);}
   catch(e){report(e);}
 });
 $('folderInput').addEventListener('change',e=>{uploadFiles([...e.target.files]);e.target.value='';});
@@ -528,6 +562,7 @@ $('inspectorContent').addEventListener('click',e=>{
   }
 });
 document.addEventListener('keydown',e=>{
+  if(e.shiftKey && e.key==='Escape'){e.preventDefault();$('panicButton').click();return;}
   if(e.repeat || e.metaKey || e.ctrlKey || e.altKey && e.code!=='ArrowDown')return;
   const tag=e.target.tagName;
   if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
@@ -569,7 +604,7 @@ $('cancelSettings').addEventListener('click',closeSettings);
 $('saveSettings').addEventListener('click',async()=>{
   const old=state.project.speakers;
   state.project.speakers=stagedSpeakerPayload();
-  try {await saveNow();if($('saveIndicator').textContent==='Save failed')throw new Error('Invalid speaker layout. Check channels and angular coverage.');closeSettings();renderDial();notify('Speaker geometry saved. Test all four channels before rehearsal.');}
+  try {await saveNow();closeSettings();renderDial();notify('Speaker geometry saved. Test all four channels before rehearsal.');}
   catch(e){state.project.speakers=old;report(e);}
 });
 async function boot(){
@@ -648,15 +683,17 @@ function acRenderReport() {
   acUpdateApplyButton();
 }
 function acUpdateApplyButton() {
-  const r=ac.report, running=ac.run?.state==='running';
+  const r=ac.report, running=['running','cancelling'].includes(ac.run?.state);
   $('acApply').disabled=!(r?.status==='review_required' && r.quality_ok &&
     $('acApproveCheck').checked && $('acApproveText').value.trim()==='APPLY' &&
     !running && !state.status?.connected && state.status?.mixer?.master_mute !== false &&
     !(state.status?.mixer?.voices||[]).length);
   $('acDisable').disabled=!ac.overview?.enabled || !!state.status?.connected || running;
   $('acStart').disabled=running;
+  $('acCancel').disabled=!running;
   $('acSaveConfig').disabled=running;
   $('acProgress').textContent=running ? `● ${ac.run.message}. Please do not move the microphone.` :
+    ac.run?.state==='cancelled' ? 'Measurement cancelled. No new profile was saved or applied.' :
     ac.run?.state==='failed' ? `⚠ Measurement failed: ${ac.run.message}` :
     ac.run?.state==='completed' ? '✓ Four measurements saved. Review plots and proposed corrections; nothing has been applied.' :
     'No measurement in progress.';
@@ -712,12 +749,15 @@ $('acStart').addEventListener('click',async()=>{
     notify('AutoCal started. Four separate low-level sweeps are being measured.');
   }catch(e){report(e);}
 });
+$('acCancel').addEventListener('click',async()=>{
+  try {ac.run=await post(acPath()+'/cancel');acUpdateApplyButton();}catch(e){report(e);}
+});
 async function acPoll(){
-  if(!acDialog.open||!state.project||ac.projectId!==state.project.id||ac.run?.state!=='running')return;
+  if(!acDialog.open||!state.project||ac.projectId!==state.project.id||!['running','cancelling'].includes(ac.run?.state))return;
   try{
     const fresh=await api(acPath()+'/run');
     const prev=ac.run?.state;ac.run=fresh;acUpdateApplyButton();
-    if(prev==='running'&&fresh.state!=='running'){
+    if(['running','cancelling'].includes(prev)&&!['running','cancelling'].includes(fresh.state)){
       await acLoad(fresh.state==='completed'?fresh.session_id:null);
       if(fresh.state==='failed')report(new Error(fresh.message));
     }
