@@ -299,8 +299,10 @@ class StageController:
         with self.lock:
             if self.mixer and self.project_id == project.id and self.stream is not None:
                 old = self.mixer.project
-                if old.speakers != project.speakers and not self.mixer.master_mute:
-                    raise ValueError("MAIN MUTE first before changing stage speaker geometry/routing")
+                if ((old.speakers != project.speakers or
+                     (old.calibration_enabled and old.distance_compensation != project.distance_compensation))
+                     and not self.mixer.master_mute):
+                    raise ValueError("MAIN MUTE first before changing stage geometry/routing or calibrated output settings")
 
     def skip(self) -> dict:
         with self.lock:
