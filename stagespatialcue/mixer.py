@@ -304,6 +304,12 @@ class Mixer:
     def status(self) -> dict:
         with self.lock:
             elapsed=0 if self.show_start_frame is None else max(0,self.frame-self.show_start_frame)/self.sample_rate
+            def bearing(voice):
+                t = np.array([max(0, self.frame-voice.start_frame)/self.sample_rate])
+                offset = cue_direction_offsets(t, len(voice.samples)/self.sample_rate, voice.cue)[0]
+                if self.project.global_envelope_enabled:
+                    offset += envelope_offsets(np.array([elapsed]), self.project.global_modulation)[0]
+                return round(float(wrap_deg(voice.cue.position_deg+self.project.global_rotation_deg+offset)), 2)
             return {'frame':self.frame,'seconds':round(self.frame/self.sample_rate,3),
                     'show_elapsed_s':round(elapsed,3),
                     'master_mute':self.master_mute,'master_db':self.master_db,
@@ -317,5 +323,5 @@ class Mixer:
                                'elapsed_s':round(max(0,self.frame-v.start_frame)/self.sample_rate,2),
                                'duration_s':round(len(v.samples)/self.sample_rate,2),
                                'end_s':round(v.end_frame/self.sample_rate,2),
-                               'position_deg':round(float(wrap_deg(v.cue.position_deg+self.project.global_rotation_deg)),2)}
+                               'position_deg':bearing(v)}
                               for v in self.voices if v.end_frame>self.frame]}

@@ -55,6 +55,14 @@ class TestPayload(BaseModel):
     channel: int = Field(ge=1, le=4)
 
 
+class CapturePayload(BaseModel):
+    recording: bool
+
+
+class MonitorPayload(BaseModel):
+    gains: list[float] = Field(min_length=4, max_length=4)
+
+
 class AutoCalStartPayload(BaseModel):
     hardware_ready: bool = False
 
@@ -160,6 +168,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                     temp.flush()
                     relative, display_name = store.add_file(project_id, temp_path, name)
                 finally:
+                    temp.close()  # Windows cannot unlink an open upload file.
                     temp_path.unlink(missing_ok=True)
             full = store.media_path(project_id, relative)
             match = re.match(r"^\d{1,5}[-_ ](.+)$", Path(display_name).stem)
@@ -193,6 +202,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 temp.flush()
                 relative, display = store.add_file(project_id, path, name)
             finally:
+                temp.close()  # Windows cannot unlink an open upload file.
                 path.unlink(missing_ok=True)
         cue.filename = display
         cue.media_relpath = relative
@@ -275,6 +285,42 @@ def create_app(data_root: Path | None = None) -> FastAPI:
     @app.post("/api/audio/connect")
     def connect(payload: DevicePayload):
         return stage.connect(payload.device_index)
+
+    @app.post("/api/simulation/connect")
+    def simulation_connect():
+        return stage.connect_simulation()
+
+    @app.post("/api/simulation/monitor")
+    def simulation_monitor(payload: DevicePayload):
+        return stage.connect_simulation(payload.device_index)
+
+    @app.post("/api/simulation/monitor-gains")
+    def simulation_monitor_gains(payload: MonitorPayload):
+        import numpy as np
+        from .simulation import StereoMonitorStream
+        if not isinstance(stage.stream, StereoMonitorStream):
+            raise ValueError("Connect stereo monitor first")
+        gains = np.asarray(payload.gains, dtype=np.float32)
+        if not np.isfinite(gains).all() or np.any(gains < 0) or np.any(gains > 1):
+            raise ValueError("Monitor gains must be finite values in 0..1")
+        stage.stream.gains = gains
+        return stage.status()
+
+    def simulation_stream():
+        from .simulation import SimulationStream
+        if not isinstance(stage.stream, SimulationStream):
+            raise ValueError("Connect silent simulation first")
+        return stage.stream
+
+    @app.post("/api/simulation/capture")
+    def simulation_capture(payload: CapturePayload):
+        simulation_stream().capture(payload.recording)
+        return stage.status()
+
+    @app.get("/api/simulation/capture.wav")
+    def simulation_download():
+        return Response(simulation_stream().wav(), media_type="audio/wav", headers={
+            "Content-Disposition": 'attachment; filename="SpatialStage-4ch-48000.wav"'})
 
     @app.post("/api/audio/disconnect")
     def disconnect():

@@ -31,7 +31,7 @@ class ProjectStore:
         found = []
         for path in sorted(self.root.glob("*/project.json")):
             try:
-                p = Project.model_validate_json(path.read_text())
+                p = Project.model_validate_json(path.read_text(encoding="utf-8"))
                 found.append({"id": p.id, "name": p.name, "updated_at": p.updated_at, "count": len(p.cues)})
             except (OSError, ValueError):
                 continue
@@ -46,7 +46,7 @@ class ProjectStore:
         path = self.directory(project_id) / "project.json"
         if not path.exists():
             raise FileNotFoundError("Project not found")
-        return Project.model_validate_json(path.read_text())
+        return Project.model_validate_json(path.read_text(encoding="utf-8"))
 
     def save(self, project: Project) -> Project:
         folder = self.directory(project.id)

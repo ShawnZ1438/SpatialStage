@@ -1,5 +1,9 @@
 # SpatialStage
 
+**Local Windows simulation console:** see [setup, scope and verified tests](docs/LOCAL_SIMULATION.md).
+It uses the production cue/mixing engine with silent output, optional low-level stereo monitoring,
+four-channel capture and editable stage visualization. Real four-output mode remains available.
+
 **Local-first four-output spatial cue control for actor-centered experimental theatre.**
 
 [中文说明](README.zh-CN.md) · [Architecture](docs/ARCHITECTURE.md) · [Calibration](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [Reliability / audit fixes](docs/RELIABILITY.md) · [Open decisions](docs/OPEN_QUESTIONS.md)

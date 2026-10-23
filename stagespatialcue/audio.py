@@ -254,13 +254,33 @@ class StageController:
         path = self.store.directory(project.id) / "autocal" / f"{sid}.json"
         if not path.is_file():
             raise ValueError("Active AutoCal profile is missing. Disable AutoCal first")
-        profile = json.loads(path.read_text())
+        profile = json.loads(path.read_text(encoding="utf-8"))
         if (profile.get("status") != "applied" or not profile.get("quality_ok") or
                 profile.get("speaker_signature") != geometry_signature(project.speakers) or
                 project.distance_compensation or any(s.trim_db != 0 for s in project.speakers)):
             raise ValueError("Active AutoCal is invalid for current speaker routing. Disable it")
         recommendation = profile["recommendations"]
         self.mixer.set_calibration(recommendation["channel_gain_db"], recommendation["channel_delay_ms"])
+
+    def connect_simulation(self, device_index: int | None = None) -> dict:
+        from .simulation import SimulationStream, StereoMonitorStream
+        with self.lock:
+            if self.mixer is None:
+                raise ValueError("Arm a project first")
+            if self.measurement_active:
+                raise ValueError("AutoCal measurement active")
+            self.disconnect()
+            self.audio_error = None
+            self.xruns = 0
+            self.stream = (SimulationStream(self) if device_index is None
+                           else StereoMonitorStream(self, device_index))
+            try:
+                self.stream.start()
+            except Exception:
+                self.stream.close()
+                self.stream = None
+                raise
+            return self.status()
 
     def connect(self, device_index: int) -> dict:
         import sounddevice as sd
@@ -271,7 +291,7 @@ class StageController:
                 raise ValueError("AutoCal measurement active; wait before connecting live audio")
             if self.mixer.project.calibration_enabled:
                 profile_path = self.store.directory(self.mixer.project.id) / "autocal" / f"{self.mixer.project.active_calibration_id}.json"
-                profile = json.loads(profile_path.read_text())
+                profile = json.loads(profile_path.read_text(encoding="utf-8"))
                 device_name = str(sd.query_devices(device_index)["name"])
                 if device_name != profile["output_device_name"]:
                     raise ValueError("Output interface differs from approved AutoCal profile; disable it or use measured interface")
@@ -373,7 +393,7 @@ class StageController:
                 problems.append(f"{cue.title}: {e}")
         if total > MAX_CACHE_BYTES:
             problems.append("Total decoded audio exceeds 700 MiB cache: split the show or preload each next group; GO never decodes")
-        if self.output_device is None:
+        if not self._output_active():
             problems.append("Select and connect a 4-output sound interface")
         return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1), "count": len(project.cues)}
 
@@ -445,6 +465,8 @@ class StageController:
 
     def status(self) -> dict:
         with self.lock:
+            from .simulation import SimulationStream
+            simulated = isinstance(self.stream, SimulationStream)
             connected = self._output_active()
             if self.mixer:
                 for audio_event in self.mixer.drain_events():
@@ -459,6 +481,8 @@ class StageController:
                 "preparing": self.preparing,
                 "prepare_error": self.prepare_error,
                 "output_device": self.output_device,
+                "output_mode": "simulation" if simulated else "hardware",
+                "simulation": self.stream.status() if simulated else None,
                 "connected": connected,
                 "error": self.audio_error,
                 "xruns": self.xruns,
