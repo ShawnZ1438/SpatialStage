@@ -49,3 +49,16 @@
 .ac-review {border-top:1px solid #3d5568; margin-top:20px; padding-top:5px}
 .ac-actions {display:flex; gap:10px; flex-wrap:wrap; margin:10px 0}
 @media(max-width:860px){.autocal-grid{grid-template-columns:1fr}.autocal-config{border:0; border-bottom:1px solid #364658; padding:0 0 16px}.autocal-dialog{padding:14px}.ac-results-head{display:block}}
+:root .simulation-panel { margin:16px 0; padding:16px; border:1px solid #375e68; border-radius:12px; background:#12202c; color:#c5d1dc; }
+.simulation-panel p { font-size:12px; line-height:1.5; margin:10px 0; }
+.simulation-panel button,.simulation-panel a { margin:4px; }
+.simulation-view { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.simulation-view > div { flex:1; min-width:220px; }
+.simulation-view label { display:block; margin:8px; }
+.simulation-view input { max-width:150px; }
+#simChannels { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:12px; margin:12px 0; }
+#simChannels > div { padding:10px; border:1px solid #375e68; border-radius:8px; }
+#simChannels label { display:inline-block; margin-right:10px; font-size:12px; }
+#simDevice { display:inline-block; width:300px; max-width:100%; }
+#simCanvas { width:300px; height:auto; }
+@media(max-width:900px) { #simChannels { grid-template-columns:repeat(2,1fr); } }

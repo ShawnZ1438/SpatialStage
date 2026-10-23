@@ -165,6 +165,18 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         expect(page.locator('#autocalDialog')).to_be_visible()
         expect(page.locator('#acCancel')).to_be_disabled()
         page.locator('#autocalClose').click()
+        page.locator('#simConnect').click()
+        page.wait_for_function("state.status?.output_mode === 'simulation'")
+        assert page.evaluate('state.status.mixer.master_mute')
+        page.locator('#simRecord').click()
+        page.wait_for_function('state.status?.simulation?.recording === true')
+        page.locator('#simStopRecord').click()
+        page.wait_for_function('state.status?.simulation?.recording === false')
+        capture=httpx.get(base_url+'/api/simulation/capture.wav')
+        assert capture.status_code == 200 and capture.content[:4] == b'RIFF'
+        page.locator('#simX').fill('1.2')
+        page.locator('#simHead').fill('270')
+        print('PASS silent simulation, muted connection, bounded capture download, actor markers')
         screenshot.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshot), full_page=True)
         assert not errors, f'Browser exceptions: {errors}'

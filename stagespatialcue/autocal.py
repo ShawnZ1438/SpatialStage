@@ -246,7 +246,7 @@ class AutoCalManager:
 
     def config(self, project_id: str) -> AutoCalConfig:
         path = self._folder(project_id) / "config.json"
-        return AutoCalConfig.model_validate_json(path.read_text()) if path.is_file() else AutoCalConfig()
+        return AutoCalConfig.model_validate_json(path.read_text(encoding="utf-8")) if path.is_file() else AutoCalConfig()
 
     def save_config(self, project_id: str, config: AutoCalConfig) -> AutoCalConfig:
         self.store.get(project_id)
@@ -262,7 +262,7 @@ class AutoCalManager:
         path = self._folder(project_id) / f"{session_id}.json"
         if not path.is_file():
             raise FileNotFoundError("AutoCal session not found")
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def sessions(self, project_id: str) -> list[dict]:
         self.store.get(project_id)

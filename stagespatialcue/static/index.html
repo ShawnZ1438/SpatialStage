@@ -56,6 +56,23 @@
         <div class="transport-buttons"><button id="goButton" class="go" title="Space / normal transition">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" title="C / bypass waits and transition">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
       </section>
 
+      <details class="simulation-panel" open>
+        <summary>LOCAL SIMULATION / real engine + optional stereo monitor</summary>
+        <p>Approx. 6 m × 6 m stage; four IBO PS 15 (specifications unverified). Dashed square is a stage footprint, NOT room walls. Speaker positions are editable placeholders in Stage setup.</p>
+        <button id="simConnect">Connect silent simulation</button>
+        <button id="simRecord">Start new capture</button><button id="simStopRecord">Stop capture</button>
+        <a href="/api/simulation/capture.wav" download>Download 4-channel WAV</a>
+        <select id="simDevice" aria-label="Stereo monitor device"></select><button id="simListen">Connect stereo monitor</button><button id="simStopListen">Disconnect output</button><div id="simChannels"></div>
+        <p id="simStatus" role="status">Simulation disconnected. No hardware output.</p>
+        <div class="simulation-view"><canvas id="simCanvas" width="420" height="360" aria-label="Stage geometry, actor and live cue bearings"></canvas><div>
+          <label>Actor X (m) <input id="simX" type="number" value="0" min="-3" max="3" step="0.1"></label>
+          <label>Actor Y (m) <input id="simY" type="number" value="0" min="-3" max="3" step="0.1"></label>
+          <label>Head bearing (°) <input id="simHead" type="range" value="0" min="0" max="359"></label>
+          <p>0° front / +Y; 90° right; 270° left. Actor/head controls are visual markers only; the production VBAP reference stays at center.</p>
+          <p>CH1–4 meters show actual clipped engine output. Capture is post-master, post-routing at 48 kHz, capped at 60 s. Download before reconnecting.</p>
+          <p>Stereo monitor: real CH1–4 output summed at low gain to both L/R. Solo/mute/gain controls affect monitoring only, not meters, capture or show routing. This tests audible content, NOT surround perception or hardware routing. Indoor venue confirmed; room acoustics and onsite console leveling are outside this console.</p>
+        </div></div>
+      </details>
       <div class="work-area">
         <section class="cue-panel">
           <div class="panel-title"><div><span class="section-heading">CUE STACK</span><span id="cueCount" class="count">0 cues</span></div><div class="panel-actions"><label class="import-button">＋ Import folder<input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button">Files<input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
@@ -118,5 +135,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/static/save-queue.js"></script>
 <script src="/static/app.js" defer></script>
+<script src="/static/simulation.js" defer></script>
 </body>
 </html>

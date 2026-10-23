@@ -1,5 +1,9 @@
 # SpatialStage
 
+**Local Windows simulation console:** see [setup, scope and verified tests](docs/LOCAL_SIMULATION.md).
+It uses the production cue/mixing engine with silent output, optional low-level stereo monitoring,
+four-channel capture and editable stage visualization. Real four-output mode remains available.
+
 **Local-first four-output spatial cue control for actor-centered experimental theatre.**
 
 [中文说明](README.zh-CN.md) · [Architecture](docs/ARCHITECTURE.md) · [Calibration](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [Reliability / audit fixes](docs/RELIABILITY.md) · [Open decisions](docs/OPEN_QUESTIONS.md)
@@ -12,7 +16,7 @@ The performers are the listeners; there is no audience-facing coordinate system.
 
 | Capability | Current behavior |
 |---|---|
-| Direction | Clockwise 0.00–359.99° dial; 0=12 o'clock, 90=right, 180=bottom, 270=left |
+| Direction | Clockwise 0.00–359.99° dial (360° input normalizes to 0°); 0=12 o'clock, 90=right, 180=bottom, 270=left |
 | Spatialization | 2D adjacent-speaker constant-power VBAP at one fixed reference center |
 | Movement | Per-cue relative angular keyframes or angular ADSR, plus global rotation and show envelope |
 | Cue playback | Replace, layer or queue; per-cue gain, fades, transition, pre/post waits |
@@ -61,7 +65,7 @@ Mark the actual center and the 12-o'clock reference arrow on the floor. +X is ri
 | RR / rear-right | 135° | CH3 |
 | RL / rear-left | 225° | CH4 |
 
-These angles are a starting layout, not required exact positions. Move the speakers back from the acting circle as needed, point them toward its center, and enter measured coordinates. Exactly four unique output channels are required; adjacent speaker bearings must have gaps below 180°. 0.01° is **control resolution**, not promised perceptual accuracy.
+These angles are a starting layout, not required exact positions. Move the speakers back from the acting circle as needed, point them toward its center, and enter measured coordinates. Exactly four unique output channels are required; adjacent speaker bearings must be at least 0.01° apart (including across 0/360) and have gaps below 180°. 0.01° is **control resolution**, not promised perceptual accuracy.
 
 ```text
                        0° / +Y
@@ -125,7 +129,7 @@ Keyframe offsets are unwrapped: `0 → 360` is one clockwise revolution, not zer
 
 Edits autosave through a single-flight revision queue. A pending PUT never discards later edits; explicit Save waits for the newest revision. Failure keeps a dirty state and offers **Retry save**. The stage dialog closes only after acknowledgement. Project switching/export/transport preparation wait for pending saves. STOP/PANIC do not wait for saves and cancel a GO still waiting on save completion.
 
-Polling updates row state without replacing the whole cue table. NEXT is tracked by cue ID, not row number. A stopped/disconnected output stream latches mute and rejects GO. Reconnect and unmute deliberately; no automatic replay or catch-up occurs. Use **one browser editor at a time**: cross-tab/version conflict protection and transactional media-import edits are not implemented. Avoid changing cues during a media import/file replacement or project switch.
+Polling updates row state without replacing the whole cue table. NEXT is tracked by cue ID, not row number. A stopped/disconnected output stream latches mute and rejects GO. Reconnect and unmute deliberately; no automatic replay or catch-up occurs. Use **one browser editor at a time**: cross-tab/version conflict protection is not implemented. Within one editor, media import merges newly added cue IDs and media replacement updates only media fields, preserving concurrent edits and deletions. Project switching waits for the active media operation.
 
 ## 5. AutoCal: center / balanced / XLR / EQ off
 
@@ -146,10 +150,12 @@ python -m pip install -e '.[dev]'
 python -m pytest -q
 node --check stagespatialcue/static/app.js
 node --check stagespatialcue/static/save-queue.js
+node --check stagespatialcue/static/simulation.js
 node --test tests/js/*.test.cjs
 python -m ruff check stagespatialcue tests
 python -m playwright install chromium
 python scripts/browser_smoke.py --spawn
+python scripts/browser_audit_regressions.py
 ```
 
 The browser script creates isolated temporary projects, refuses an occupied operator port, imports silence and does not play audio. `--browser-path` selects an installed Chromium without hard-coded paths. `--inline-transport` is an explicit offline-DOM/local-API test mode for environments whose browser policy blocks HTTP navigation; CI uses normal HTTP. CI is configured for Python 3.11/3.12/3.13, Node syntax/regressions, correctness lint and browser interactions. CI results must be checked per commit, not inferred from its configuration.
