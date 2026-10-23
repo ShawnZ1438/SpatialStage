@@ -15,7 +15,7 @@ function harness() {
     return elements.get(id);
   };
   const context = vm.createContext({console:{error(){}}, setInterval(){}, setTimeout(){return 1;}, clearTimeout(){},
-    structuredClone, FormData, document:{getElementById:get,addEventListener(){},querySelector(){return null;}},
+    structuredClone, FormData, Blob, document:{getElementById:get,addEventListener(){},querySelector(){return null;}},
     window:{addEventListener(){}}, requests:[], responses:[], rejectNext:false});
   const queuePath = path.join(root, 'stagespatialcue/static/save-queue.js');
   if (fs.existsSync(queuePath)) vm.runInContext(fs.readFileSync(queuePath,'utf8'), context);
@@ -112,4 +112,50 @@ test('STOP cancels a GO waiting for a slow save; no deferred playback', async()=
   h.context.responses[0].resolve({updated_at:'late'});
   await go;
   assert.deepEqual(Array.from(h.run('sent')),['/audio/stop']);
+});
+
+
+test('delayed import merges new IDs without restoring edited or deleted cues', async()=>{
+  const h=harness();
+  h.run(`state.project.cues=[{id:'a',title:'before'},{id:'b',title:'delete'}];
+    renderEverything=()=>{}; refreshProjectsPreservingSelection=async()=>{};
+    saved=[]; saveNow=async()=>saved.push(structuredClone(state.project));
+    api=async()=>new Promise(resolve=>{uploadAck=resolve;});`);
+  const pending=h.run("uploadFiles([new Blob(['x'])])"); await tick();
+  h.run(`state.project.cues[0].title='during import'; state.project.cues.pop(); state.project.global_rotation_deg=77;
+    uploadAck({added:1,ignored:[],project:{cues:[{id:'a',title:'before'},{id:'b',title:'delete'},{id:'c',title:'new'}]}});`);
+  await pending;
+  assert.equal(h.run('state.project.cues[0].title'),'during import');
+  assert.equal(h.run('state.project.cues.map(c=>c.id).join()'),'a,c');
+  assert.equal(h.run('saved.at(-1).global_rotation_deg'),77);
+  assert.equal(h.run('saved.at(-1).cues[0].title'),'during import');
+});
+
+test('delayed media replacement keeps edits and never resurrects a deleted cue', async()=>{
+  for(const deleted of [false,true]) {
+    const h=harness();
+    h.run(`state.project.cues=[{id:'a',title:'before',gain_db:-6}]; state.selectedCueId='a';
+      renderEverything=()=>{}; saveNow=async()=>{};
+      api=async()=>new Promise(resolve=>{mediaAck=resolve;});`);
+    const pending=h.get('inspectorContent').listeners.change({target:{id:'replaceCueAudio',files:[new Blob(['x'])]}});
+    await tick();
+    h.run(deleted?`state.project.cues=[];`:`state.project.cues[0].title='after';state.project.cues[0].gain_db=-12;`);
+    h.run(`mediaAck({cue:{filename:'replacement.wav',media_relpath:'media/replacement.wav',duration_s:2,title:'stale',gain_db:0}})`);
+    await pending;
+    if(deleted)assert.equal(h.run('state.project.cues.length'),0);
+    else {
+      assert.equal(h.run('state.project.cues[0].title'),'after');
+      assert.equal(h.run('state.project.cues[0].gain_db'),-12);
+      assert.equal(h.run('state.project.cues[0].filename'),'replacement.wav');
+    }
+  }
+});
+
+test('360 bearing input is zero while angular envelope offsets remain unwrapped',async()=>{
+  const h=harness();h.run(`state.project.cues=[{id:'a',position_deg:270,modulation:[{time_s:0,offset_deg:0}]}];state.selectedCueId='a';renderRows=()=>{};renderInspector=()=>{};`);
+  const change=h.get('inspectorContent').listeners.change;
+  await change({target:{dataset:{cue:'position_deg'},value:'360'}});
+  assert.equal(h.run('state.project.cues[0].position_deg'),0);
+  await change({target:{dataset:{cue:'point_offset'},value:'360'}});
+  assert.equal(h.run('state.project.cues[0].modulation[0].offset_deg'),360);
 });

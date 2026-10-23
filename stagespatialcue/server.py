@@ -43,7 +43,7 @@ class GoPayload(ProjectPayload):
 
 
 class DevicePayload(BaseModel):
-    device_index: int
+    device_index: int = Field(ge=0)
 
 
 class MasterPayload(BaseModel):
@@ -175,6 +175,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
             title = match.group(1).replace("_", " ") if match else Path(display_name).stem.replace("_", " ")
             cue = Cue(title=title, filename=display_name, media_relpath=relative, duration_s=audio_duration(full))
             added.append(cue)
+        # Decoding/upload awaits may overlap ordinary saves. Re-read current fields.
+        project = store.get(project_id)
         project.cues.extend(sorted(added, key=filename_key))
         store.save(project)
         stage.sync(project)
@@ -204,9 +206,14 @@ def create_app(data_root: Path | None = None) -> FastAPI:
             finally:
                 temp.close()  # Windows cannot unlink an open upload file.
                 path.unlink(missing_ok=True)
+        duration = audio_duration(store.media_path(project_id, relative))
+        project = store.get(project_id)
+        cue = next((c for c in project.cues if c.id == cue_id), None)
+        if cue is None:
+            raise HTTPException(status_code=404, detail="Cue was deleted during media upload")
         cue.filename = display
         cue.media_relpath = relative
-        cue.duration_s = audio_duration(store.media_path(project_id, relative))
+        cue.duration_s = duration
         saved = store.save(project)
         stage.sync(saved)
         return {"cue": cue, "project": saved,

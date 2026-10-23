@@ -37,6 +37,7 @@ async function loadProjectList() {
   $('projectSelect').innerHTML = state.projects.map(p=>`<option value="${h(p.id)}">${h(p.name)}</option>`).join('');
 }
 async function switchProject(projectId) {
+  await state.mediaOperation;
   await saveNow();
   const incoming=await api('/projects/'+encodeURIComponent(projectId));
   const currentStatus=await api('/audio/status');
@@ -94,7 +95,7 @@ async function saveNow() {
 }
 $('retrySave').addEventListener('click',()=>saveNow().catch(report));
 window.addEventListener('beforeunload',e=>{
-  if(saveQueue.dirty || saveQueue.running){e.preventDefault();e.returnValue='';}
+  if(saveQueue.dirty || saveQueue.running || state.mediaOperation){e.preventDefault();e.returnValue='';}
 });
 async function loadDevices() {
   const old = state.outputChoice || $('outputSelect').value;
@@ -229,7 +230,7 @@ function renderInspector() {
     <div class="dial-wrap"><div id="spatialDial"></div><div class="dial-caption">Drag the pointer to place a virtual source · 0.01° precision</div></div>
     <div class="section-label">POSITION & LEVEL</div>
     <div class="field-row three">
-      ${inputField('Bearing (°)','position_deg',fmt(c.position_deg),{min:0,max:359.99})}
+      ${inputField('Bearing (°)','position_deg',fmt(c.position_deg),{min:0,max:360})}
       ${inputField('Cue gain (dB)','gain_db',fmt(c.gain_db),{min:-90,max:12})}
       <label>Media duration (s)<input type="number" readonly value="${fmt(c.duration_s,2)}" title="Detected from decoded media; not editable"></label>
     </div>
@@ -334,7 +335,7 @@ function dialSet(event) {
   const pt=svgLocal(svg,event);
   const angle=(Math.atan2(pt.x-148,125-pt.y)*180/Math.PI+360)%360;
   const cue=currentCue();if(!cue)return;
-  cue.position_deg=Number(Math.min(359.99,Math.round(angle*100)/100).toFixed(2));
+  cue.position_deg=Number((Math.round(angle*100)/100 % 360).toFixed(2));
   const input=document.querySelector('[data-cue="position_deg"]');if(input)input.value=fmt(cue.position_deg);
   renderDial();renderRows();
 }
@@ -367,24 +368,36 @@ async function action(path,payload={},message=''){
       if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
     }
     state.status=await post(path,payload);renderTransport();renderRows();renderMaster();if(message)notify(message);
+    return true;
   }
-  catch(e){report(e);}
+  catch(e){report(e);return false;}
+}
+async function mediaMutation(operation) {
+  while (state.mediaOperation) await state.mediaOperation;
+  let finish;
+  state.mediaOperation = new Promise(resolve=>{finish=resolve;});
+  try { await operation(); }
+  finally { state.mediaOperation=null; finish(); }
 }
 async function uploadFiles(files) {
   if(!files?.length || !state.project) return;
+  return mediaMutation(async()=>{
   const fd=new FormData();
   for(const file of files) fd.append('files',file,file.name);
   $('saveIndicator').textContent='Importing…';
   try {
     await saveNow();
+    const existingIds=new Set(state.project.cues.map(c=>c.id));
     const data=await api('/projects/'+state.project.id+'/upload',{method:'POST',body:fd});
-    state.project=data.project;
+    // Merge new immutable IDs only. Never restore deleted cues or stale editor fields.
+    state.project.cues.push(...data.project.cues.filter(c=>!existingIds.has(c.id) && !state.project.cues.some(v=>v.id===c.id)));
+    await saveNow();
     state.selectedCueId=state.selectedCueId ?? state.project.cues[0]?.id;
     await refreshProjectsPreservingSelection();
     renderEverything();
     notify(`Imported ${data.added} audio file(s)${data.ignored.length ? `; skipped ${data.ignored.length}`:''}.`);
-    $('saveIndicator').textContent='Saved locally';
-  } catch(e){report(e);$('saveIndicator').textContent='Import failed — check saved project';}
+  } catch(e){report(e);}
+  });
 }
 
 $('projectSelect').addEventListener('change',e=>switchProject(e.target.value).catch(report));
@@ -488,10 +501,14 @@ $('inspectorContent').addEventListener('change',async e=>{
   const c=currentCue();if(!c)return;
   if(e.target.id==='replaceCueAudio'){
     const file=e.target.files?.[0];if(!file)return;
-    try {await saveNow();const form=new FormData();form.append('file',file,file.name);
-      const r=await api(`/projects/${state.project.id}/cues/${c.id}/replace-media`,{method:'POST',body:form});
-      state.project=r.project;renderEverything();notify('Media swapped for fresh playback. Already scheduled audio remains unchanged.');
-    }catch(err){report(err);}return;
+    await mediaMutation(async()=>{
+      try {await saveNow();const form=new FormData();form.append('file',file,file.name);
+        const r=await api(`/projects/${state.project.id}/cues/${c.id}/replace-media`,{method:'POST',body:form});
+        const current=state.project.cues.find(v=>v.id===c.id);
+        if(current) for(const field of ['filename','media_relpath','duration_s']) current[field]=r.cue[field];
+        await saveNow();renderEverything();notify('Media swapped for fresh playback. Already scheduled audio remains unchanged.');
+      }catch(err){report(err);}
+    });return;
   }
   const key=e.target.dataset.cue;if(!key)return;
   if(key.startsWith('point_')){
@@ -503,7 +520,7 @@ $('inspectorContent').addEventListener('change',async e=>{
   } else if(key.startsWith('adsr_')) {
     const field=key.slice(5), val=num(e.target.value);
     c.direction_adsr[field]=field.endsWith('_s')?Math.max(0,val):Math.max(-2160,Math.min(2160,val));
-  } else if(key==='position_deg')c[key]=Math.max(0,Math.min(359.99,num(e.target.value)));
+  } else if(key==='position_deg')c[key]=Math.max(0,Math.min(360,num(e.target.value))) % 360;
   else if(key==='title')c.title=e.target.value.trim()||'Untitled cue';
   else if(e.target.type==='number')c[key]=Math.max(key==='gain_db'?-90:0,num(e.target.value));
   else c[key]=e.target.value;

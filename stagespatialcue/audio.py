@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import RLock
 from uuid import uuid4
+from functools import wraps
 
 import numpy as np
 import soundfile as sf
@@ -23,6 +24,25 @@ from .storage import ProjectStore
 
 MAX_CLIP_SECONDS = 30 * 60  # pre-decoded prototype; no long-file streaming
 MAX_CACHE_BYTES = 700 * 1024 * 1024
+
+
+def controlled_connection(method):
+    """Turn driver failures into actionable errors with no live output left behind."""
+    @wraps(method)
+    def connect(self, *args, **kwargs):
+        with self.lock:
+            if self.measurement_active:
+                raise ValueError("AutoCal measurement active; wait before connecting output")
+            try:
+                return method(self, *args, **kwargs)
+            except Exception as exc:
+                try:
+                    self.disconnect()
+                except Exception:
+                    pass  # disconnect's finally clears references even if driver close fails
+                self.audio_error = f"Output connection failed: {exc}. Select an available device and reconnect."
+                raise ValueError(self.audio_error) from exc
+    return connect
 
 
 def decode_audio(path: Path, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
@@ -262,6 +282,7 @@ class StageController:
         recommendation = profile["recommendations"]
         self.mixer.set_calibration(recommendation["channel_gain_db"], recommendation["channel_delay_ms"])
 
+    @controlled_connection
     def connect_simulation(self, device_index: int | None = None) -> dict:
         from .simulation import SimulationStream, StereoMonitorStream
         with self.lock:
@@ -282,6 +303,7 @@ class StageController:
                 raise
             return self.status()
 
+    @controlled_connection
     def connect(self, device_index: int) -> dict:
         import sounddevice as sd
         with self.lock:

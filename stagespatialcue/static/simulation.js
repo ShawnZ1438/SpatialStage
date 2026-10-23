@@ -14,8 +14,7 @@ $('simListen').onclick = async () => {
     }
     document.querySelectorAll('.simGain').forEach(e=>e.value=1);
     document.querySelectorAll('.simMute,.simSolo').forEach(e=>e.checked=false);
-    await action('/simulation/monitor',{device_index:Number(select.value)});
-    notify('Stereo monitor connected, MAIN MUTE remains on. Unmute deliberately, then GO.');
+    if(await action('/simulation/monitor',{device_index:Number(select.value)}))notify('Stereo monitor connected, MAIN MUTE remains on. Unmute deliberately, then GO.');
   } catch(e) { report(e); }
 };
 $('simStopListen').onclick=()=>action('/audio/disconnect');

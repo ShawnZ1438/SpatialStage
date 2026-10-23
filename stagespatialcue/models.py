@@ -19,10 +19,15 @@ class Speaker(BaseModel):
     x = distance*sin(angle), y = distance*cos(angle).
     """
     name: str
-    angle_deg: float = Field(ge=0, lt=360)
+    angle_deg: float = Field(ge=0, le=360)
     distance_m: float = Field(gt=0, le=100)
     output_channel: int = Field(ge=1, le=4)
     trim_db: float = Field(default=0, ge=-30, le=12)
+
+    @field_validator('angle_deg')
+    @classmethod
+    def canonical_angle(cls, value):
+        return value % 360
 
 
 DEFAULT_SPEAKERS = [
@@ -60,7 +65,7 @@ class Cue(BaseModel):
     media_relpath: str = ""
     duration_s: float = Field(default=0, ge=0)
     color: str = "cyan"
-    position_deg: float = Field(default=0, ge=0, lt=360)
+    position_deg: float = Field(default=0, ge=0, le=360)
     direction_mode: Literal["keyframes", "adsr"] = "keyframes"
     modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])
     direction_adsr: DirectionADSR = Field(default_factory=DirectionADSR)
@@ -73,6 +78,11 @@ class Cue(BaseModel):
     post_wait_s: float = Field(default=0, ge=0, le=3600)
     start_mode: Literal["replace", "layer", "queue"] = "replace"
     continue_mode: Literal["manual", "auto_continue", "auto_follow"] = "manual"
+
+    @field_validator('position_deg')
+    @classmethod
+    def canonical_bearing(cls, value):
+        return value % 360
 
     @field_validator("modulation")
     @classmethod
@@ -117,6 +127,8 @@ class Project(BaseModel):
             raise ValueError("Speaker output channels must be a unique 1/2/3/4 permutation")
         angles = sorted(s.angle_deg for s in self.speakers)
         gaps = [(angles[(i + 1) % 4] - angles[i]) % 360 for i in range(4)]
+        if min(gaps) < 0.01 - 1e-9:
+            raise ValueError("Speaker bearings must be separated by at least 0.01 degrees, including across 0/360")
         if max(gaps) >= 180:
             raise ValueError("Speakers must surround the stage center (gap < 180°)")
         ids = [c.id for c in self.cues]

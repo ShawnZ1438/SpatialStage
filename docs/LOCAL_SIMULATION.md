@@ -1,7 +1,7 @@
 # Local functional console (Shawn-PC)
 
 Implemented on local branch `local/simulation-platform` from verified remote main
-`b61f81537dbfbcc61e5465c0eac3d694afba0f06`. No push or deployment.
+`b61f81537dbfbcc61e5465c0eac3d694afba0f06`. This records the initial local-only build; see [audit fixes](AUDIT_FIXES.md) for the subsequent authorized publication and validation scope.
 
 ## Start
 
@@ -66,7 +66,9 @@ Existing unsupported features remain unsupported: ZIP restore/import (audio impo
 is supported), true pause/resume, loop/trim editor, stereo-width preservation,
 MIDI/OSC, multi-window conflict resolution and automatic room EQ.
 
-## Verified locally, 2026-10-23
+## Initial simulator verification, 2026-10-23
+
+The subsequent audit repair validation is recorded in [AUDIT_FIXES.md](AUDIT_FIXES.md).
 
 - Python: **65 passed**, including new capture byte equality, cap/empty/stop rules,
   API GO/end-of-list/repeated STOP/live save, monitor gain/solo stem isolation,
