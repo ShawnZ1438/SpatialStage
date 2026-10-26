@@ -7,7 +7,7 @@ Implemented on local branch `local/simulation-platform` from verified remote mai
 
 Double-click **`Start Simulation (Windows).cmd`** (or run `./run_simulation.ps1`). On first run it
 creates `.venv` with Python 3.11–3.13 and installs dependencies; it then opens
-http://127.0.0.1:8765 in Performance mode. Data lives in `SpatialStage-test-data`,
+http://127.0.0.1:8765 with the full interface (Edit | Performance switch at the top right). Data lives in `SpatialStage-test-data`,
 separate from shows under the user profile, and the repository show (`show/audio`) is
 imported there as *Show audio (repository)*. If an older SpatialStage engine already holds
 port 8765, the launcher shows its PID/command and asks before stopping it.

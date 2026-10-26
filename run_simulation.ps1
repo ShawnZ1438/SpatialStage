@@ -5,7 +5,7 @@ param([switch]$InstallOnly)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $health = 'http://127.0.0.1:8765/api/health'
-$url = 'http://127.0.0.1:8765/?mode=perform'
+$url = 'http://127.0.0.1:8765/'
 
 function Get-Health {
   try { return Invoke-RestMethod $health -TimeoutSec 1 } catch { return $null }

@@ -4,7 +4,8 @@
 'use strict';
 const perf = {follow:true, lastNext:undefined, tool:'position', selected:0, dragging:-1,
   locked:false, previewT:null, targetSig:'', statusAt:0, frame:0};
-const PERF_MODE_KEY = 'spatialstage.mode', PERF_LOCK_KEY = 'spatialstage.performLock';
+const PERF_MODE_KEY = 'spatialstage.mode', PERF_LOCK_KEY = 'spatialstage.performLock',
+  PERF_SIM_KEY = 'spatialstage.simPanel';
 
 function perfStorage(key, value) {
   try {
@@ -17,18 +18,15 @@ const performing = () => document.body.classList.contains('performing');
 const perfCueIndex = id => state.project?.cues.findIndex(c => c.id === id) ?? -1;
 const perfCueNumber = id => String(perfCueIndex(id) + 1).padStart(3, '0');
 
+// Both modes share the project, transport, sidebar and simulation panel; only
+// the work area changes (cue table + inspector vs stage map + target panel).
 function setPerformMode(on) {
   document.body.classList.toggle('performing', on);
-  $('modeToggle').textContent = on ? '✎ Edit mode' : '▶ Performance mode';
-  $('modeToggle').setAttribute('aria-pressed', String(on));
+  $('modeEdit').setAttribute('aria-pressed', String(!on));
+  $('modePerform').setAttribute('aria-pressed', String(on));
   perfStorage(PERF_MODE_KEY, on ? 'perform' : 'edit');
   perf.targetSig = '';
-  if (on) {
-    perf.follow = true; perf.lastNext = undefined;
-    const sim = document.querySelector('.simulation-panel');
-    if (sim) sim.open = false;  // collapsed above the map; expand to connect a monitor
-    renderPerform();
-  }
+  if (on) { perf.follow = true; perf.lastNext = undefined; renderPerform(); }
   else if (state.project) { renderRows(); renderInspector(); }
 }
 
@@ -180,7 +178,8 @@ function renderPerformTarget(force = false) {
   const duration = Math.max(cue.duration_s || 0, isPath ? cue.path.at(-1).time_s : 0);
   host.innerHTML = `
     <div class="perf-target-head"><span class="eyebrow">${perf.follow ? 'TARGET · FOLLOWING NEXT' : 'TARGET · MANUAL SELECTION'}</span>
-      ${perf.follow ? '' : '<button data-perf="follow" class="secondary">↺ Follow NEXT</button>'}</div>
+      <span>${perf.follow ? '' : '<button data-perf="follow" class="secondary">↺ Follow NEXT</button>'}
+      <button data-perf="edit" class="secondary" title="Open this cue in the Edit inspector (fades, start mode, waits, media)">✎ Edit cue</button></span></div>
     <h2>${perfCueNumber(cue.id)} · ${h(cue.title)}</h2>
     <div class="small-muted">${cue.duration_s ? fmt(cue.duration_s, 1) + ' s' : 'duration unknown'} · ${h(cue.start_mode.toUpperCase())} · ${isPath ? `stage-map ${cue.path.length > 1 ? `path, ${cue.path.length} points` : 'position'}` : `angle mode ${fmt(cue.position_deg, 1)}°`}</div>
     <div class="perf-tools" role="group" aria-label="Map tool">
@@ -264,6 +263,7 @@ $('performTarget').addEventListener('click', e => {
   if (!b || !cue) return;
   const what = b.dataset.perf;
   if (what === 'follow') { perf.follow = true; perf.lastNext = undefined; perf.targetSig = ''; renderPerform(); return; }
+  if (what === 'edit') { setPerformMode(false); return; }  // same selected cue opens in the inspector
   if (what === 'recall') {
     if (perfRecall(cue)) { perf.selected = 0; perf.previewT = null; perfChanged(`Recalled stored position/path for cue ${perfCueNumber(cue.id)}.`); }
     return;
@@ -386,9 +386,21 @@ function perfEndDrag() {
 }
 $('performMap').addEventListener('pointerup', perfEndDrag);
 $('performMap').addEventListener('pointercancel', perfEndDrag);
-$('modeToggle').addEventListener('click', () => setPerformMode(!performing()));
+$('modeEdit').addEventListener('click', () => setPerformMode(false));
+$('modePerform').addEventListener('click', () => setPerformMode(true));
+// The simulation panel keeps whatever open/closed state the operator chose.
+const simPanel = document.querySelector('.simulation-panel');
+if (simPanel) {
+  const saved = perfStorage(PERF_SIM_KEY);
+  if (saved) simPanel.open = saved === 'open';
+  simPanel.addEventListener('toggle', () => perfStorage(PERF_SIM_KEY, simPanel.open ? 'open' : 'closed'));
+}
 
 perf.locked = perfStorage(PERF_LOCK_KEY) === '1';
-setPerformMode((new URLSearchParams(location.search).get('mode') || perfStorage(PERF_MODE_KEY)) === 'perform');
+// ?mode=perform|edit picks the mode once; the remembered choice applies afterwards,
+// and the parameter is removed so a reload never forces a mode.
+const urlMode = new URLSearchParams(location.search).get('mode');
+setPerformMode((urlMode || perfStorage(PERF_MODE_KEY)) === 'perform');
+if (urlMode) history.replaceState(null, '', location.pathname);
 perf.frame = requestAnimationFrame(perfAnimate);
 globalThis.SpatialPerform = {render: renderPerform, open: () => setPerformMode(true)};

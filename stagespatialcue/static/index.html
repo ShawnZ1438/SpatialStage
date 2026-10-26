@@ -10,7 +10,7 @@
 <div class="app">
   <header class="topbar">
     <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small>SPATIAL SHOW CONTROL / MAC LOCAL</small></div></div>
-    <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><button id="modeToggle" class="mode-toggle" aria-pressed="false" title="Switch between cue editing and the show-running stage map">▶ Performance mode</button><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
+    <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><div class="mode-switch" role="group" aria-label="Interface mode"><button id="modeEdit" aria-pressed="true" title="Cue list, inspector, import and all settings">✎ Edit</button><button id="modePerform" aria-pressed="false" title="Stage map for placing the next cue; transport stays above">▶ Performance</button></div><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
   </header>
 
   <div class="shell">
@@ -49,7 +49,7 @@
     </aside>
 
     <main class="main">
-      <div class="workspace-header"><div><div class="eyebrow">SHOW CONTROL / LIVE OPERATOR</div><h1 id="showName">Untitled show</h1><button id="renameProject" class="linklike">✎ Rename show</button><div class="help-line">Space = FADE GO · C = CUT GO · S = STOP · Alt+↓ = SKIP · Shift+Esc = PANIC</div></div><button id="preflight" class="secondary">✓ Preflight check</button></div>
+      <div class="workspace-header"><div><div class="eyebrow">SHOW CONTROL / LIVE OPERATOR</div><h1 id="showName">Untitled show</h1><button id="renameProject" class="linklike">✎ Rename show</button><div class="help-line">Space = FADE GO · C = CUT GO · S = STOP · Alt/⌥+↓ = SKIP · Shift+Esc = PANIC</div></div><button id="preflight" class="secondary">✓ Preflight check</button></div>
 
       <section class="transport">
         <div class="now-next"><span class="section-heading">NEXT TO FIRE</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted">Arm and connect a 4-output interface</div></div>

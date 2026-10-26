@@ -45,6 +45,9 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Local server and browser interactions (no audio device)
         run: python scripts/browser_smoke.py --spawn --screenshot test-output/browser.png
+      - run: python -m playwright install --with-deps webkit
+      - name: Same browser flow in WebKit (Safari engine, for the Mac show machine)
+        run: python scripts/browser_smoke.py --spawn --engine webkit --screenshot test-output/browser-webkit.png
       - name: Audit boundary and media-race browser regressions (guarded audio)
         run: python scripts/browser_audit_regressions.py
       - uses: actions/upload-artifact@v4

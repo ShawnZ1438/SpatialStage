@@ -36,14 +36,14 @@ def silent_wave() -> bytes:
     return stream.getvalue()
 
 
-def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_transport=False):
+def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_transport=False, engine='chromium'):
     with sync_playwright() as playwright:
         kwargs = {'headless': True}
         if browser_path:
             kwargs['executable_path'] = browser_path
-        print('Launching Chromium', flush=True)
-        browser = playwright.chromium.launch(**kwargs)
-        print('Chromium ready', flush=True)
+        print(f'Launching {engine}', flush=True)
+        browser = getattr(playwright, engine).launch(**kwargs)  # webkit = Safari's engine
+        print(f'{engine} ready', flush=True)
         page = browser.new_page(viewport={'width': 1570, 'height': 950})
         page.set_default_timeout(10000)
         errors = []
@@ -184,11 +184,14 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
             cues = page.request.get(base_url + '/api/projects/' + pid).json()['cues']
             return next(c for c in cues if c['id'] == nid)
         def map_click(fx, fy):
-            box = page.locator('#performMap svg').bounding_box()
+            # The SVG is re-rendered on every status poll: scroll its stable host,
+            # then read the current SVG rectangle in one step.
+            page.locator('#performMap').scroll_into_view_if_needed()
+            box = page.evaluate("(() => { const r = document.querySelector('#performMap svg').getBoundingClientRect(); return {x:r.x, y:r.y, width:r.width, height:r.height}; })()")
             page.mouse.click(box['x'] + box['width']*fx, box['y'] + box['height']*fy)
         def settled():
             page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
-        page.locator('#modeToggle').click()
+        page.locator('#modePerform').click()
         expect(page.locator('#performView')).to_be_visible()
         expect(page.locator('.cue-panel')).to_be_hidden()
         page.wait_for_function("state.selectedCueId === state.status.next_cue_id")
@@ -217,11 +220,21 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         expect(page.locator('#performView')).to_be_visible()
         expect(page.locator('#perfLock')).to_be_checked()
         page.locator('#perfLock').uncheck()
-        page.locator('#modeToggle').click()
+        page.locator('#performCues [data-cue-id]').filter(has_text='Car').click()
+        page.locator('[data-perf="edit"]').click()  # same cue opens in the Edit inspector
         expect(page.locator('.cue-panel')).to_be_visible()
+        expect(page.locator('#inspectTitle')).to_have_text(page.evaluate('currentCue().title'))
         page.locator(f"#cueRows tr[data-id='{cue['id']}']").click()
         expect(page.locator('#openPerform')).to_be_visible()
-        print('PASS performance map: convert, add path point, store/reset/recall, lock persists, inspector mini-map')
+        if not inline_transport:  # the remembered mode wins after ?mode= is used once
+            page.goto(base_url + '/?mode=perform', wait_until='domcontentloaded')
+            expect(page.locator('#performView')).to_be_visible()
+            assert '?' not in page.url
+            page.locator('#modeEdit').click()
+            page.reload(wait_until='domcontentloaded')
+            expect(page.locator('.cue-panel')).to_be_visible()
+            expect(page.locator('#modeEdit')).to_have_attribute('aria-pressed', 'true')
+        print('PASS performance map: convert, add path point, store/reset/recall, lock persists, Edit-cue jump, mode switch memory')
         screenshot.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshot), full_page=True)
         assert not errors, f'Browser exceptions: {errors}'
@@ -236,6 +249,8 @@ def main():
                         help='Start an isolated localhost server (default). --no-spawn uses an existing test server.')
     parser.add_argument('--inline-transport', action='store_true', help='Offline DOM + local API bridge for network-restricted runners; CI uses normal HTTP navigation')
     parser.add_argument('--browser-path', default=os.environ.get('PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'))
+    parser.add_argument('--engine', choices=['chromium', 'webkit', 'firefox'], default='chromium',
+                        help='webkit approximates Safari (python -m playwright install webkit)')
     parser.add_argument('--screenshot', type=Path, default=Path('test-output/browser.png'))
     args = parser.parse_args()
     process = None
@@ -266,7 +281,7 @@ def main():
                         time.sleep(.1)
                 else:
                     raise RuntimeError('Test server startup timed out')
-            exercise(args.base_url, args.browser_path, args.screenshot, args.inline_transport)
+            exercise(args.base_url, args.browser_path, args.screenshot, args.inline_transport, args.engine)
         finally:
             if process:
                 process.terminate()

@@ -11,7 +11,7 @@
 | B. 不接调音台的排练 / 调 Cue | Mac（或 Windows 电脑） | 耳机 | 第 3–5 节 |
 | C. 现场部署与演出 | 场地 | M32R、4 只音箱、（可选）测量话筒 | 第 6–7 节 |
 
-开发者的自动化测试在第 8 节，故障排查在第 9 节。
+开发者的自动化测试在第 8 节，故障排查在第 9 节，Mac 上特有的问题在第 10 节。
 
 > **安全原则**：软件里的 MAIN MUTE 和 PANIC 只能停掉软件输出，收不回调音台、功放里已经缓冲的声音。现场必须保留一个**物理静音手段**（调音台 Mute Group 或功放电源），并且有专人负责。所有测试都从低音量开始。
 
@@ -93,7 +93,7 @@ ls show/audio | wc -l
 首次启动会发生这些事：
 1. 自动创建 `.venv` 并安装依赖，需要联网，大约 1–3 分钟。之后再启动不需要联网。
 2. 把 `show/audio/` 导入成项目 **Show audio (repository)**（15 个 Cue），音箱布局取自 `show/stage.json`（6 m × 6 m 四角）。终端会显示 `Repository show: Show audio (repository) (15 cues)`。
-3. 浏览器自动打开 `http://127.0.0.1:8765/?mode=perform`（演出模式）。
+3. 浏览器自动打开 `http://127.0.0.1:8765`，显示完整界面。右上角的 **Edit | Performance** 开关随时切换编辑模式和演出模式，软件会记住上次的选择。
 
 **看到这些就说明启动成功：**
 - 终端显示 `SpatialStage running at http://127.0.0.1:8765`，窗口保持打开。
@@ -187,7 +187,7 @@ ls ~/.spatialstage/projects
 
 ## 4. 编排 Cue（编辑模式）
 
-点右上角 **✎ Edit mode** 进入编辑模式；点 **▶ Performance mode** 回到演出模式。
+右上角的 **Edit | Performance** 开关随时切换。两种模式共用同一个项目、顶部播放控制、左侧边栏和 LOCAL SIMULATION 面板，只是中间的工作区不同：编辑模式是 Cue 列表 + Inspector，演出模式是舞台平面图 + 目标 Cue 面板。在演出模式里点 **✎ Edit cue**，会直接跳到编辑模式并打开同一个 Cue。
 
 ### 4.1 项目与素材
 
@@ -237,7 +237,7 @@ ls ~/.spatialstage/projects
 
 ## 5. 演出模式：拖动位置、画路径、Store / Recall / Reset
 
-点 **▶ Performance mode**。左边是以演员为中心、单位为米的舞台平面图，右边是目标 Cue 面板和 Cue 列表。
+在右上角开关里点 **▶ Performance**。左边是以演员为中心、单位为米的舞台平面图，右边是目标 Cue 面板和 Cue 列表。LOCAL SIMULATION 面板展开时，平面图会排在它下面，需要向下滚动；滚动时顶部的 GO / STOP / PANIC 播放条和左侧边栏始终固定可见。收起面板即可让平面图回到一屏内（展开/收起状态会被记住）。
 
 **目标 Cue**
 - 默认编辑 **NEXT**（下一个要播放的 Cue），每次 GO 后自动跟到新的 NEXT。
@@ -372,7 +372,7 @@ Mac ──USB──▶ M32R USB 声卡（Card 1–4）
 | FADE GO | **空格** | 播放 NEXT（以及自动接续的 Cue），遵守开始方式、Pre-wait 和交叉淡化 |
 | CUT GO | **C** | 立刻播放 NEXT，忽略等待和交叉淡化（5 ms 去咔哒），只播这一个 |
 | STOP | **S** | 40 ms 淡出停止所有声音，并取消等待中的 Cue |
-| SKIP | **Alt + ↓** | 只把 NEXT 往后挪一个，不影响正在播放的声音 |
+| SKIP | **Option（⌥）+ ↓** | 只把 NEXT 往后挪一个，不影响正在播放的声音 |
 | PANIC | **Shift + Esc** | 立刻清空所有声音并打开 MAIN MUTE（在输入框里也有效） |
 | MAIN MUTE | 点按钮 | 15 ms 渐变静音；**时钟继续走，不是暂停** |
 
@@ -451,7 +451,34 @@ python scripts/browser_audit_regressions.py
 
 ---
 
-## 10. 已知限制
+## 10. 在 Mac 上运行会遇到的问题（及预防）
+
+以下问题在 Windows 上测试时遇不到，但在 Mac 上很可能碰到。界面本身已经在 WebKit（Safari 的内核）里跑过完整的浏览器回归测试，没有报错；下面这些主要是系统层面的问题。
+
+| # | 问题 | 表现 | 预防 / 解决 |
+|---|---|---|---|
+| 1 | **新 USB 设备需要授权**（macOS 13+ 的 Apple Silicon 笔记本） | 第一次插 M32R 时弹出「允许配件连接？」；如果点了不允许或没注意到，设备列表里就看不到 M32R | 点「允许」。错过了就重新插拔 USB；也可以在 系统设置 → 隐私与安全性 → 允许配件连接 里检查 |
+| 2 | **系统声音从音箱出来** | 提示音、通知声从前左、前右音箱放出来 | 2.4：系统输出和声音效果都选 Mac 扬声器 |
+| 3 | **采样率不一致** | 连接失败，或者 macOS 在后台做变频 | 调音台和「音频 MIDI 设置」都设 48 kHz |
+| 4 | **M32R 的软件音量被调低** | 声音整体偏小 | 「音频 MIDI 设置」里 M32R 输出如果有音量滑块，拉到最大 |
+| 5 | **麦克风权限** | AutoCal 录到的是静音，报 *Very weak microphone signal* | 隐私与安全性 → 麦克风 → 打开「终端」；第一次测量时弹窗请点允许 |
+| 6 | **文件夹访问弹窗** | 仓库放在「文稿」或「桌面」时，终端会弹窗要求访问权限 | 点允许；建议直接把仓库放在用户目录 `~/SpatialStage` |
+| 7 | **iCloud 云盘优化存储** | 仓库放在开了 iCloud 同步的「文稿/桌面」里，音频可能被移到云端，播放前要先下载，Preflight 变慢或失败 | 放在 `~/SpatialStage`（不在 iCloud 同步范围内） |
+| 8 | **Gatekeeper 拦截** | 双击启动文件提示「身份不明的开发者」 | 右键 → 打开（一次）；用 `git clone` 获取代码一般不会出现 |
+| 9 | **找不到 Python** | 提示 `Install supported Python first` | 启动器会自动查找 `/opt/homebrew/bin/python3.12`、`/usr/local/bin/python3.12` 和 python.org 的安装路径；还是找不到就执行 `brew install python@3.12` |
+| 10 | **Rosetta / Intel 版 Homebrew** | 能运行，但 CPU 占用高、容易爆音 | Apple Silicon 上应该用 `/opt/homebrew` 下的原生 Homebrew。检查命令：`.venv/bin/python -c "import platform; print(platform.machine())"`，结果应为 `arm64` |
+| 11 | **演出时第一次播放某个 Cue 时爆音** | 引擎在后台解码下一个 Cue 时会占用 CPU（44.1 kHz 的文件还要变频），可能导致 XRUNS 增加 | **开场前一定要点 ✓ Preflight check**，把所有 Cue 预先解码进缓存（15 个 Cue 约 394 MiB，在 700 MiB 上限内），演出中就不会再解码 |
+| 12 | **端口被旧引擎占用** | 浏览器打开的是旧版本界面 | 新的 `run_mac.command` 会检测并询问是否停掉旧引擎（按 `y`）；也可以手动查：`lsof -nP -iTCP:8765 -sTCP:LISTEN` |
+| 13 | **重插 USB 后设备不见了 / 选错设备** | macOS 重新枚举设备后，设备编号会变 | 插好后点 **↻** 刷新，再重新选设备并 Connect audio |
+| 14 | **蓝牙耳机做虚拟监听** | 延迟大；AirPods 一旦被当作麦克风使用就会降为低音质 | 排练监听用有线耳机或 USB 耳机 |
+| 15 | **Mac 睡眠 / 锁屏** | 演出中屏幕变黑、进入锁屏 | 启动器已用 caffeinate 阻止睡眠；另外接上电源，关闭屏保 |
+| 16 | **快捷键差异** | Mac 键盘上没有 Alt 键 | SKIP 是 **Option（⌥）+ ↓**；PANIC 是 **Shift + Esc** |
+| 17 | **第一次启动没有网络** | 依赖安装失败 | 第一次启动一定要在有网络的地方完成；之后可以离线运行 |
+| 18 | **Safari 版本太旧** | 页面功能异常 | 需要 Safari 15.4 或更新（macOS 12.3+）；也可以用 Chrome 打开 `http://127.0.0.1:8765` |
+
+---
+
+## 11. 已知限制
 
 - 排练原型：Python 音频回调没有硬实时保证，正式演出前一定要做长时间连排。
 - 没有真正的暂停/继续，MAIN MUTE 不是暂停。

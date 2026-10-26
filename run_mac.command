@@ -2,16 +2,32 @@
 set -eu
 cd "$(dirname "$0")"
 URL="${SPATIALSTAGE_URL:-http://127.0.0.1:8765/}"
-# A second double-click must not start a second engine on the operator port.
-if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
-  echo "SpatialStage is already running. Opening $URL"
-  open "$URL"
-  exit 0
+# A second double-click must not start a second engine on the operator port;
+# an engine from an older checkout/version is offered for shutdown instead.
+HEALTH="$(curl -fsS http://127.0.0.1:8765/api/health 2>/dev/null || true)"
+if [ -n "$HEALTH" ]; then
+  if [[ "$HEALTH" == *virtual-monitor* ]]; then
+    echo "SpatialStage is already running. Opening $URL"
+    open "$URL"
+    exit 0
+  fi
+  OWNER="$(lsof -nP -iTCP:8765 -sTCP:LISTEN -t 2>/dev/null | head -1)"
+  echo "An OLDER SpatialStage engine is using port 8765 (PID ${OWNER:-unknown}):"
+  [ -n "$OWNER" ] && ps -o command= -p "$OWNER"
+  echo '旧版本 SpatialStage 正在占用 8765 端口。'
+  read -r "ANSWER?Stop it and start this version? 停止旧版本并启动当前版本？ [y/N] "
+  if [[ "$ANSWER" != [yY]* || -z "$OWNER" ]]; then
+    exit 1
+  fi
+  kill "$OWNER"
+  sleep 1
 fi
 if [ ! -d .venv ]; then
   PYTHON="${SPATIALSTAGE_PYTHON:-}"
   if [ -z "$PYTHON" ]; then
-    for candidate in python3.12 python3.13 python3.11 python3; do
+    # Explicit paths cover Homebrew/python.org installs when PATH is not set up yet.
+    for candidate in python3.12 python3.13 python3.11 python3 /opt/homebrew/bin/python3.12 \
+        /usr/local/bin/python3.12 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3; do
       if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; assert (3,11) <= sys.version_info[:2] < (3,14)' 2>/dev/null; then
         PYTHON="$candidate"
         break

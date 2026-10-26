@@ -16,7 +16,7 @@ cd SpatialStage
 ./run_mac.command
 ```
 
-**双击启动：** 在 Finder 里双击项目文件夹中的 **`Start SpatialStage.command`**。首次运行会自动安装依赖；引擎运行期间用 `caffeinate` 防止 Mac 睡眠；浏览器直接打开演出模式（Performance mode）。已经在运行时再双击，只会重新打开浏览器。演出期间保持终端窗口打开，关闭窗口会停止音频引擎。如果文件夹是 ZIP 下载的、macOS 拦截了这个文件，第一次右键 → 打开即可。
+**双击启动：** 在 Finder 里双击项目文件夹中的 **`Start SpatialStage.command`**。首次运行会自动安装依赖；引擎运行期间用 `caffeinate` 防止 Mac 睡眠；浏览器打开完整界面，右上角 **Edit | Performance** 随时切换（记住上次的选择）。已经在运行时再双击，只会重新打开浏览器。演出期间保持终端窗口打开，关闭窗口会停止音频引擎。如果文件夹是 ZIP 下载的、macOS 拦截了这个文件，第一次右键 → 打开即可。
 
 **仓库里的演出音频：** 启动器会把 `show/audio/` 里的所有音频导入名为 *Show audio (repository)* 的项目，音箱布局取自 `show/stage.json`（6 m × 6 m 四角）。音频只复制一次到数据目录；之后往 `show/audio/` 加新文件（比如 `git pull` 之后），下次启动会追加到列表末尾。你在软件里删除、排序、改位置的 Cue 不会被覆盖。仓库里的文件是 FLAC 无损格式；高于 48 kHz 的文件已降到引擎使用的 48 kHz。
 
@@ -77,7 +77,7 @@ WAV/AIFF/FLAC/OGG 由 libsndfile 解码；不支持的格式可由已安装 FFmp
 | 空格 / FADE GO | 播放 NEXT 及自动链，遵守 start mode、pre-wait、transition |
 | C / CUT GO | 立即触发一条 NEXT，忽略 pre-wait/queue/layer，5 ms 去点击替换，不继续整条自动链 |
 | S / STOP | 40 ms 软停止，并取消待播；重复停止不得抬高停止包络或延长原结束点 |
-| Alt+↓ / SKIP | 只推进 NEXT，不停止已经播放的音频 |
+| Alt（Mac 上是 Option ⌥）+↓ / SKIP | 只推进 NEXT，不停止已经播放的音频 |
 | MAIN MUTE | 最终输出约 15 ms 渐变静音/解除静音；**音频和全局时钟仍在走，不是暂停** |
 | Shift+Esc / PANIC | 软件立即清空 voice、延迟缓冲并静音，同时请求取消 AutoCal；输入框/对话框中也可触发 |
 
@@ -99,7 +99,7 @@ ARM/自动链推进时后台预热下一组 PCM。**冷缓存 GO 会明确拒绝
 
 ## 6. 演出模式与舞台平面图
 
-顶部 **▶ Performance mode**（或网址加 `?mode=perform`）把 Cue 列表换成以演员中心为原点、以米为单位的舞台平面图。平面图默认编辑 NEXT，每次 GO 后自动跟到新的 NEXT；在右侧列表点其他 Cue 可以提前准备，**↺ Follow NEXT** 恢复跟随。
+右上角 **Edit | Performance** 切换开关选 **▶ Performance**（或网址加一次 `?mode=perform`），把 Cue 列表换成以演员中心为原点、以米为单位的舞台平面图。平面图默认编辑 NEXT，每次 GO 后自动跟到新的 NEXT；在右侧列表点其他 Cue 可以提前准备，**↺ Follow NEXT** 恢复跟随。
 
 - **位置：** 在图上点击或拖动。角度模式的 Cue 第一次操作时会转成平面位置：当前角度先落在音箱连线上，声音不变，之后再移动。
 - **路径：** 选 **＋ Add path point**（或按住 Shift 点击）按时间追加路径点；拖动点改位置，表格里可改时间/X/Y。时间从音频文件开头算起，第一个点之前和最后一个点之后声源停在端点。**Preview path time** 可拖动预览任意时刻的位置。

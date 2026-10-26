@@ -19,7 +19,7 @@ The performers are the listeners; there is no audience-facing coordinate system.
 | Direction | Clockwise 0.00–359.99° dial (360° input normalizes to 0°); 0=12 o'clock, 90=right, 180=bottom, 270=left |
 | Spatialization | 2D adjacent-speaker constant-power VBAP at one fixed reference center |
 | Movement | Per-cue relative angular keyframes or angular ADSR, or a stage-map XY position/path; plus global rotation and show envelope |
-| Performance mode | Stage map that follows NEXT: drag position, draw a timed path, Store / Recall / Reset per cue, lock for the show |
+| Edit / Performance | Switch at the top right at any time. Edit = cue table + inspector; Performance = stage map that follows NEXT (drag position, timed path, Store / Recall / Reset, lock). Transport, sidebar and simulation panel stay available in both |
 | Cue playback | Replace, layer or queue; per-cue gain, fades, transition, pre/post waits |
 | Operator controls | FADE GO, CUT GO, STOP, SKIP, ARM SELECTED, MAIN MUTE, PANIC |
 | Media / projects | Local numbered-file/folder upload, stable manual ordering, file replacement, autosave, multiple projects, ZIP export |
@@ -44,7 +44,7 @@ cd SpatialStage
 
 **Show audio in the repository:** the launcher imports every file in `show/audio/` into a project called *Show audio (repository)*, with the speaker layout from `show/stage.json` (6 m × 6 m corners). It is copied into the data folder once; files added to `show/audio/` later (e.g. after `git pull`) are appended on the next launch. Cues you delete, reorder or reposition in the app are never overwritten. The bundled files are FLAC (lossless; files above 48 kHz were downsampled to the engine's 48 kHz).
 
-**Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the browser in Performance mode. Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
+**Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the full interface in the browser (Edit / Performance switch at the top right; the last choice is remembered). Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
 
 Open `http://127.0.0.1:8765`. The launcher creates `.venv` and installs dependencies on first use or when `pyproject.toml` changes. That installation may need Internet access. Subsequent launches with installed dependencies are local/offline. `SPATIALSTAGE_PYTHON=/path/to/python3.12 ./run_mac.command` selects an interpreter for a new environment. An incompatible existing `.venv` must be recreated deliberately, not silently deleted.
 
@@ -134,7 +134,7 @@ Keyframe offsets are unwrapped: `0 → 360` is one clockwise revolution, not zer
 
 ### Performance mode and the stage map
 
-**▶ Performance mode** (top bar, or `?mode=perform`) replaces the cue table with a stage map in metres around the actor centre. The map targets the NEXT cue and follows it after each GO; click another cue in the list to prepare it ahead (**↺ Follow NEXT** returns).
+**▶ Performance** in the top-right **Edit | Performance** switch (or `?mode=perform` once) replaces the cue table with a stage map in metres around the actor centre. The map targets the NEXT cue and follows it after each GO; click another cue in the list to prepare it ahead (**↺ Follow NEXT** returns).
 
 - **Position:** click or drag on the map. An angle-mode cue converts to a stage-map position the first time; its current bearing becomes the starting point on the speaker edge, so it sounds the same until moved.
 - **Path:** choose **＋ Add path point** (or Shift+click) to append timed points; drag points to move them and edit time/X/Y in the table. Time is seconds from the start of the file; the source holds the first/last point before/after them. **Preview path time** scrubs a ghost position.

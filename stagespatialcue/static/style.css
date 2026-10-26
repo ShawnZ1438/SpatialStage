@@ -64,9 +64,12 @@
 @media(max-width:900px) { #simChannels { grid-template-columns:repeat(2,1fr); } }
 
 /* Performance mode — stage map, presets and show list */
-.mode-toggle{background:#1b514f;border:1px solid #2f8f86;color:#c4fff6}
-.mode-toggle[aria-pressed="true"]{background:#5a3f1d;border-color:#b38751;color:#ffe3b1}
-.perform-view{display:none;flex:1;min-height:0;gap:15px}
+.mode-switch{display:flex;border:1px solid #2f415a;border-radius:9px;overflow:hidden}
+.mode-switch button{border-radius:0;background:#131f30;color:#8fa3b9;padding:8px 14px}
+.mode-switch button[aria-pressed="true"]{background:#1b514f;color:#d6fff8}
+.mode-switch #modePerform[aria-pressed="true"]{background:#5a3f1d;color:#ffe3b1}
+.perf-target-head span{display:flex;gap:6px}
+.perform-view{display:none;flex:1 0 auto;min-height:620px;gap:15px}
 body.performing .perform-view{display:flex}
 body.performing .work-area{display:none}
 .perform-stage{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:11px;background:#0b1522;padding:12px}
@@ -143,3 +146,7 @@ body.performing .work-area{display:none}
 .sm-listener-head{stroke:#64aaff;stroke-width:3;stroke-linecap:round}
 .perf-stereo{margin-top:12px}
 .perf-stereo select{margin-top:6px}
+/* Only the centre column scrolls; GO / STOP / PANIC stay pinned while scrolling. */
+.main{overflow-y:auto}
+.transport{position:sticky;top:-27px;z-index:6;flex-shrink:0;background:linear-gradient(120deg,#172a35,#111d2c)}
+@media(max-width:1250px){.transport{top:-20px}}
