@@ -1,6 +1,6 @@
 # SpatialStage · 四声道舞台声音 Cue 系统
 
-[English](README.md) · [架构](docs/ARCHITECTURE.md) · [校准步骤](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [修复与验收](docs/RELIABILITY.md) · [待定决策](docs/OPEN_QUESTIONS.md)
+[English](README.md) · **[使用、测试与演出部署手册](docs/SHOW_GUIDE.zh-CN.md)** · [架构](docs/ARCHITECTURE.md) · [校准步骤](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [修复与验收](docs/RELIABILITY.md) · [待定决策](docs/OPEN_QUESTIONS.md)
 
 **v0.3.1：排练原型，不是正式演出或听力安全认证系统。** 浏览器控制界面 + Mac 本地 Python 四声道音频引擎。演员是聆听者，没有观众朝向；不做演员跟踪，不记录研究参与者数据，也不声称对 ADHD 有治疗或改善效果。当前 Python 回调仍有锁和内存分配，尚未完成真实 Apple Silicon Mac / 调音台 / 麦克风 / 四音箱验收。必须保留独立的物理静音手段。
 

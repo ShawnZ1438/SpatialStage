@@ -6,7 +6,7 @@ four-channel capture and editable stage visualization. Real four-output mode rem
 
 **Local-first four-output spatial cue control for actor-centered experimental theatre.**
 
-[中文说明](README.zh-CN.md) · [Architecture](docs/ARCHITECTURE.md) · [Calibration](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [Reliability / audit fixes](docs/RELIABILITY.md) · [Open decisions](docs/OPEN_QUESTIONS.md)
+[中文说明](README.zh-CN.md) · [Step-by-step Mac deployment, testing and show guide (Chinese)](docs/SHOW_GUIDE.zh-CN.md) · [Architecture](docs/ARCHITECTURE.md) · [Calibration](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [Reliability / audit fixes](docs/RELIABILITY.md) · [Open decisions](docs/OPEN_QUESTIONS.md)
 
 > **v0.3.1 is a rehearsal prototype, not a production or hearing-safety guarantee.** The Python callback still takes locks and allocates arrays. Software tests do not validate a particular Apple Silicon Mac, console, microphone or speaker system. There is no claim of benefit for ADHD participants, no listener tracking, and no participant research logging. An independent physical mute must remain available.
 
