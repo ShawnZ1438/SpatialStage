@@ -1,7 +1,7 @@
 # SpatialStage
 
-**Local Windows simulation console:** see [setup, scope and verified tests](docs/LOCAL_SIMULATION.md).
-It uses the production cue/mixing engine with silent output, optional low-level stereo monitoring,
+**Local Windows simulation console:** double-click `Start Simulation (Windows).cmd` — see [setup, scope and verified tests](docs/LOCAL_SIMULATION.md).
+It uses the production cue/mixing engine with silent output, a virtual four-speaker headphone monitor (listener position and head direction),
 four-channel capture and editable stage visualization. Real four-output mode remains available.
 
 **Local-first four-output spatial cue control for actor-centered experimental theatre.**
@@ -26,7 +26,9 @@ The performers are the listeners; there is no audience-facing coordinate system.
 | Live edits | Bearing, gain, angular envelopes and natural fade settings; no PCM reload or rescheduling of already queued voices |
 | AutoCal | One center point, balanced, XLR input, EQ disabled; sequential sweeps, diagnostic plots, persisted reports, explicit human APPLY |
 | Reliability | Persistent mute ramps, non-increasing stop envelopes, identity-based NEXT, predecoded GO, device-loss mute latch, queued browser saves |
-| Not implemented | True pause/resume, loop/trim editor, stereo-width preservation, ZIP restore/import, MIDI/OSC, multi-window conflict resolution, automatic room EQ |
+| Stereo sources | Stereo files keep L/R as two sources at ±width/2 around the cue position (default 90°), or downmix to mono per cue |
+| Repository show | Audio in `show/audio/` (plus layout in `show/stage.json`) is imported on launch as the project “Show audio (repository)” |
+| Not implemented | True pause/resume, loop/trim editor, ZIP restore/import, MIDI/OSC, multi-window conflict resolution, automatic room EQ |
 
 ## 2. Mac setup and launch
 
@@ -39,6 +41,8 @@ git clone https://github.com/ShawnZ1438/SpatialStage.git
 cd SpatialStage
 ./run_mac.command
 ```
+
+**Show audio in the repository:** the launcher imports every file in `show/audio/` into a project called *Show audio (repository)*, with the speaker layout from `show/stage.json` (6 m × 6 m corners). It is copied into the data folder once; files added to `show/audio/` later (e.g. after `git pull`) are appended on the next launch. Cues you delete, reorder or reposition in the app are never overwritten. The bundled files are FLAC (lossless; files above 48 kHz were downsampled to the engine's 48 kHz).
 
 **Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the browser in Performance mode. Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
 
@@ -94,7 +98,7 @@ The geometry preview computes theoretical relative gain/delay suggestions only; 
 
 Name sources `001_Footsteps.wav`, `002_Car.wav`, `003_Wind.wav`. Import a folder or multiple files. **Only the newly imported batch is numerically sorted**, then appended; existing hand-arranged rows never get sorted again. Up/down buttons reorder rows. Click a row to edit it; selecting a row does not change NEXT. ARM SELECTED explicitly sets NEXT by immutable cue ID. Deleting NEXT clears it and requires re-arming.
 
-WAV/AIFF/FLAC/OGG use libsndfile; formats not accepted there use FFmpeg when installed. Every source is currently downmixed to **mono**, resampled to 48 kHz and predecoded. Stereo width is not retained. Clip decoding is capped at 30 minutes (the FFmpeg fallback truncates at that limit); split longer sources. Maximum decoded cache is 700 MiB, not a total application memory guarantee. Upload limit is 150 MiB per file, 256 MiB per whole request and 250 files per request; split large batches.
+WAV/AIFF/FLAC/OGG use libsndfile; formats not accepted there use FFmpeg when installed. Sources are resampled to 48 kHz and predecoded. **Stereo files stay stereo** (more than two channels are downmixed to mono): per cue choose *Keep stereo · L/R width* (default for stereo imports) or *Mono downmix*. With width *w*, the file's L channel is placed at cue position − *w*/2 and R at + *w*/2, each panned like a normal source at equal power: 90° puts L/R on the speaker pair in front of the cue, 180° on the left and right halves (good for ambience beds), 0° behaves like mono without phase cancellation. On stage-map cues the pair rotates around the centre with the path and merges into all four speakers near the centre. Use mono downmix for point-like effects that should come from one place. Clip decoding is capped at 30 minutes (the FFmpeg fallback truncates at that limit); split longer sources. Maximum decoded cache is 700 MiB, not a total application memory guarantee. Upload limit is 150 MiB per file, 256 MiB per whole request and 250 files per request; split large batches.
 
 Changing a cue's media affects its **next fresh playback**. Already playing or scheduled voices retain their existing PCM. Editing direction/gain/envelope updates matching voices; changing trigger timing does not retroactively reschedule them. Use STOP then ARM/GO to audition a new schedule. Live fade-in/out changes are blended over 15 ms rather than stepping their natural gain envelope.
 

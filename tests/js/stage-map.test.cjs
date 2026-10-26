@@ -38,3 +38,11 @@ test('path interpolation holds the ends; presets compare canonically', () => {
   cue.path[0].x_m = -1;
   assert.equal(StageMap.presetState(cue), 'changed');
 });
+
+test('stereo width: angle cues stay on the speaker edge, map cues rotate the point', () => {
+  close(StageMap.sourceGains({x: 0, y: 3}, corners, 90, true), [Math.SQRT1_2, Math.SQRT1_2, 0, 0]);
+  const [l, r] = StageMap.stereoPoints({x: 0, y: 3}, corners, 90, true);
+  assert.ok(Math.abs(l.x + 3) < 1e-9 && Math.abs(l.y - 3) < 1e-9 && Math.abs(r.x - 3) < 1e-9);
+  const [ml] = StageMap.stereoPoints({x: 0, y: 2}, corners, 90);
+  assert.ok(Math.abs(Math.hypot(ml.x, ml.y) - 2) < 1e-9 && ml.x < 0);
+});

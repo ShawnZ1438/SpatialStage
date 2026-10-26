@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import os
 import json
+import re
 from datetime import datetime, timezone
 import shutil
 import subprocess
@@ -46,9 +47,11 @@ def controlled_connection(method):
 
 
 def decode_audio(path: Path, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
-    """Decode to mono floating-point at the mixer's fixed rate.
+    """Decode to float32 frames x channels (1 or 2) at the mixer's fixed rate.
 
-    WAV/AIFF/FLAC/OGG via libsndfile, MP3/M4A/AAC fallback via FFmpeg.
+    Stereo stays stereo; the mixer downmixes or widens per cue. Sources with more
+    than two channels are downmixed to mono. WAV/AIFF/FLAC/OGG via libsndfile,
+    MP3/M4A/AAC fallback via FFmpeg.
     """
     try:
         with sf.SoundFile(path) as file:
@@ -56,23 +59,42 @@ def decode_audio(path: Path, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
                 raise ValueError("Audio file exceeds 30-minute predecode limit")
             data = file.read(dtype="float32", always_2d=True)
             source_rate = file.samplerate
-        mono = data.mean(axis=1, dtype=np.float32)
+        if data.shape[1] > 2:
+            data = data.mean(axis=1, keepdims=True, dtype=np.float32)
         if source_rate != sample_rate:
             gcd = math.gcd(source_rate, sample_rate)
-            mono = resample_poly(mono, sample_rate // gcd, source_rate // gcd).astype(np.float32)
-        return mono
+            data = resample_poly(data, sample_rate // gcd, source_rate // gcd, axis=0).astype(np.float32)
+        return np.ascontiguousarray(data, dtype=np.float32)
     except (sf.LibsndfileError, RuntimeError):
         if shutil.which("ffmpeg") is None:
             raise ValueError("Unsupported file: install FFmpeg or convert to WAV/FLAC")
+        channels = 2 if audio_channels(path) == 2 else 1
         cmd = [
             "ffmpeg", "-nostdin", "-v", "error", "-i", str(path),
-            "-t", str(MAX_CLIP_SECONDS), "-f", "f32le", "-ac", "1",
+            "-t", str(MAX_CLIP_SECONDS), "-f", "f32le", "-ac", str(channels),
             "-ar", str(sample_rate), "pipe:1",
         ]
         result = subprocess.run(cmd, capture_output=True, timeout=120, check=False)
         if result.returncode:
             raise ValueError(result.stderr.decode(errors="replace")[-300:])
-        return np.frombuffer(result.stdout, dtype="<f4").copy()
+        return np.frombuffer(result.stdout, dtype="<f4").reshape(-1, channels).copy()
+
+
+def audio_channels(path: Path) -> int:
+    """Source channel count for the editor (1 when unknown)."""
+    try:
+        return sf.info(str(path)).channels
+    except (sf.LibsndfileError, RuntimeError):
+        if not shutil.which("ffprobe"):
+            return 1
+        result = subprocess.run([
+            "ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+            "stream=channels", "-of", "csv=p=0", str(path),
+        ], capture_output=True, text=True, timeout=20)
+        try:
+            return max(1, int(result.stdout.strip().splitlines()[0]))
+        except (ValueError, IndexError):
+            return 1
 
 
 def audio_duration(path: Path) -> float:
@@ -90,6 +112,25 @@ def audio_duration(path: Path) -> float:
             return round(float(result.stdout), 3)
         except (ValueError, TypeError):
             return 0
+
+
+def media_cue(path: Path, relative: str, display_name: str) -> Cue:
+    """New cue for an imported file: title from the name, duration and channel count.
+
+    Stereo files keep stereo (width 90° = L/R on the speaker pair around the cue).
+    """
+    match = re.match(r"^\d{1,5}[-_ ](.+)$", Path(display_name).stem)
+    title = (match.group(1) if match else Path(display_name).stem).replace("_", " ")
+    channels = audio_channels(path)
+    return Cue(title=title, filename=display_name, media_relpath=relative,
+               duration_s=audio_duration(path), source_channels=channels,
+               stereo_mode="width" if channels == 2 else "mono")
+
+
+def filename_key(cue: Cue):
+    """Numbered names (001_...) first in numeric order, then alphabetical."""
+    match = re.match(r"^(\d{1,5})[-_ ]", cue.filename)
+    return (0, int(match.group(1)), cue.filename.lower()) if match else (1, cue.filename.lower(), "")
 
 
 class StageController:
@@ -113,6 +154,7 @@ class StageController:
         self.preparing = False
         self.prepare_error: str | None = None
         self._closing = False
+        self.monitor_pose = (0.0, 0.0, 0.0)  # virtual headphone listener: x, y, head bearing
 
     @property
     def next_index(self) -> int:
@@ -283,8 +325,8 @@ class StageController:
         self.mixer.set_calibration(recommendation["channel_gain_db"], recommendation["channel_delay_ms"])
 
     @controlled_connection
-    def connect_simulation(self, device_index: int | None = None) -> dict:
-        from .simulation import SimulationStream, StereoMonitorStream
+    def connect_simulation(self, device_index: int | None = None, monitor: str = "virtual") -> dict:
+        from .simulation import SimulationStream, StereoMonitorStream, VirtualMonitorStream
         with self.lock:
             if self.mixer is None:
                 raise ValueError("Arm a project first")
@@ -293,8 +335,12 @@ class StageController:
             self.disconnect()
             self.audio_error = None
             self.xruns = 0
-            self.stream = (SimulationStream(self) if device_index is None
-                           else StereoMonitorStream(self, device_index))
+            if device_index is None:
+                self.stream = SimulationStream(self)
+            elif monitor == "virtual":
+                self.stream = VirtualMonitorStream(self, device_index, self.monitor_pose)
+            else:
+                self.stream = StereoMonitorStream(self, device_index)
             try:
                 self.stream.start()
             except Exception:

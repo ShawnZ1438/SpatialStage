@@ -179,11 +179,11 @@ function renderRows() {
     let row=rows.get(c.id);
     if(!row){row=document.createElement('tr');row.dataset.id=c.id;}
     rows.delete(c.id);
-    const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.direction_mode,c.path?.length,c.gain_db,c.duration_s,cues.length]);
+    const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.direction_mode,c.path?.length,c.stereo_mode,c.source_channels,c.gain_db,c.duration_s,cues.length]);
     if(row.dataset.signature!==signature){
       row.innerHTML=`<td><span class="cue-state"><i></i><b></b></span></td><td class="number">${String(i+1).padStart(3,'0')}</td>
         <td><span class="cue-title" title="${h(c.title)}">${h(c.title)}</span><span class="cue-subtitle" title="${h(c.filename)}">${h(c.filename)}</span></td>
-        <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${c.direction_mode==='path'?(c.path.length>1?`PATH ${c.path.length}`:'XY'):`${fmt(c.position_deg)}°`}</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
+        <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${c.direction_mode==='path'?(c.path.length>1?`PATH ${c.path.length}`:'XY'):`${fmt(c.position_deg)}°`}${c.source_channels===2&&c.stereo_mode==='width'?' · ST':''}</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
         <td><div class="row-btns"><button data-move="-1" title="Move up" ${i===0?'disabled':''}>↑</button><button data-move="1" title="Move down" ${i===cues.length-1?'disabled':''}>↓</button></div></td>`;
       row.dataset.signature=signature;
     }
@@ -236,6 +236,11 @@ function renderInspector() {
       ${inputField('Cue gain (dB)','gain_db',fmt(c.gain_db),{min:-90,max:12})}
       <label>Media duration (s)<input type="number" readonly value="${fmt(c.duration_s,2)}" title="Detected from decoded media; not editable"></label>
     </div>
+    <div class="field-row" style="margin-top:11px">
+      ${selectField(c.source_channels===2?'Stereo file':'Stereo (stereo files only)','stereo_mode',c.stereo_mode||'mono',[['width','Keep stereo · L/R width'],['mono','Mono downmix']])}
+      ${inputField('Stereo width (°)','stereo_width_deg',fmt(c.stereo_width_deg??90,0),{min:0,max:180,step:'1'})}
+    </div>
+    <div class="extra-hint">Keep stereo places L and R at −width/2 and +width/2 around the cue position (90° = the speaker pair in front of it; 180° = left/right halves). Near the centre both spread to all four speakers.</div>
     <div class="section-label">TRIGGER & TRANSITION</div>
     <label class="full-label">Cue title<input type="text" data-cue="title" value="${h(c.title)}"></label>
     <div class="field-row" style="margin-top:11px">
@@ -524,6 +529,7 @@ $('inspectorContent').addEventListener('change',async e=>{
     c.direction_adsr[field]=field.endsWith('_s')?Math.max(0,val):Math.max(-2160,Math.min(2160,val));
   } else if(key==='position_deg')c[key]=Math.max(0,Math.min(360,num(e.target.value))) % 360;
   else if(key==='title')c.title=e.target.value.trim()||'Untitled cue';
+  else if(key==='stereo_width_deg')c.stereo_width_deg=Math.max(0,Math.min(180,num(e.target.value)));
   else if(key==='direction_mode'){
     c.direction_mode=e.target.value;
     // Converting keeps the sound: the current bearing becomes a point on the speaker edge.

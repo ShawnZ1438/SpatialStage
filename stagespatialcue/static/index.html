@@ -57,20 +57,20 @@
       </section>
 
       <details class="simulation-panel" open>
-        <summary>LOCAL SIMULATION / real engine + optional stereo monitor</summary>
+        <summary>LOCAL SIMULATION / real engine + headphone monitor (virtual 4 speakers)</summary>
         <p>Approx. 6 m × 6 m stage; four IBO PS 15 (specifications unverified). Dashed square is a stage footprint, NOT room walls. Speaker positions are editable placeholders in Stage setup.</p>
         <button id="simConnect">Connect silent simulation</button>
         <button id="simRecord">Start new capture</button><button id="simStopRecord">Stop capture</button>
         <a href="/api/simulation/capture.wav" download>Download 4-channel WAV</a>
-        <select id="simDevice" aria-label="Stereo monitor device"></select><button id="simListen">Connect stereo monitor</button><button id="simStopListen">Disconnect output</button><div id="simChannels"></div>
+        <select id="simMode" aria-label="Headphone monitor type"><option value="virtual">Virtual 4 speakers (headphones)</option><option value="sum">Mono sum (content check)</option></select><select id="simDevice" aria-label="Stereo monitor device"></select><button id="simListen">Connect headphone monitor</button><button id="simStopListen">Disconnect output</button><div id="simChannels"></div>
         <p id="simStatus" role="status">Simulation disconnected. No hardware output.</p>
         <div class="simulation-view"><canvas id="simCanvas" width="420" height="360" aria-label="Stage geometry, actor and live cue bearings"></canvas><div>
-          <label>Actor X (m) <input id="simX" type="number" value="0" min="-3" max="3" step="0.1"></label>
-          <label>Actor Y (m) <input id="simY" type="number" value="0" min="-3" max="3" step="0.1"></label>
+          <label>Listener X (m) <input id="simX" type="number" value="0" min="-6" max="6" step="0.1"></label>
+          <label>Listener Y (m) <input id="simY" type="number" value="0" min="-6" max="6" step="0.1"></label>
           <label>Head bearing (°) <input id="simHead" type="range" value="0" min="0" max="359"></label>
-          <p>0° front / +Y; 90° right; 270° left. Actor/head controls are visual markers only; the production VBAP reference stays at center.</p>
+          <p>0° front / +Y; 90° right; 270° left. With the <b>virtual 4-speaker</b> monitor you hear the four speakers from this position and head direction (level and arrival differences, approximate head shadow) — move off-centre to hear how an actor near a speaker perceives the cue. The panning reference itself stays at the centre.</p>
           <p>CH1–4 meters show actual clipped engine output. Capture is post-master, post-routing at 48 kHz, capped at 60 s. Download before reconnecting.</p>
-          <p>Stereo monitor: real CH1–4 output summed at low gain to both L/R. Solo/mute/gain controls affect monitoring only, not meters, capture or show routing. This tests audible content, NOT surround perception or hardware routing. Indoor venue confirmed; room acoustics and onsite console leveling are outside this console.</p>
+          <p>Mono sum monitor: real CH1–4 output summed at low gain to both L/R. Solo/mute/gain controls affect monitoring only, not meters, capture or show routing. This tests audible content, NOT surround perception or hardware routing. Indoor venue confirmed; room acoustics and onsite console leveling are outside this console.</p>
         </div></div>
       </details>
       <section id="performView" class="perform-view" aria-label="Performance mode">

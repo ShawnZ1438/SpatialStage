@@ -4,7 +4,10 @@ import json
 from pathlib import Path
 
 from stagespatialcue.audio import StageController
-from stagespatialcue.simulation import SimulationStream
+import numpy as np
+import soundfile as sf
+
+from stagespatialcue.simulation import VIRTUAL_MONITOR_GAIN, SimulationStream, VirtualRoom
 from stagespatialcue.storage import ProjectStore
 
 
@@ -15,6 +18,8 @@ def main():
     parser.add_argument('--index', type=int, default=0, help='Zero-based cue index')
     parser.add_argument('--seconds', type=float, default=6)
     parser.add_argument('--output', type=Path, default=Path('test-output/offline-4ch.wav'))
+    parser.add_argument('--headphones', metavar='X,Y,HEAD',
+                        help='Also write <output>-headphones.wav: the four speakers heard at X,Y m facing HEAD°')
     args = parser.parse_args()
     if not 0 < args.seconds <= 60:
         parser.error('--seconds must be in (0, 60]')
@@ -38,6 +43,11 @@ def main():
         stream.capture(False)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_bytes(stream.wav())
+        if args.headphones:
+            x, y, head = (float(v) for v in args.headphones.split(','))
+            room = VirtualRoom(stage.mixer.project.speakers, (x, y, head))
+            stereo = np.concatenate([room.process(b) for b in stream.blocks]) * VIRTUAL_MONITOR_GAIN * 4
+            sf.write(args.output.with_name(args.output.stem + '-headphones.wav'), stereo, 48000, subtype='FLOAT')
         report = {'project_id': args.project, 'cue_index':args.index,
                   'frames':stream.frames, 'channels':4, 'sample_rate':48000,
                   'peak_over_blocks':stage.mixer.peak_over_count,

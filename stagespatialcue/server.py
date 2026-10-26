@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import re
 import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -10,10 +9,13 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from . import __version__
-from .audio import StageController, audio_duration
+from .audio import StageController, audio_channels, audio_duration, filename_key, media_cue
+from .bundle import sync_bundled_show
 from .http_safety import RequestSizeLimit
 from .autocal import AutoCalConfig, AutoCalManager, geometry_signature
 from .models import Cue, Project
@@ -59,6 +61,17 @@ class CapturePayload(BaseModel):
     recording: bool
 
 
+class MonitorConnectPayload(BaseModel):
+    device_index: int = Field(ge=0)
+    mode: Literal["virtual", "sum"] = "virtual"
+
+
+class PosePayload(BaseModel):
+    x_m: float = Field(ge=-50, le=50)
+    y_m: float = Field(ge=-50, le=50)
+    head_deg: float = Field(ge=-720, le=720)
+
+
 class MonitorPayload(BaseModel):
     gains: list[float] = Field(min_length=4, max_length=4)
 
@@ -69,11 +82,6 @@ class AutoCalStartPayload(BaseModel):
 
 class AutoCalApplyPayload(BaseModel):
     confirm: str = ""
-
-
-def filename_key(cue: Cue):
-    match = re.match(r"^(\d{1,5})[-_ ]", cue.filename)
-    return (0, int(match.group(1)), cue.filename.lower()) if match else (1, cue.filename.lower(), "")
 
 
 def create_app(data_root: Path | None = None) -> FastAPI:
@@ -106,7 +114,9 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"version": __version__, "mode": "local", "sample_rate": 48000}
+        # Launchers use `features` to tell a current engine from a stale one on the port.
+        return {"version": __version__, "mode": "local", "sample_rate": 48000,
+                "features": ["simulation", "performance", "bundled-show", "stereo-width", "virtual-monitor"]}
 
     @app.get("/api/projects")
     def projects():
@@ -170,11 +180,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 finally:
                     temp.close()  # Windows cannot unlink an open upload file.
                     temp_path.unlink(missing_ok=True)
-            full = store.media_path(project_id, relative)
-            match = re.match(r"^\d{1,5}[-_ ](.+)$", Path(display_name).stem)
-            title = match.group(1).replace("_", " ") if match else Path(display_name).stem.replace("_", " ")
-            cue = Cue(title=title, filename=display_name, media_relpath=relative, duration_s=audio_duration(full))
-            added.append(cue)
+            added.append(media_cue(store.media_path(project_id, relative), relative, display_name))
         # Decoding/upload awaits may overlap ordinary saves. Re-read current fields.
         project = store.get(project_id)
         project.cues.extend(sorted(added, key=filename_key))
@@ -207,6 +213,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 temp.close()  # Windows cannot unlink an open upload file.
                 path.unlink(missing_ok=True)
         duration = audio_duration(store.media_path(project_id, relative))
+        channels = audio_channels(store.media_path(project_id, relative))
         project = store.get(project_id)
         cue = next((c for c in project.cues if c.id == cue_id), None)
         if cue is None:
@@ -214,6 +221,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         cue.filename = display
         cue.media_relpath = relative
         cue.duration_s = duration
+        cue.source_channels = channels
         saved = store.save(project)
         stage.sync(saved)
         return {"cue": cue, "project": saved,
@@ -298,8 +306,16 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         return stage.connect_simulation()
 
     @app.post("/api/simulation/monitor")
-    def simulation_monitor(payload: DevicePayload):
-        return stage.connect_simulation(payload.device_index)
+    def simulation_monitor(payload: MonitorConnectPayload):
+        return stage.connect_simulation(payload.device_index, payload.mode)
+
+    @app.post("/api/simulation/monitor-pose")
+    def simulation_monitor_pose(payload: PosePayload):
+        from .simulation import VirtualMonitorStream
+        stage.monitor_pose = (payload.x_m, payload.y_m, payload.head_deg % 360)
+        if isinstance(stage.stream, VirtualMonitorStream):
+            stage.stream.room.update(pose=stage.monitor_pose)
+        return stage.status()
 
     @app.post("/api/simulation/monitor-gains")
     def simulation_monitor_gains(payload: MonitorPayload):
@@ -412,6 +428,14 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
 def main():
     import uvicorn
+    # Launchers (run_mac.command / run_simulation.ps1) bring the repository's
+    # show/audio folder into the project list; the bare factory does not.
+    try:
+        project = sync_bundled_show(ProjectStore(Path(os.environ.get("STAGE_SPATIAL_DATA", "~/.spatialstage/projects"))))
+        if project:
+            print(f"Repository show: {project.name} ({len(project.cues)} cues)", flush=True)
+    except Exception as exc:  # never block the engine because of the bundle
+        print(f"Repository show import skipped: {exc}", flush=True)
     uvicorn.run("stagespatialcue.server:create_app", factory=True, host="127.0.0.1", port=8765, reload=False, access_log=False)
 
 

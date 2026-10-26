@@ -100,6 +100,12 @@ class Cue(BaseModel):
     # direction_mode "path": XY waypoints replace bearing + angular envelope.
     path: list[PathPoint] = Field(default_factory=list)
     spatial_preset: SpatialPreset | None = None
+    # Stereo files: "width" keeps L/R as two sources at ±width/2 around the cue
+    # position; "mono" downmixes (the pre-v0.4 behaviour). source_channels is
+    # detected on import and only informs the editor.
+    source_channels: int = Field(default=1, ge=1, le=64)
+    stereo_mode: Literal["mono", "width"] = "mono"
+    stereo_width_deg: float = Field(default=90, ge=0, le=180)
     gain_db: float = Field(default=-6, ge=-90, le=12)
     fade_in_s: float = Field(default=0.05, ge=0, le=3600)
     fade_out_s: float = Field(default=0.1, ge=0, le=3600)
@@ -149,6 +155,9 @@ class Project(BaseModel):
     global_envelope_enabled: bool = False
     global_modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])
     preferred_input_device: int | None = None  # legacy; not used or shown in the UI
+    # Set on the project created from the repository's show/audio folder.
+    bundle_id: str | None = None
+    bundle_files: list[str] = Field(default_factory=list)
     # Only managed by the AutoCal approval API. Ordinary project PUT cannot enable it.
     active_calibration_id: str | None = None
     calibration_enabled: bool = False

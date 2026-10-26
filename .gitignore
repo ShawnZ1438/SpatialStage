@@ -16,6 +16,8 @@ __pycache__/
 *.mp3
 *.m4a
 *.aac
+# Show audio shipped with the repository (imported on launch).
+!show/audio/*
 projects/
 SpatialStage-test-data/
 *.jsonl

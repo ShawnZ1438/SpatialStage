@@ -10,7 +10,7 @@ Actor-centered four speakers, no audience; actors move inside the perimeter. 0°
 - Selecting a row is not ARM; NEXT is stable by ID; deleting NEXT blocks GO until re-armed.
 - MAIN MUTE is not pause: clocks and files progress. SKIP changes NEXT only. CUT GO plays one cue, not its automatic chain.
 - Angular ADSR release is file-end-relative, not triggered by STOP. Global envelope includes silent gaps and mute time.
-- Media replacement applies on next playback. Current playback is not hot-swapped or paused/resumed. Audio sources are downmixed to mono.
+- Media replacement applies on next playback. Current playback is not hot-swapped or paused/resumed. Stereo files play as an L/R pair at ±width/2 (or mono downmix per cue); more than two channels are downmixed to mono.
 - Pending timing changes affect subsequent scheduling, not the already planned automatic chain.
 - One browser editor owns a project at a time. Avoid edits during media import/replacement/project switching.
 - ZIP export exists; safe ZIP restore/import does not. No hidden “complete all features” claim.
@@ -23,7 +23,7 @@ Actor-centered four speakers, no audience; actors move inside the perimeter. 0°
 | Pause and global clock | Should pausing freeze file playheads and show envelope? Does mute continue? | Separate PAUSE/RESUME from MUTE; explicit show-clock reset/freeze |
 | Direction release | Should STOP trigger an angular release before sound stops? | Distinct key-off release, bounded by stop/fade duration |
 | Spatial motion | Is a circular bearing sweep sufficient, or must a car follow a Cartesian path? | Bearing-first MVP; XY trajectories and distance gain require a separate perceptual design |
-| Source format | Is mono spatialization adequate for all assets? | Optional stereo width/two-source mode, never silently repan original stereo |
+| Source format | Is the L/R width model enough, or are multichannel (4.0/ambisonic) assets needed? | Stereo width implemented; native 4-channel stems would bypass panning |
 | Editing reliability | Is more than one operator/window needed? Can active cues be protected? | Revision/ETag conflicts, transactional media edits, show lock, undo/version snapshots |
 | Recovery | Must a replacement Mac restore a show from one file? | Validated ZIP import, media hashes, device-remap confirmation, muted recovery |
 | Trigger safety | Are repeated deliberate GO presses common, or should accidental doubles be guarded? | Request IDs/server idempotency; optional guarded trigger, not arbitrary debounce swallowing intended cues |

@@ -5,10 +5,29 @@ Implemented on local branch `local/simulation-platform` from verified remote mai
 
 ## Start
 
-From this checkout, run `./run_simulation.ps1` in PowerShell, then open
-http://127.0.0.1:8765. The installed `.venv` is local to this checkout. The launcher
-uses `SpatialStage-test-data`, separate from existing shows under the user profile.
-A low-level synthetic demo is already seeded (ID `2b71ed8221a0`). It is not a calibration signal.
+Double-click **`Start Simulation (Windows).cmd`** (or run `./run_simulation.ps1`). On first run it
+creates `.venv` with Python 3.11–3.13 and installs dependencies; it then opens
+http://127.0.0.1:8765 in Performance mode. Data lives in `SpatialStage-test-data`,
+separate from shows under the user profile, and the repository show (`show/audio`) is
+imported there as *Show audio (repository)*. If an older SpatialStage engine already holds
+port 8765, the launcher shows its PID/command and asks before stopping it.
+`run_simulation.ps1 -InstallOnly` only prepares the environment.
+
+### Virtual four-speaker headphone monitor
+
+Expand **LOCAL SIMULATION**, choose *Virtual 4 speakers (headphones)*, click **Connect
+headphone monitor** once to list devices, pick your headphones and click it again. Output
+stays muted until you unmute. The real CH1–4 engine output is rendered as four virtual
+speakers at their Stage setup positions, heard from **Listener X/Y** facing **Head bearing**:
+1/r level and r/c arrival differences relative to the nearest speaker, a spherical-head
+time difference, broadband level difference, far-ear head shadow and slight darkening
+behind. At the centre it matches the console-levelled venue; walk the listener towards a
+corner to hear how close performers perceive cues (the panning reference stays at the centre).
+The listener is drawn on the Performance map. This is approximate (no HRTF, no room
+reflections); front/back cues are weak on headphones. *Mono sum* remains for content checks.
+
+Offline headphone render of one GO: `scripts/render_simulation.py --project ID --headphones 2,2,0`
+also writes `<output>-headphones.wav` heard at x=2 m, y=2 m facing front.
 
 1. Choose **Connect silent simulation**. MAIN MUTE stays on. Preflight decodes the
    numbered files; unmute explicitly and GO to see the real engine's CH1–4 meters.

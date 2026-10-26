@@ -23,7 +23,12 @@ function setPerformMode(on) {
   $('modeToggle').setAttribute('aria-pressed', String(on));
   perfStorage(PERF_MODE_KEY, on ? 'perform' : 'edit');
   perf.targetSig = '';
-  if (on) { perf.follow = true; perf.lastNext = undefined; renderPerform(); }
+  if (on) {
+    perf.follow = true; perf.lastNext = undefined;
+    const sim = document.querySelector('.simulation-panel');
+    if (sim) sim.open = false;  // collapsed above the map; expand to connect a monitor
+    renderPerform();
+  }
   else if (state.project) { renderRows(); renderInspector(); }
 }
 
@@ -79,6 +84,11 @@ function perfSpeakerNotes() {
   });
 }
 
+// Width in degrees when this cue plays a stereo file as L/R, else 0.
+function perfStereo(cue) {
+  return cue && cue.source_channels === 2 && cue.stereo_mode === 'width' ? Number(cue.stereo_width_deg) : 0;
+}
+
 function perfFocusPoint(cue) {
   if (!cue) return null;
   if (cue.direction_mode !== 'path') {
@@ -96,7 +106,7 @@ function renderPerformMap() {
   host.innerHTML = StageMap.svg({
     speakers: state.project.speakers, notes: perfSpeakerNotes(), interactive: !perf.locked,
     path: cue?.direction_mode === 'path' ? cue.path : null, selected: perf.selected,
-    anglePoint, gainPoint: perfFocusPoint(cue),
+    anglePoint, gainPoint: perfFocusPoint(cue), stereo: perfStereo(cue),
   });
   host.classList.toggle('locked', perf.locked);
   renderPerformLive();
@@ -130,6 +140,11 @@ function renderPerformLive() {
     }
     parts.push(`<circle cx="${g.px(p.x)}" cy="${g.py(p.y)}" r="9" class="sm-live"/><text x="${g.px(p.x) + 12}" y="${g.py(p.y) + 4}" class="sm-live-label">${h(perfCueNumber(v.cue_id))} ${h(v.title)}</text>`);
   }
+  const pose = state.status?.simulation?.pose;
+  if (pose) {  // virtual headphone listener: where the monitor stands and faces
+    const head = pose.head_deg * Math.PI / 180, x = g.px(pose.x_m), y = g.py(pose.y_m);
+    parts.push(`<circle cx="${x}" cy="${y}" r="8" class="sm-listener"/><line x1="${x}" y1="${y}" x2="${x + 22 * Math.sin(head)}" y2="${y - 22 * Math.cos(head)}" class="sm-listener-head"/><text x="${x + 11}" y="${y + 18}" class="sm-small">LISTENER (headphones)</text>`);
+  }
   layer.innerHTML = parts.join('');
 }
 
@@ -149,7 +164,8 @@ function perfPresetText(cue) {
 function renderPerformTarget(force = false) {
   const host = $('performTarget'), cue = perfTarget();
   const sig = JSON.stringify([cue?.id, cue && StageMap.spatialSnapshot(cue), cue?.spatial_preset, cue?.title,
-    cue?.duration_s, perfCueIndex(cue?.id), perf.selected, perf.tool, perf.locked, perf.follow, perf.previewT]);
+    cue?.duration_s, perfCueIndex(cue?.id), perf.selected, perf.tool, perf.locked, perf.follow, perf.previewT,
+    cue?.stereo_mode, cue?.stereo_width_deg, cue?.source_channels]);
   const editing = host.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
   if (!force && (sig === perf.targetSig || editing)) return;
   perf.targetSig = sig;
@@ -178,6 +194,9 @@ function renderPerformTarget(force = false) {
       : '<p class="direction-mode-help">This cue still uses angle mode. Click or drag on the map to convert it to a stage-map position (the current bearing becomes the starting point).</p>'}
     ${isPath && duration > 0 ? `<label class="small-label" for="perfPreview">Preview path time · ${perf.previewT == null ? 'off' : fmt(perf.previewT, 1) + ' s'}</label>
       <input id="perfPreview" type="range" min="0" max="${duration}" step="0.05" value="${perf.previewT ?? 0}">` : ''}
+    ${cue.source_channels === 2 ? `<div class="perf-stereo"><label class="small-label">Stereo file
+        <select id="perfStereoMode" ${lock}><option value="width" ${cue.stereo_mode === 'width' ? 'selected' : ''}>Keep stereo · L/R width</option><option value="mono" ${cue.stereo_mode !== 'width' ? 'selected' : ''}>Mono downmix</option></select></label>
+      ${cue.stereo_mode === 'width' ? `<label class="small-label" for="perfStereoWidth">Width · ${fmt(cue.stereo_width_deg, 0)}°</label><input id="perfStereoWidth" type="range" min="0" max="180" step="5" value="${cue.stereo_width_deg}" ${lock}>` : ''}</div>` : ''}
     <div class="perf-presets">
       <button data-perf="store" class="primary" ${lock}>Store</button>
       <button data-perf="recall" class="secondary" ${cue.spatial_preset ? '' : 'disabled'}>Recall</button>
@@ -190,7 +209,7 @@ function renderPerformTarget(force = false) {
 function renderPerformOutputs() {
   const cue = perfTarget(), p = perfFocusPoint(cue), host = $('performOutputs');
   if (!cue || !p) { host.innerHTML = ''; return; }
-  const gains = StageMap.pointGains(p.x, p.y, state.project.speakers);
+  const gains = StageMap.sourceGains(p, state.project.speakers, perfStereo(cue), cue.direction_mode !== 'path');
   const mix = state.status?.mixer;
   host.innerHTML = `<div class="section-heading">SPEAKER OUTPUT AT ${perf.previewT != null ? 'PREVIEW TIME' : 'SELECTED POINT'}</div>` +
     [...state.project.speakers].sort((a, b) => a.output_channel - b.output_channel).map(s => {
@@ -270,6 +289,12 @@ $('performTarget').addEventListener('click', e => {
 $('performTarget').addEventListener('change', e => {
   const cue = perfTarget();
   if (!cue) return;
+  if ((e.target.id === 'perfStereoMode' || e.target.id === 'perfStereoWidth') && !perf.locked) {
+    if (e.target.id === 'perfStereoMode') cue.stereo_mode = e.target.value;
+    else cue.stereo_width_deg = Math.max(0, Math.min(180, num(e.target.value)));
+    perfChanged();
+    return;
+  }
   if (e.target.id === 'perfLock') {
     perf.locked = e.target.checked;
     perfStorage(PERF_LOCK_KEY, perf.locked ? '1' : '0');
@@ -285,6 +310,15 @@ $('performTarget').addEventListener('change', e => {
   perfChanged();
 });
 $('performTarget').addEventListener('input', e => {
+  if (e.target.id === 'perfStereoWidth') {
+    const cue = perfTarget(), label = $('performTarget').querySelector('label[for="perfStereoWidth"]');
+    if (cue && !perf.locked) {
+      cue.stereo_width_deg = num(e.target.value);
+      if (label) label.textContent = `Width · ${fmt(cue.stereo_width_deg, 0)}°`;
+      renderPerformMap(); renderPerformOutputs();
+    }
+    return;
+  }
   if (e.target.id !== 'perfPreview') return;
   perf.previewT = num(e.target.value);
   const label = $('performTarget').querySelector('label[for="perfPreview"]');

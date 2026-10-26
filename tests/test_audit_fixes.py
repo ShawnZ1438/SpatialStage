@@ -72,6 +72,7 @@ def test_media_commit_rereads_edits_made_during_decode(tmp_path,monkeypatch,repl
             app.state.store.save(latest)
             return .1
         monkeypatch.setattr('stagespatialcue.server.audio_duration',duration)
+        monkeypatch.setattr('stagespatialcue.audio.audio_duration',duration)  # uploads via media_cue
         wave=BytesIO();sf.write(wave,np.zeros(4800),48000,format='WAV')
         suffix=f'/cues/{project.cues[0].id}/replace-media' if replacement else '/upload'
         r=c.post('/api/projects/'+project.id+suffix,files={('file' if replacement else 'files'):('001.wav',wave.getvalue(),'audio/wav')})

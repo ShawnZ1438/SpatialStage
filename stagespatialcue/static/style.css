@@ -68,7 +68,7 @@
 .mode-toggle[aria-pressed="true"]{background:#5a3f1d;border-color:#b38751;color:#ffe3b1}
 .perform-view{display:none;flex:1;min-height:0;gap:15px}
 body.performing .perform-view{display:flex}
-body.performing .work-area,body.performing .simulation-panel{display:none}
+body.performing .work-area{display:none}
 .perform-stage{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:11px;background:#0b1522;padding:12px}
 .perform-map-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 4px 8px}
 .perform-map-head .micro{margin:0}
@@ -137,3 +137,9 @@ body.performing .work-area,body.performing .simulation-panel{display:none}
 .sm-live-label{fill:#f7d38c;font-size:11px;font-weight:700}
 @media(max-width:1250px){.perform-side{width:330px}}
 .sm-live-path{fill:none;stroke:#f2ba61;stroke-width:2;stroke-dasharray:6 6;opacity:.55}
+.sm-stereo{fill:#0b1522;stroke:#b9a3fa;stroke-width:2}
+.sm-stereo-label{fill:#d9ccff;font-size:9px;font-weight:800}
+.sm-listener{fill:#64aaff;stroke:#dcecff;stroke-width:2}
+.sm-listener-head{stroke:#64aaff;stroke-width:3;stroke-linecap:round}
+.perf-stereo{margin-top:12px}
+.perf-stereo select{margin-top:6px}

@@ -14,13 +14,24 @@ $('simListen').onclick = async () => {
     }
     document.querySelectorAll('.simGain').forEach(e=>e.value=1);
     document.querySelectorAll('.simMute,.simSolo').forEach(e=>e.checked=false);
-    if(await action('/simulation/monitor',{device_index:Number(select.value)}))notify('Stereo monitor connected, MAIN MUTE remains on. Unmute deliberately, then GO.');
+    const mode=$('simMode').value;
+    if(await action('/simulation/monitor',{device_index:Number(select.value),mode})){
+      sendPose();
+      notify(`${mode==='virtual'?'Virtual 4-speaker':'Mono sum'} headphone monitor connected, MAIN MUTE remains on. Unmute deliberately, then GO.`);
+    }
   } catch(e) { report(e); }
 };
 $('simStopListen').onclick=()=>action('/audio/disconnect');
 function simPose() {
-  return {x:Math.max(-3,Math.min(3,num($('simX').value))), y:Math.max(-3,Math.min(3,num($('simY').value))), a:num($('simHead').value)*Math.PI/180};
+  return {x:Math.max(-6,Math.min(6,num($('simX').value))), y:Math.max(-6,Math.min(6,num($('simY').value))), a:num($('simHead').value)*Math.PI/180};
 }
+// The virtual monitor renders the speakers as heard from this listener pose.
+let poseTimer;
+function sendPose() {
+  const p=simPose();
+  post('/simulation/monitor-pose',{x_m:p.x,y_m:p.y,head_deg:p.a*180/Math.PI}).catch(report);
+}
+for(const id of ['simX','simY','simHead'])$(id).addEventListener('input',()=>{clearTimeout(poseTimer);poseTimer=setTimeout(sendPose,120);});
 $('simChannels').innerHTML=[1,2,3,4].map(ch=>`<div><strong>CH${ch}</strong><input class="simGain" type="range" min="0" max="1" step="0.01" value="1" aria-label="Monitor CH${ch} gain"><label><input class="simMute" type="checkbox">Mute</label><label><input class="simSolo" type="checkbox">Solo</label></div>`).join('');
 $('simChannels').onchange=()=>{
   const gains=[...document.querySelectorAll('.simGain')], mutes=[...document.querySelectorAll('.simMute')], solos=[...document.querySelectorAll('.simSolo')];
@@ -31,7 +42,7 @@ function drawSimulation() {
   const project=state.project; if(!project)return;
   const sim=state.status?.simulation;
   $('simChannels').querySelectorAll('input').forEach(e=>e.disabled=!sim?.stereo_monitor);
-  $('simStatus').textContent=sim ? `${sim.stereo_monitor?"STEREO MONITOR (-32 dB per channel)":"SILENT ENGINE"} • ${sim.recording?'RECORDING':'capture stopped'} • ${sim.captured_seconds.toFixed(2)} / 60 s • ${sim.stereo_monitor?"stereo fold-down; NOT four-output verification":"no soundcard opened"}` : 'Simulation disconnected; hardware mode remains available.';
+  $('simStatus').textContent=sim ? `${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'VIRTUAL 4-SPEAKER HEADPHONES (about -26 dB)':'MONO SUM MONITOR (-32 dB per channel)'):"SILENT ENGINE"} • ${sim.recording?'RECORDING':'capture stopped'} • ${sim.captured_seconds.toFixed(2)} / 60 s • ${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'approximate binaural preview; NOT four-output verification':'stereo fold-down; NOT four-output verification'):"no soundcard opened"}` : 'Simulation disconnected; hardware mode remains available.';
   const c=$('simCanvas'), g=c.getContext('2d'), p=simPose();
   const extent=Math.max(4,...project.speakers.map(s=>s.distance_m+0.8)), scale=150/extent;
   const xy=(x,y)=>[210+x*scale,180-y*scale];

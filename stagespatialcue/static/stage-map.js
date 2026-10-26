@@ -34,6 +34,22 @@ const StageMap = (() => {
     speakers.forEach((s, i) => { physical[s.output_channel - 1] = blended[i] / n; });
     return physical;
   }
+  // Stereo width w: L/R at -w/2 and +w/2. Stage-map cues rotate the point (same
+  // radius, as the mixer does); angle cues stay on the speaker edge (pure VBAP).
+  function stereoPoints(p, speakers, stereo, edge = false) {
+    const bearing = Math.atan2(p.x, p.y) * 180 / Math.PI;
+    return [-stereo / 2, stereo / 2].map(w => {
+      if (!edge) return rotate(p, w);
+      const q = bearingPoint(bearing + w, speakers);
+      return {x: q.x_m, y: q.y_m};
+    });
+  }
+  // Per channel: one source, or the RMS of the equal-power L/R pair.
+  function sourceGains(p, speakers, stereo = 0, edge = false) {
+    if (!stereo) return pointGains(p.x, p.y, speakers);
+    const [l, r] = stereoPoints(p, speakers, stereo, edge).map(q => pointGains(q.x, q.y, speakers));
+    return l.map((v, i) => Math.sqrt((v * v + r[i] * r[i]) / 2));
+  }
   // A stage-map point on the speaker edge sounds identical to a plain bearing.
   function bearingPoint(bearing, speakers, time_s = 0) {
     const {ring} = pairPan(bearing, speakers);
@@ -85,7 +101,7 @@ const StageMap = (() => {
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
   /* opts: speakers, notes[] (per speaker), path[], selected, anglePoint {x,y},
-     gainPoint {x,y}, interactive, size. Returns SVG markup with an empty .live-layer group. */
+     gainPoint {x,y}, stereo (width ° or 0), interactive, size. Returns SVG markup with an empty .live-layer group. */
   function svg(opts) {
     const {speakers, size = 640} = opts;
     const g = geometry(speakers, size), {px, py, extent} = g, parts = [];
@@ -103,7 +119,7 @@ const StageMap = (() => {
     parts.push(`<text x="${px(0)}" y="16" class="sm-label" text-anchor="middle">0° · FRONT / +Y</text>`,
       `<circle cx="${px(0)}" cy="${py(0)}" r="13" class="sm-actor"/><text x="${px(0)}" y="${py(0) + 3}" class="sm-small" text-anchor="middle">ACTOR</text>`);
     if (opts.gainPoint) {
-      const gains = pointGains(opts.gainPoint.x, opts.gainPoint.y, speakers);
+      const gains = sourceGains(opts.gainPoint, speakers, opts.stereo, !!opts.anglePoint);
       speakers.forEach(s => {
         const p = speakerXY(s), v = gains[s.output_channel - 1];
         if (v > 0.01) parts.push(`<line x1="${px(opts.gainPoint.x)}" y1="${py(opts.gainPoint.y)}" x2="${px(p.x)}" y2="${py(p.y)}" class="sm-gain" style="stroke-width:${1 + 5 * v};opacity:${0.15 + 0.75 * v}"/>`);
@@ -116,6 +132,12 @@ const StageMap = (() => {
         `<text x="${lx}" y="${ly}" text-anchor="${anchor}" class="sm-label">${esc(s.name)}</text>`);
       if (opts.notes?.[i]) parts.push(`<text x="${lx}" y="${ly + 14}" text-anchor="${anchor}" class="sm-small">${esc(opts.notes[i])}</text>`);
     });
+    if (opts.stereo && opts.gainPoint) {
+      stereoPoints(opts.gainPoint, speakers, opts.stereo, !!opts.anglePoint).forEach((q, i) => {
+        const label = i ? 'R' : 'L';
+        parts.push(`<circle cx="${px(q.x)}" cy="${py(q.y)}" r="7" class="sm-stereo"/><text x="${px(q.x)}" y="${py(q.y) + 3.5}" text-anchor="middle" class="sm-stereo-label">${label}</text>`);
+      });
+    }
     if (opts.anglePoint) {
       parts.push(`<line x1="${px(0)}" y1="${py(0)}" x2="${px(opts.anglePoint.x)}" y2="${py(opts.anglePoint.y)}" class="sm-anglemode"/>`,
         `<circle cx="${px(opts.anglePoint.x)}" cy="${py(opts.anglePoint.y)}" r="9" class="sm-point angle"/>`);
@@ -134,6 +156,6 @@ const StageMap = (() => {
       ${parts.join('')}<g class="live-layer"></g></svg>`;
   }
 
-  return {speakerXY, pairPan, pointGains, bearingPoint, pathAt, rotate, spatialSnapshot, presetState, geometry, svg};
+  return {speakerXY, pairPan, pointGains, stereoPoints, sourceGains, bearingPoint, pathAt, rotate, spatialSnapshot, presetState, geometry, svg};
 })();
 if (typeof module !== 'undefined') module.exports = StageMap;

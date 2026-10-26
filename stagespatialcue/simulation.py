@@ -5,8 +5,77 @@ from time import monotonic
 
 import soundfile as sf
 import numpy as np
+from scipy.signal import lfilter
 
 from .mixer import SAMPLE_RATE
+from .spatial import SPEED_OF_SOUND_M_S, xy_from_polar
+
+HEAD_RADIUS_M = 0.0875
+VIRTUAL_MONITOR_GAIN = 0.05  # about -26 dB: conservative headphone level
+
+
+class VirtualRoom:
+    """Headphone preview of the four real loudspeakers heard from a listener pose.
+
+    Per speaker: 1/r level and r/c arrival (relative, so the centre pose equals the
+    console-levelled venue), a spherical-head time difference, a broadband level
+    difference, a one-pole head-shadow low-pass on the far ear and mild darkening
+    for speakers behind the head. Approximate: no HRTF, reflections or SPL.
+    """
+    max_delay = int(0.06 * SAMPLE_RATE)
+
+    def __init__(self, speakers, pose=(0.0, 0.0, 0.0)):
+        self.history = np.zeros((self.max_delay, 4), dtype=np.float32)
+        self.zi = np.zeros((4, 2, 1))
+        self.speakers, self.pose = list(speakers), tuple(pose)
+        self.params = self._configure()
+
+    def update(self, speakers=None, pose=None):
+        if speakers is not None:
+            self.speakers = list(speakers)
+        if pose is not None:
+            self.pose = tuple(pose)
+        self.params = self._configure()  # one assignment: safe against the audio thread
+
+    def _configure(self):
+        x0, y0, head = self.pose
+        rows = []
+        for s in self.speakers:
+            sx, sy = xy_from_polar(s.angle_deg, s.distance_m)
+            dx, dy = sx - x0, sy - y0
+            r = max(0.3, float(np.hypot(dx, dy)))
+            az = np.deg2rad(np.rad2deg(np.arctan2(dx, dy)) - head)  # 0 = ahead, + = right
+            lateral = float(np.sin(az))
+            theta = np.arcsin(abs(lateral))
+            itd = round(HEAD_RADIUS_M / SPEED_OF_SOUND_M_S * (theta + np.sin(theta)) * SAMPLE_RATE)
+            behind = max(0.0, -float(np.cos(az)))
+            ears = []
+            for side in (-1, 1):  # left, right
+                near = side * lateral >= 0
+                pan = 0.5 + 0.3 * lateral
+                ear_gain = np.sqrt(pan if side > 0 else 1 - pan)
+                cutoff = 20000 - 14000 * behind - (0 if near else 16000 * abs(lateral))
+                coef = float(np.exp(-2 * np.pi * max(1200, cutoff) / SAMPLE_RATE)) if cutoff < 19000 else 0.0
+                ears.append((0 if near else itd, ear_gain, coef))
+            rows.append((s.output_channel - 1, s.distance_m / r, r, ears))
+        nearest = min(row[2] for row in rows)
+        return [(ch, gain, min(self.max_delay - 64, round((r - nearest) / SPEED_OF_SOUND_M_S * SAMPLE_RATE)), ears)
+                for ch, gain, r, ears in rows]
+
+    def process(self, block: np.ndarray) -> np.ndarray:
+        frames = len(block)
+        H = self.max_delay
+        buffer = np.concatenate([self.history, block.astype(np.float32)])
+        out = np.zeros((frames, 2), dtype=np.float32)
+        for i, (ch, gain, delay, ears) in enumerate(self.params):
+            for ear, (itd, ear_gain, coef) in enumerate(ears):
+                d = min(H, delay + itd)
+                segment = buffer[H - d:H - d + frames, ch]
+                if coef:
+                    segment, self.zi[i, ear] = lfilter([1 - coef], [1, -coef], segment, zi=self.zi[i, ear])
+                out[:, ear] += segment * (gain * ear_gain)
+        self.history = buffer[-H:]
+        return out
 
 
 class SimulationStream:
@@ -134,5 +203,39 @@ class StereoMonitorStream(SimulationStream):
 
     def status(self):
         result = super().status()
-        result.update(hardware_output=True, stereo_monitor=True, monitor_gains=self.gains.tolist())
+        result.update(hardware_output=True, stereo_monitor=True, monitor_gains=self.gains.tolist(),
+                      monitor_mode="sum")
+        return result
+
+
+class VirtualMonitorStream(StereoMonitorStream):
+    """Headphones hear the real CH1-4 output as four virtual speakers (VirtualRoom)."""
+    def __init__(self, stage, device, pose=(0.0, 0.0, 0.0)):
+        super().__init__(stage, device)
+        self.room = VirtualRoom(stage.mixer.project.speakers, pose)
+        self._geometry = None
+
+    def callback(self, outdata, frames, time_info, status):
+        try:
+            if status:
+                self.stage.xruns += 1
+            block = self.step(frames)
+            speakers = self.stage.mixer.project.speakers
+            geometry = tuple((s.angle_deg, s.distance_m, s.output_channel) for s in speakers)
+            if geometry != self._geometry:
+                self._geometry = geometry
+                self.room.update(speakers=speakers)
+            target = self.gains.copy()
+            weights = np.linspace(self.previous_gains, target, frames, dtype=np.float32)
+            self.previous_gains = target
+            outdata[:] = self.room.process(block * weights) * VIRTUAL_MONITOR_GAIN
+        except Exception as exc:
+            outdata[:] = 0
+            self.stage.audio_error = f"Virtual monitor error: {exc}; reconnect required"
+            self.stage.mixer.panic()
+
+    def status(self):
+        result = super().status()
+        x, y, head = self.room.pose
+        result.update(monitor_mode="virtual", pose={"x_m": x, "y_m": y, "head_deg": head})
         return result

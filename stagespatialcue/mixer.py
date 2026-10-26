@@ -233,13 +233,18 @@ class Mixer:
                     continue
                 positions = rel[valid]
                 seconds = positions / self.sample_rate
-                samples = voice.samples[positions].astype(np.float32,copy=True)
+                source = voice.samples[positions]
+                if source.ndim == 1:
+                    source = source[:, None]
                 cue = voice.cue
+                # Stereo is kept only in width mode; otherwise downmix as before.
+                if source.shape[1] > 1 and (cue.stereo_mode != 'width' or voice.test_channel is not None):
+                    source = source.mean(axis=1, keepdims=True)
                 fadein = int(round(cue.fade_in_s * self.sample_rate))
                 if voice.start_fade_frames is not None:
                     fadein = max(fadein,voice.start_fade_frames)
                 fadeout = int(round(cue.fade_out_s * self.sample_rate))
-                natural_fade = np.ones(len(samples), dtype=np.float32)
+                natural_fade = np.ones(len(source), dtype=np.float32)
                 if fadein:
                     natural_fade *= np.sin(0.5*np.pi*np.minimum(1,positions/fadein)).astype(np.float32)
                 if fadeout:
@@ -252,37 +257,42 @@ class Mixer:
                     if blend[-1] >= 1:
                         voice.fade_edit_frame = None
                 voice.last_fade = float(natural_fade[-1])
-                samples *= natural_fade
-                samples *= voice.stop_gain(index[valid]).astype(np.float32)
+                envelope = natural_fade * voice.stop_gain(index[valid]).astype(np.float32)
                 target_level = float(10**(cue.gain_db/20))
                 if voice.last_level is not None and not np.isclose(target_level,voice.last_level):
-                    n=min(len(samples),max(1,round(SMOOTH_S*self.sample_rate)))
-                    volume=np.full(len(samples),target_level,dtype=np.float32)
+                    n=min(len(envelope),max(1,round(SMOOTH_S*self.sample_rate)))
+                    volume=np.full(len(envelope),target_level,dtype=np.float32)
                     volume[:n]=np.linspace(voice.last_level,target_level,n,dtype=np.float32)
-                    samples *= volume
+                    envelope = envelope * volume
                 else:
-                    samples *= np.float32(target_level)
+                    envelope = envelope * np.float32(target_level)
                 voice.last_level = target_level
+                samples = (source * envelope[:, None]).astype(np.float32)
                 if voice.test_channel is not None:
-                    out[valid,voice.test_channel-1] += samples
+                    out[valid,voice.test_channel-1] += samples[:, 0]
                     continue
+                # One source (mono) or two (stereo L/R at -width/2, +width/2).
+                spread = [0.0] if samples.shape[1] == 1 else [-cue.stereo_width_deg/2, cue.stereo_width_deg/2]
+                rotation = self.project.global_rotation_deg + global_offsets[valid]
                 if cue.direction_mode == 'path':
                     x, y = path_xy(seconds, cue.path)
-                    gains=point_gains(x, y, self.project.speakers,
-                                      rotation_deg=self.project.global_rotation_deg + global_offsets[valid],
-                                      distance_compensation=self.project.distance_compensation)
+                    gains = np.stack([point_gains(x, y, self.project.speakers, rotation_deg=rotation + w,
+                                                  distance_compensation=self.project.distance_compensation)
+                                      for w in spread], axis=1)
                 else:
-                    angles=(cue.position_deg + self.project.global_rotation_deg
-                            + cue_direction_offsets(seconds,len(voice.samples)/self.sample_rate,cue)
-                            + global_offsets[valid])
-                    gains=vbap_gains(angles,self.project.speakers,
-                                     distance_compensation=self.project.distance_compensation)
-                if voice.last_gains is not None and gains.shape[0]:
+                    angles = (cue.position_deg + rotation
+                              + cue_direction_offsets(seconds,len(voice.samples)/self.sample_rate,cue))
+                    gains = np.stack([vbap_gains(angles + w, self.project.speakers,
+                                                 distance_compensation=self.project.distance_compensation)
+                                      for w in spread], axis=1)
+                if len(spread) > 1:
+                    gains *= np.float32(np.sqrt(0.5))  # equal power for the L/R pair
+                if voice.last_gains is not None and voice.last_gains.shape == gains.shape[1:] and gains.shape[0]:
                     n=min(len(gains),max(1,round(SMOOTH_S*self.sample_rate)))
-                    blend=np.linspace(0,1,n,dtype=np.float32)[:,None]
-                    gains[:n]=voice.last_gains[None,:]*(1-blend)+gains[:n]*blend
-                voice.last_gains=gains[-1,:].copy()
-                out[valid] += samples[:,None]*gains
+                    blend=np.linspace(0,1,n,dtype=np.float32)[:,None,None]
+                    gains[:n]=voice.last_gains[None]*(1-blend)+gains[:n]*blend
+                voice.last_gains=gains[-1].copy()
+                out[valid] += np.einsum('mk,mkc->mc', samples, gains)
             # Physical channel delay precedes final mute. Otherwise delayed PCM
             # could emerge after mute or PANIC, independently of the master ramp.
             self._calibrated_output(out)
