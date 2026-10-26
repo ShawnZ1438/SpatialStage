@@ -92,11 +92,11 @@ def cue_direction_offsets(time_s: np.ndarray, duration_s: float, cue) -> np.ndar
     return envelope_offsets(time_s, cue.modulation)
 
 
-def vbap_gains(bearing_deg: float | np.ndarray, speakers: list[Speaker], *, distance_compensation: bool=False) -> np.ndarray:
-    """Order: physical channels 1,2,3,4; for each bearing at most 2 active.
+def _pair_pan(bearing_deg, speakers: list[Speaker]) -> tuple[np.ndarray, np.ndarray]:
+    """Unit-power pairwise VBAP in speaker-list order, plus the speaker-edge radius.
 
-    Correct at the stage *reference center* under amplitude panning assumptions.
-    This is NOT a room model or proof of localization for moving performers.
+    The edge is the straight line joining the active pair: stage-map points on or
+    beyond the speaker polygon are pure pairwise panning, inner points spread.
     """
     angles = np.asarray([s.angle_deg for s in speakers], dtype=float)
     idx = np.argsort(angles)
@@ -113,10 +113,58 @@ def vbap_gains(bearing_deg: float | np.ndarray, speakers: list[Speaker], *, dist
     right = np.sin(np.deg2rad(rel)) / np.sin(np.deg2rad(span))
     norm = np.hypot(left, right)
     left, right = left/norm, right/norm
-    result = np.zeros((target.shape[0],4), dtype=np.float32)
+    result = np.zeros((target.shape[0],4), dtype=np.float64)
     rows = np.arange(len(target))
     result[rows,idx[left_idx]] = left
     result[rows,idx[right_idx]] = right
+    # Distance along this bearing to the straight edge joining the active pair.
+    xy = np.asarray([xy_from_polar(s.angle_deg, s.distance_m) for s in speakers])
+    a, b = xy[idx[left_idx]], xy[idx[right_idx]]
+    edge = b - a
+    ux, uy = np.sin(np.deg2rad(target)), np.cos(np.deg2rad(target))
+    ring = (a[:, 0]*edge[:, 1] - a[:, 1]*edge[:, 0]) / (ux*edge[:, 1] - uy*edge[:, 0])
+    return result, ring
+
+
+def path_xy(time_s: np.ndarray, points) -> tuple[np.ndarray, np.ndarray]:
+    """Straight-line XY interpolation between stage-map waypoints (held at the ends)."""
+    t = np.asarray(time_s, dtype=np.float64)
+    pts = sorted(points, key=lambda p: p.time_s)
+    times = [p.time_s for p in pts]
+    return np.interp(t, times, [p.x_m for p in pts]), np.interp(t, times, [p.y_m for p in pts])
+
+
+def point_gains(x_m, y_m, speakers: list[Speaker], *, rotation_deg=0.0,
+                distance_compensation: bool=False) -> np.ndarray:
+    """Stage-map source → four physical channel gains (constant power).
+
+    Bearing comes from the reference centre. Radius only controls spread: on the
+    speaker polygon edge the result equals pairwise VBAP, at (0,0) all four speakers play
+    equally, so a path crossing the centre does not jump between opposite pairs.
+    No distance attenuation is modelled (performers are listeners, not audience).
+    """
+    x = np.atleast_1d(np.asarray(x_m, dtype=np.float64))
+    y = np.atleast_1d(np.asarray(y_m, dtype=np.float64))
+    bearing = np.rad2deg(np.arctan2(x, y)) + np.asarray(rotation_deg, dtype=np.float64)
+    pair, ring = _pair_pan(bearing, speakers)
+    ratio = np.clip(np.hypot(x, y) / ring, 0, 1)[:, None]
+    blended = ratio * pair + (1 - ratio) * 0.5
+    blended /= np.linalg.norm(blended, axis=1, keepdims=True)
+    return _physical(blended, speakers, distance_compensation)
+
+
+def vbap_gains(bearing_deg: float | np.ndarray, speakers: list[Speaker], *, distance_compensation: bool=False) -> np.ndarray:
+    """Order: physical channels 1,2,3,4; for each bearing at most 2 active.
+
+    Correct at the stage *reference center* under amplitude panning assumptions.
+    This is NOT a room model or proof of localization for moving performers.
+    """
+    return _physical(_pair_pan(bearing_deg, speakers)[0], speakers, distance_compensation)
+
+
+def _physical(gains: np.ndarray, speakers: list[Speaker], distance_compensation: bool) -> np.ndarray:
+    """Speaker-order gains → compensation, manual trims and physical channel order."""
+    result = gains.astype(np.float32)
     if distance_compensation:
         dist = np.asarray([s.distance_m for s in speakers], dtype=float)
         result *= (dist / np.median(dist)).astype(np.float32)

@@ -1,6 +1,13 @@
 #!/bin/zsh
 set -eu
 cd "$(dirname "$0")"
+URL="${SPATIALSTAGE_URL:-http://127.0.0.1:8765/}"
+# A second double-click must not start a second engine on the operator port.
+if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
+  echo "SpatialStage is already running. Opening $URL"
+  open "$URL"
+  exit 0
+fi
 if [ ! -d .venv ]; then
   PYTHON="${SPATIALSTAGE_PYTHON:-}"
   if [ -z "$PYTHON" ]; then
@@ -28,13 +35,19 @@ if [ ! -f .venv/.spatialstage-install ] || [ "$(cat .venv/.spatialstage-install)
   printf '%s\n' "$STAMP" > .venv/.spatialstage-install
 fi
 echo 'SpatialStage running at http://127.0.0.1:8765'
+echo 'Keep this window open during the show; closing it stops the audio engine.'
+echo '演出期间请保持此窗口打开；关闭窗口会停止音频引擎。'
 (
   for attempt in $(seq 1 40); do
     if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
-      open 'http://127.0.0.1:8765' >/dev/null 2>&1 || true
+      open "$URL" >/dev/null 2>&1 || true
       break
     fi
     sleep 0.25
   done
 ) &
+# caffeinate keeps the Mac and display awake only while the engine runs.
+if command -v caffeinate >/dev/null 2>&1; then
+  exec caffeinate -dims spatialstage
+fi
 exec spatialstage

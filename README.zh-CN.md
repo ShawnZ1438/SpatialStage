@@ -16,6 +16,8 @@ cd SpatialStage
 ./run_mac.command
 ```
 
+**双击启动：** 在 Finder 里双击项目文件夹中的 **`Start SpatialStage.command`**。首次运行会自动安装依赖；引擎运行期间用 `caffeinate` 防止 Mac 睡眠；浏览器直接打开演出模式（Performance mode）。已经在运行时再双击，只会重新打开浏览器。演出期间保持终端窗口打开，关闭窗口会停止音频引擎。如果文件夹是 ZIP 下载的、macOS 拦截了这个文件，第一次右键 → 打开即可。
+
 打开 `http://127.0.0.1:8765`。启动器首次运行或 `pyproject.toml` 变化时创建/更新 `.venv` 依赖，此时可能需要联网；依赖齐全后的常规运行在本机完成。新建环境可用 `SPATIALSTAGE_PYTHON=/path/to/python3.12 ./run_mac.command` 指定解释器；不会擅自删除不兼容的旧环境。
 
 已有仓库：先备份项目数据，再 `git pull --ff-only`，然后运行启动器。不要用强制覆盖来丢弃你自己的修改。手动方式：
@@ -93,7 +95,19 @@ ARM/自动链推进时后台预热下一组 PCM。**冷缓存 GO 会明确拒绝
 
 方向 ADSR 的 Release 当前按文件结尾触发，不是 STOP 按键触发。全局包络从第一条排定 Cue 开始，静音和空场时间仍继续；无活动声音时重新 ARM 会重置演出包络。真正的暂停/恢复、全局时钟手动冻结和触发式 Release 尚未实现，不能把 MAIN MUTE 当成这些功能。
 
-## 6. AutoCal（保持已确认配置）
+## 6. 演出模式与舞台平面图
+
+顶部 **▶ Performance mode**（或网址加 `?mode=perform`）把 Cue 列表换成以演员中心为原点、以米为单位的舞台平面图。平面图默认编辑 NEXT，每次 GO 后自动跟到新的 NEXT；在右侧列表点其他 Cue 可以提前准备，**↺ Follow NEXT** 恢复跟随。
+
+- **位置：** 在图上点击或拖动。角度模式的 Cue 第一次操作时会转成平面位置：当前角度先落在音箱连线上，声音不变，之后再移动。
+- **路径：** 选 **＋ Add path point**（或按住 Shift 点击）按时间追加路径点；拖动点改位置，表格里可改时间/X/Y。时间从音频文件开头算起，第一个点之前和最后一个点之后声源停在端点。**Preview path time** 可拖动预览任意时刻的位置。
+- **声音规则：** 方向仍按中心计算；距离只决定扩散程度：在虚线音箱连线上或更外侧 = 只用相邻两只音箱（与原 VBAP 完全一致）；越靠近中心越均匀地分到四只音箱，所以穿过中心的路径不会在对角音箱间跳变。总功率恒定，不做距离衰减。全局旋转和演出包络照常叠加。面板显示所选点四个通道的增益；音箱标签显示 trim 和已启用的 AutoCal 补偿。
+- **Store / Recall / Reset：** Store 把当前位置/路径（连同角度设置）存进项目；Recall 恢复；Reset 回到正前方（0°）的单个静止点。列表里 ✓ = 与存储一致，● = 存储后被改过，— = 未存储。**Store all / Recall all** 作用于全部 Cue。
+- **锁定：** 排好后勾选 *Lock map and presets*，平面图和编辑都会禁用（本浏览器会记住）；GO / STOP / PANIC 和 Recall 仍可用。
+
+修改和其他 Cue 编辑一样自动保存，正在播放的 Cue 约 300 ms 后生效。编辑模式的 Inspector 对平面图 Cue 显示小地图；*Modulation curve → Stage-map position / XY path* 也能把 Cue 转过去。Stage setup 对话框会随输入实时画出音箱布局和理论延时/电平提示。
+
+## 7. AutoCal（保持已确认配置）
 
 **1 测量点 / balanced / XLR 麦克风 / EQ 关闭。** 麦克风放舞台中心、接近演员耳高；尽量使用同一兼容双工接口/时钟。停止并断开 show 输出，保持 MAIN MUTE，演员离场，物理输出降低，确认麦克风通道和四路输出再开始。
 
@@ -101,7 +115,7 @@ AutoCal 是独立测量流：show 的 MAIN MUTE **不会阻止用户明确启动
 
 新加 **Cancel measurement**，PANIC 也请求终止测量。取消期间锁仍占用，等待驱动/worker 返回后才释放；半途取消不会保存成可应用的完整报告。停止是 best-effort，现场必须仍能物理静音。单点 balanced 只针对中心，不是 Audyssey 的多位置优化；dBFS 不是 dB SPL，不能据此声称绝对听力安全。调音台增益/DSP、音箱位置或路由有变化后必须重新检查校准。更多见 [AUTOCAL.md](docs/AUTOCAL.md)。
 
-## 7. 备份、安全和测试
+## 8. 备份、安全和测试
 
 项目 JSON 原子写入，媒体路径限制在项目内部。ZIP **仅支持导出**：当前项目 JSON、被引用媒体和 AutoCal JSON；不包含 events.jsonl、临时文件和未引用素材。超过 8 MiB 的导出缓冲转到临时磁盘文件，再分块传输。暂无已验证 ZIP 恢复/导入按钮，备份时也应保留原始项目文件夹。
 
@@ -112,6 +126,8 @@ python -m pip install -e '.[dev]'
 python -m pytest -q
 node --check stagespatialcue/static/app.js
 node --check stagespatialcue/static/save-queue.js
+node --check stagespatialcue/static/stage-map.js
+node --check stagespatialcue/static/perform.js
 node --test tests/js/*.test.cjs
 python -m ruff check stagespatialcue tests
 python -m playwright install chromium

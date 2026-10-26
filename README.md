@@ -18,7 +18,8 @@ The performers are the listeners; there is no audience-facing coordinate system.
 |---|---|
 | Direction | Clockwise 0.00–359.99° dial (360° input normalizes to 0°); 0=12 o'clock, 90=right, 180=bottom, 270=left |
 | Spatialization | 2D adjacent-speaker constant-power VBAP at one fixed reference center |
-| Movement | Per-cue relative angular keyframes or angular ADSR, plus global rotation and show envelope |
+| Movement | Per-cue relative angular keyframes or angular ADSR, or a stage-map XY position/path; plus global rotation and show envelope |
+| Performance mode | Stage map that follows NEXT: drag position, draw a timed path, Store / Recall / Reset per cue, lock for the show |
 | Cue playback | Replace, layer or queue; per-cue gain, fades, transition, pre/post waits |
 | Operator controls | FADE GO, CUT GO, STOP, SKIP, ARM SELECTED, MAIN MUTE, PANIC |
 | Media / projects | Local numbered-file/folder upload, stable manual ordering, file replacement, autosave, multiple projects, ZIP export |
@@ -38,6 +39,8 @@ git clone https://github.com/ShawnZ1438/SpatialStage.git
 cd SpatialStage
 ./run_mac.command
 ```
+
+**Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the browser in Performance mode. Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
 
 Open `http://127.0.0.1:8765`. The launcher creates `.venv` and installs dependencies on first use or when `pyproject.toml` changes. That installation may need Internet access. Subsequent launches with installed dependencies are local/offline. `SPATIALSTAGE_PYTHON=/path/to/python3.12 ./run_mac.command` selects an interpreter for a new environment. An incompatible existing `.venv` must be recreated deliberately, not silently deleted.
 
@@ -125,6 +128,18 @@ effective angle = wrap360(base cue angle
 
 Keyframe offsets are unwrapped: `0 → 360` is one clockwise revolution, not zero motion. For a car going from left through the top to right, base=270°, offsets=0→180°. Through the bottom use 0→−180°. Cue ADSR uses angular peak/sustain/final offsets, not loudness; its release is tied to file duration, **not a STOP key-off event**. The global envelope starts with the first scheduled cue, continues during mute and silent gaps, and is reset when re-arming an idle show. End-relative release and clock controls remain design decisions, not full synthesizer ADSR semantics.
 
+### Performance mode and the stage map
+
+**▶ Performance mode** (top bar, or `?mode=perform`) replaces the cue table with a stage map in metres around the actor centre. The map targets the NEXT cue and follows it after each GO; click another cue in the list to prepare it ahead (**↺ Follow NEXT** returns).
+
+- **Position:** click or drag on the map. An angle-mode cue converts to a stage-map position the first time; its current bearing becomes the starting point on the speaker edge, so it sounds the same until moved.
+- **Path:** choose **＋ Add path point** (or Shift+click) to append timed points; drag points to move them and edit time/X/Y in the table. Time is seconds from the start of the file; the source holds the first/last point before/after them. **Preview path time** scrubs a ghost position.
+- **How a point sounds:** bearing comes from the centre as before. Distance only sets spread: on or beyond the dashed speaker edge = that speaker pair only (identical to plain VBAP); toward the centre the sound blends into all four speakers equally, so a path crossing the centre does not jump between opposite pairs. Power stays constant; there is no distance attenuation. Global rotation and the show envelope still rotate the result. The panel shows the four channel gains at the selected point; speaker labels show trims and active AutoCal values.
+- **Store / Recall / Reset:** Store saves the cue's current position/path (and its angle settings) in the project. Recall restores it. Reset sets one static point at the front (0°). The list marks each cue ✓ stored, ● changed since stored, — none. **Store all / Recall all** act on every cue.
+- **Lock:** tick *Lock map and presets* once the show is set; the map and editing are disabled (remembered in this browser). GO / STOP / PANIC and Recall still work.
+
+Edits autosave like any other cue edit and apply to a cue that is already playing after ~300 ms. Edit mode's inspector shows a mini map for stage-map cues; *Modulation curve → Stage-map position / XY path* converts a cue there too. Stage setup draws the speaker layout with theoretical delay/level hints as you type.
+
 ### Saves and recovery
 
 Edits autosave through a single-flight revision queue. A pending PUT never discards later edits; explicit Save waits for the newest revision. Failure keeps a dirty state and offers **Retry save**. The stage dialog closes only after acknowledgement. Project switching/export/transport preparation wait for pending saves. STOP/PANIC do not wait for saves and cancel a GO still waiting on save completion.
@@ -151,6 +166,8 @@ python -m pytest -q
 node --check stagespatialcue/static/app.js
 node --check stagespatialcue/static/save-queue.js
 node --check stagespatialcue/static/simulation.js
+node --check stagespatialcue/static/stage-map.js
+node --check stagespatialcue/static/perform.js
 node --test tests/js/*.test.cjs
 python -m ruff check stagespatialcue tests
 python -m playwright install chromium

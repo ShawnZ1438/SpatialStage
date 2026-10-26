@@ -58,6 +58,34 @@ class DirectionADSR(BaseModel):
     release_offset_deg: float = Field(default=0, ge=-2160, le=2160)
 
 
+class PathPoint(BaseModel):
+    """Stage-map waypoint in metres about the centre (0,0); time is clip seconds."""
+    time_s: float = Field(ge=0, le=14400)
+    x_m: float = Field(ge=-100, le=100)
+    y_m: float = Field(ge=-100, le=100)
+
+
+class SpatialPreset(BaseModel):
+    """Stored spatial setup of one cue, restored by Recall in Performance mode."""
+    direction_mode: Literal["keyframes", "adsr", "path"] = "keyframes"
+    position_deg: float = Field(default=0, ge=0, le=360)
+    modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])
+    direction_adsr: DirectionADSR = Field(default_factory=DirectionADSR)
+    path: list[PathPoint] = Field(default_factory=list)
+    stored_at: str = ""
+
+    @field_validator("path")
+    @classmethod
+    def valid_path(cls, points: list[PathPoint]) -> list[PathPoint]:
+        return _sorted_path(points)
+
+
+def _sorted_path(points: list[PathPoint]) -> list[PathPoint]:
+    if len(points) > 200:
+        raise ValueError("Maximum 200 path points per cue")
+    return sorted(points, key=lambda p: p.time_s)
+
+
 class Cue(BaseModel):
     id: str = Field(default_factory=uid)
     title: str = "Untitled cue"
@@ -66,9 +94,12 @@ class Cue(BaseModel):
     duration_s: float = Field(default=0, ge=0)
     color: str = "cyan"
     position_deg: float = Field(default=0, ge=0, le=360)
-    direction_mode: Literal["keyframes", "adsr"] = "keyframes"
+    direction_mode: Literal["keyframes", "adsr", "path"] = "keyframes"
     modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])
     direction_adsr: DirectionADSR = Field(default_factory=DirectionADSR)
+    # direction_mode "path": XY waypoints replace bearing + angular envelope.
+    path: list[PathPoint] = Field(default_factory=list)
+    spatial_preset: SpatialPreset | None = None
     gain_db: float = Field(default=-6, ge=-90, le=12)
     fade_in_s: float = Field(default=0.05, ge=0, le=3600)
     fade_out_s: float = Field(default=0.1, ge=0, le=3600)
@@ -92,6 +123,17 @@ class Cue(BaseModel):
         if len(points) > 200:
             raise ValueError("Maximum 200 direction keyframes per cue")
         return sorted(points, key=lambda p: p.time_s)
+
+    @field_validator("path")
+    @classmethod
+    def valid_path(cls, points: list[PathPoint]) -> list[PathPoint]:
+        return _sorted_path(points)
+
+    @model_validator(mode="after")
+    def path_mode_has_points(self) -> "Cue":
+        if self.direction_mode == "path" and not self.path:
+            raise ValueError("Path mode needs at least one stage-map point")
+        return self
 
 
 class Project(BaseModel):

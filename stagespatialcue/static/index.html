@@ -10,7 +10,7 @@
 <div class="app">
   <header class="topbar">
     <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small>SPATIAL SHOW CONTROL / MAC LOCAL</small></div></div>
-    <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
+    <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><button id="modeToggle" class="mode-toggle" aria-pressed="false" title="Switch between cue editing and the show-running stage map">▶ Performance mode</button><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
   </header>
 
   <div class="shell">
@@ -73,6 +73,17 @@
           <p>Stereo monitor: real CH1–4 output summed at low gain to both L/R. Solo/mute/gain controls affect monitoring only, not meters, capture or show routing. This tests audible content, NOT surround perception or hardware routing. Indoor venue confirmed; room acoustics and onsite console leveling are outside this console.</p>
         </div></div>
       </details>
+      <section id="performView" class="perform-view" aria-label="Performance mode">
+        <div class="perform-stage">
+          <div class="perform-map-head"><span class="section-heading">STAGE MAP · metres from actor centre (0,0)</span><span class="micro">Dashed line = speaker edge · yellow = live sound</span></div>
+          <div id="performMap" class="perform-map"></div>
+        </div>
+        <aside class="perform-side">
+          <div id="performTarget" class="perform-card"></div>
+          <div id="performOutputs" class="perform-card"></div>
+          <div id="performCues" class="perform-card perform-cues"></div>
+        </aside>
+      </section>
       <div class="work-area">
         <section class="cue-panel">
           <div class="panel-title"><div><span class="section-heading">CUE STACK</span><span id="cueCount" class="count">0 cues</span></div><div class="panel-actions"><label class="import-button">＋ Import folder<input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button">Files<input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
@@ -94,6 +105,7 @@
 <dialog id="stageDialog"><div class="modal-head"><div><span class="eyebrow">STAGE-CENTER CALIBRATION</span><h2>Four loudspeakers · geometry and routing</h2></div><button class="square" id="closeSettings">✕</button></div>
   <p>The <b>actor reference point is (0,0)</b>. +X points to 3 o'clock; +Y points to 12 o'clock. Enter measured speaker positions in metres. Angles and distances recalculate automatically. Each speaker should physically face the center. MAIN MUTE must be ON when changing routing.</p>
   <div id="speakerFields"></div>
+  <div id="setupMap" class="setup-map"></div>
   <div id="calibrationHints" class="calibration-hints"></div>
   <p class="micro">This panel computes geometry only. For physical measurements, use AutoCal with an XLR measurement microphone. AutoCal measures relative latency/level (NOT absolute SPL) and never applies corrections without explicit confirmation.</p>
   <div class="modal-footer"><button id="cancelSettings" class="secondary">Cancel</button><button id="previewSettings" class="secondary">Preview calibration</button><button id="saveSettings" class="primary">Save geometry</button></div></dialog>
@@ -134,7 +146,9 @@
 </dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="/static/save-queue.js"></script>
+<script src="/static/stage-map.js"></script>
 <script src="/static/app.js" defer></script>
 <script src="/static/simulation.js" defer></script>
+<script src="/static/perform.js" defer></script>
 </body>
 </html>

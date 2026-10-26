@@ -88,8 +88,8 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
                 return new Response(response.body,{status:response.status,headers:response.headers});
               };
             }""")
-            page.add_script_tag(content=(ROOT/'stagespatialcue/static/save-queue.js').read_text())
-            page.add_script_tag(content=(ROOT/'stagespatialcue/static/app.js').read_text())
+            for script in ['save-queue.js', 'stage-map.js', 'app.js', 'simulation.js', 'perform.js']:
+                page.add_script_tag(content=(ROOT/'stagespatialcue/static'/script).read_text(encoding='utf-8'))
         load_page()
         print('Scripts loaded', flush=True)
         page.wait_for_selector('#projectSelect option', state='attached')
@@ -177,6 +177,51 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         page.locator('#simX').fill('1.2')
         page.locator('#simHead').fill('270')
         print('PASS silent simulation, muted connection, bounded capture download, actor markers')
+
+        # Performance mode: place/draw NEXT on the stage map, Store / Reset / Recall, lock.
+        def next_cue():
+            nid = page.evaluate('state.status.next_cue_id')
+            cues = page.request.get(base_url + '/api/projects/' + pid).json()['cues']
+            return next(c for c in cues if c['id'] == nid)
+        def map_click(fx, fy):
+            box = page.locator('#performMap svg').bounding_box()
+            page.mouse.click(box['x'] + box['width']*fx, box['y'] + box['height']*fy)
+        def settled():
+            page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
+        page.locator('#modeToggle').click()
+        expect(page.locator('#performView')).to_be_visible()
+        expect(page.locator('.cue-panel')).to_be_hidden()
+        page.wait_for_function("state.selectedCueId === state.status.next_cue_id")
+        map_click(.25, .5)
+        page.locator('[data-perf="tool"][data-tool="add"]').click()
+        map_click(.75, .5)
+        settled()
+        cue = next_cue()
+        assert cue['direction_mode'] == 'path' and len(cue['path']) == 2, cue
+        assert cue['path'][0]['x_m'] < -1 and cue['path'][1]['x_m'] > 1 and cue['path'][1]['time_s'] > 0
+        page.locator('[data-perf="store"]').click()
+        expect(page.locator('.perf-preset-state')).to_contain_text('Matches stored preset')
+        page.locator('[data-perf="reset"]').click()
+        settled()
+        assert len(next_cue()['path']) == 1
+        expect(page.locator('.perf-preset-state')).to_contain_text('Changed since stored preset')
+        page.locator('[data-perf="recall"]').click()
+        settled()
+        recalled = next_cue()
+        assert recalled['path'] == cue['path'] and recalled['spatial_preset']['path'] == cue['path']
+        page.locator('#perfLock').check()
+        map_click(.5, .2)
+        settled()
+        assert next_cue()['path'] == cue['path']
+        load_page()
+        expect(page.locator('#performView')).to_be_visible()
+        expect(page.locator('#perfLock')).to_be_checked()
+        page.locator('#perfLock').uncheck()
+        page.locator('#modeToggle').click()
+        expect(page.locator('.cue-panel')).to_be_visible()
+        page.locator(f"#cueRows tr[data-id='{cue['id']}']").click()
+        expect(page.locator('#openPerform')).to_be_visible()
+        print('PASS performance map: convert, add path point, store/reset/recall, lock persists, inspector mini-map')
         screenshot.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshot), full_page=True)
         assert not errors, f'Browser exceptions: {errors}'

@@ -108,6 +108,7 @@ async function loadDevices() {
 }
 function renderEverything() {
   renderTransport(); renderRows(); renderInspector(); renderMaster(); renderGlobalEnvelope();
+  globalThis.SpatialPerform?.render();
 }
 function renderGlobalEnvelope() {
   const p=state.project, host=$('globalEnvelopeFields'); if(!p||!host)return;
@@ -178,11 +179,11 @@ function renderRows() {
     let row=rows.get(c.id);
     if(!row){row=document.createElement('tr');row.dataset.id=c.id;}
     rows.delete(c.id);
-    const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.gain_db,c.duration_s,cues.length]);
+    const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.direction_mode,c.path?.length,c.gain_db,c.duration_s,cues.length]);
     if(row.dataset.signature!==signature){
       row.innerHTML=`<td><span class="cue-state"><i></i><b></b></span></td><td class="number">${String(i+1).padStart(3,'0')}</td>
         <td><span class="cue-title" title="${h(c.title)}">${h(c.title)}</span><span class="cue-subtitle" title="${h(c.filename)}">${h(c.filename)}</span></td>
-        <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${fmt(c.position_deg)}°</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
+        <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${c.direction_mode==='path'?(c.path.length>1?`PATH ${c.path.length}`:'XY'):`${fmt(c.position_deg)}°`}</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
         <td><div class="row-btns"><button data-move="-1" title="Move up" ${i===0?'disabled':''}>↑</button><button data-move="1" title="Move down" ${i===cues.length-1?'disabled':''}>↓</button></div></td>`;
       row.dataset.signature=signature;
     }
@@ -227,7 +228,8 @@ function renderInspector() {
   $('armSelected').disabled=!c;
   if(!c){$('inspectorContent').innerHTML='<p class="small-muted">Select a cue from the stack to edit it.</p>';return;}
   $('inspectorContent').innerHTML=`
-    <div class="dial-wrap"><div id="spatialDial"></div><div class="dial-caption">Drag the pointer to place a virtual source · 0.01° precision</div></div>
+    ${c.direction_mode==='path' ? `<div class="dial-wrap mini-map">${StageMap.svg({speakers:state.project.speakers,path:c.path,selected:0,size:420})}<button id="openPerform" class="secondary">Edit position / path on stage map ▶</button></div>`
+      : `<div class="dial-wrap"><div id="spatialDial"></div><div class="dial-caption">Drag the pointer to place a virtual source · 0.01° precision</div></div>`}
     <div class="section-label">POSITION & LEVEL</div>
     <div class="field-row three">
       ${inputField('Bearing (°)','position_deg',fmt(c.position_deg),{min:0,max:360})}
@@ -257,9 +259,9 @@ function renderInspector() {
       <div class="extra-hint">Manual mode ignores post-wait. Queued mode waits for the last active cue.</div>
     </div>
     <div class="section-label">ANGULAR DIRECTION ENVELOPE</div>
-    ${selectField('Modulation curve','direction_mode',c.direction_mode||'keyframes',[['keyframes','Free keyframes / moving sound'],['adsr','ADSR direction offset']])}
+    ${selectField('Modulation curve','direction_mode',c.direction_mode||'keyframes',[['keyframes','Free keyframes / moving sound'],['adsr','ADSR direction offset'],['path','Stage-map position / XY path']])}
     <div class="direction-mode-help">Final angle = cue base + cue offset + global rotation + global show offset. Values are signed, unwrapped degrees; +360° is one clockwise revolution. ADSR below changes <b>direction</b>, not sound volume.</div>
-    ${c.direction_mode==='adsr' ? `
+    ${c.direction_mode==='path' ? `<div class="direction-mode-help">This cue is placed on the stage map (Performance mode). Bearing, keyframes and ADSR are ignored; global rotation still applies. Centre = all four speakers, speaker edge = that pair.</div>` : c.direction_mode==='adsr' ? `
       <div class="adsr-meta">
         ${inputField('Attack (s)','adsr_attack_s',fmt(c.direction_adsr.attack_s),{min:0})}
         ${inputField('Peak offset (°)','adsr_peak_offset_deg',fmt(c.direction_adsr.peak_offset_deg))}
@@ -268,8 +270,8 @@ function renderInspector() {
         ${inputField('Release (s)','adsr_release_s',fmt(c.direction_adsr.release_s),{min:0})}
         ${inputField('Release final offset (°)','adsr_release_offset_deg',fmt(c.direction_adsr.release_offset_deg))}
       </div>` : `<div class="section-label">FREE KEYFRAMES <button id="addPoint" class="secondary">＋ KEYFRAME</button></div>`}
-    <div id="envelopeHost" class="envelope"></div>
-    <div class="envelope-help">X = time within source clip (s); Y = relative angular offset (°). ${c.direction_mode==='adsr'?'ADSR phases are proportional-compressed when the sound is too short.': 'Drag a dot, or click to add a keyframe.'}</div>
+    ${c.direction_mode==='path' ? '' : `<div id="envelopeHost" class="envelope"></div>
+    <div class="envelope-help">X = time within source clip (s); Y = relative angular offset (°). ${c.direction_mode==='adsr'?'ADSR phases are proportional-compressed when the sound is too short.': 'Drag a dot, or click to add a keyframe.'}</div>`}
     ${c.direction_mode==='keyframes' ? `<div class="point-actions">
       ${inputField('Point time (s)','point_time',fmt(c.modulation[state.selectedPoint]?.time_s??0))}
       ${inputField('Offset (°)','point_offset',fmt(c.modulation[state.selectedPoint]?.offset_deg??0))}
@@ -354,7 +356,7 @@ function pointEdits() {
 async function poll() {
   try {
     state.status=await api('/audio/status');
-    renderTransport(); renderRows(); renderMaster();
+    renderTransport(); renderRows(); renderMaster(); globalThis.SpatialPerform?.render();
     if(!state.draggingDial && state.draggingPoint<0)renderDial();
   } catch(e){ if(state.lastError!==e.message){state.lastError=e.message;report(e);} }
 }
@@ -367,7 +369,7 @@ async function action(path,payload={},message=''){
       await saveNow();
       if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
     }
-    state.status=await post(path,payload);renderTransport();renderRows();renderMaster();if(message)notify(message);
+    state.status=await post(path,payload);renderTransport();renderRows();renderMaster();globalThis.SpatialPerform?.render();if(message)notify(message);
     return true;
   }
   catch(e){report(e);return false;}
@@ -522,6 +524,11 @@ $('inspectorContent').addEventListener('change',async e=>{
     c.direction_adsr[field]=field.endsWith('_s')?Math.max(0,val):Math.max(-2160,Math.min(2160,val));
   } else if(key==='position_deg')c[key]=Math.max(0,Math.min(360,num(e.target.value))) % 360;
   else if(key==='title')c.title=e.target.value.trim()||'Untitled cue';
+  else if(key==='direction_mode'){
+    c.direction_mode=e.target.value;
+    // Converting keeps the sound: the current bearing becomes a point on the speaker edge.
+    if(c.direction_mode==='path'&&!c.path?.length)c.path=[StageMap.bearingPoint(c.position_deg,state.project.speakers)];
+  }
   else if(e.target.type==='number')c[key]=Math.max(key==='gain_db'?-90:0,num(e.target.value));
   else c[key]=e.target.value;
   scheduleSave();renderRows();renderInspector();
@@ -558,6 +565,7 @@ $('inspectorContent').addEventListener('pointerup',endDrag);
 $('inspectorContent').addEventListener('pointercancel',endDrag);
 $('inspectorContent').addEventListener('click',e=>{
   const c=currentCue();if(!c)return;
+  if(e.target.closest('#openPerform')){globalThis.SpatialPerform?.open();return;}
   if(e.target.closest('#addPoint')){
     const point={time_s:Math.max(0,c.duration_s*0.5),offset_deg:90};
     c.modulation.push(point);c.modulation.sort((a,b)=>a.time_s-b.time_s);
@@ -596,6 +604,7 @@ $('settingsToggle').addEventListener('click',()=>{
   $('speakerFields').innerHTML='<div class="speaker-grid"><small>Speaker</small><small>X (m) → right</small><small>Y (m) ↑ top</small><small>Output CH</small><small>Trim (dB)</small></div>'+
     state.editSpeakers.map((s,i)=>`<div class="speaker-grid"><input data-speaker="${i}" data-key="name" type="text" value="${h(s.name)}"/><input data-speaker="${i}" data-key="x_m" type="number" step="0.01" value="${fmt(s.x_m)}"/><input data-speaker="${i}" data-key="y_m" type="number" step="0.01" value="${fmt(s.y_m)}"/><input data-speaker="${i}" data-key="output_channel" type="number" min="1" max="4" step="1" value="${s.output_channel}"/><input data-speaker="${i}" data-key="trim_db" type="number" min="-30" max="12" step="0.1" value="${fmt(s.trim_db,1)}"/></div>`).join('');
   $('calibrationHints').textContent='4 speaker positions → bearing and distance automatically calculated. Click Preview calibration to see theoretical hints.';
+  renderSetupMap();
   $('stageDialog').showModal();
 });
 $('speakerFields').addEventListener('change',e=>{
@@ -606,7 +615,19 @@ $('speakerFields').addEventListener('change',e=>{
     const dist=Math.hypot(s.x_m,s.y_m);
     if(dist>.0001){s.distance_m=Math.round(dist*10000)/10000;s.angle_deg=Math.round(((Math.atan2(s.x_m,s.y_m)*180/Math.PI+360)%360)*100)/100;}
   }
+  renderSetupMap();
 });
+// Theoretical centre-point hints drawn on the map; nothing is applied automatically.
+function renderSetupMap() {
+  const host=$('setupMap'), speakers=state.editSpeakers;
+  if(!host||!speakers)return;
+  try {
+    const far=Math.max(...speakers.map(s=>s.distance_m)), sorted=speakers.map(s=>s.distance_m).sort((a,b)=>a-b);
+    const median=(sorted[1]+sorted[2])/2;
+    const notes=speakers.map(s=>`${fmt(s.angle_deg,1)}° · ${fmt(s.distance_m,2)} m · +${fmt((far-s.distance_m)/0.343,2)} ms · ${fmt(20*Math.log10(s.distance_m/median),1)} dB`);
+    host.innerHTML=StageMap.svg({speakers,notes,size:520});
+  } catch(e) { host.textContent='Map unavailable for this geometry: '+e.message; }
+}
 function stagedSpeakerPayload() {return state.editSpeakers.map(({x_m,y_m,...s})=>s);}
 $('previewSettings').addEventListener('click',async()=>{
   if(!state.project)return;

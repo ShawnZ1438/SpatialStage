@@ -14,7 +14,7 @@ import numpy as np
 
 from .models import Cue, Project
 from .ramps import LinearRamp
-from .spatial import cue_direction_offsets, envelope_offsets, vbap_gains, wrap_deg
+from .spatial import cue_direction_offsets, envelope_offsets, path_xy, point_gains, vbap_gains, wrap_deg
 
 SAMPLE_RATE = 48_000
 DECLICK_S = 0.005
@@ -265,18 +265,24 @@ class Mixer:
                 voice.last_level = target_level
                 if voice.test_channel is not None:
                     out[valid,voice.test_channel-1] += samples
+                    continue
+                if cue.direction_mode == 'path':
+                    x, y = path_xy(seconds, cue.path)
+                    gains=point_gains(x, y, self.project.speakers,
+                                      rotation_deg=self.project.global_rotation_deg + global_offsets[valid],
+                                      distance_compensation=self.project.distance_compensation)
                 else:
                     angles=(cue.position_deg + self.project.global_rotation_deg
                             + cue_direction_offsets(seconds,len(voice.samples)/self.sample_rate,cue)
                             + global_offsets[valid])
                     gains=vbap_gains(angles,self.project.speakers,
                                      distance_compensation=self.project.distance_compensation)
-                    if voice.last_gains is not None and gains.shape[0]:
-                        n=min(len(gains),max(1,round(SMOOTH_S*self.sample_rate)))
-                        blend=np.linspace(0,1,n,dtype=np.float32)[:,None]
-                        gains[:n]=voice.last_gains[None,:]*(1-blend)+gains[:n]*blend
-                    voice.last_gains=gains[-1,:].copy()
-                    out[valid] += samples[:,None]*gains
+                if voice.last_gains is not None and gains.shape[0]:
+                    n=min(len(gains),max(1,round(SMOOTH_S*self.sample_rate)))
+                    blend=np.linspace(0,1,n,dtype=np.float32)[:,None]
+                    gains[:n]=voice.last_gains[None,:]*(1-blend)+gains[:n]*blend
+                voice.last_gains=gains[-1,:].copy()
+                out[valid] += samples[:,None]*gains
             # Physical channel delay precedes final mute. Otherwise delayed PCM
             # could emerge after mute or PANIC, independently of the master ramp.
             self._calibrated_output(out)
@@ -304,12 +310,6 @@ class Mixer:
     def status(self) -> dict:
         with self.lock:
             elapsed=0 if self.show_start_frame is None else max(0,self.frame-self.show_start_frame)/self.sample_rate
-            def bearing(voice):
-                t = np.array([max(0, self.frame-voice.start_frame)/self.sample_rate])
-                offset = cue_direction_offsets(t, len(voice.samples)/self.sample_rate, voice.cue)[0]
-                if self.project.global_envelope_enabled:
-                    offset += envelope_offsets(np.array([elapsed]), self.project.global_modulation)[0]
-                return round(float(wrap_deg(voice.cue.position_deg+self.project.global_rotation_deg+offset)), 2)
             return {'frame':self.frame,'seconds':round(self.frame/self.sample_rate,3),
                     'show_elapsed_s':round(elapsed,3),
                     'master_mute':self.master_mute,'master_db':self.master_db,
@@ -323,5 +323,20 @@ class Mixer:
                                'elapsed_s':round(max(0,self.frame-v.start_frame)/self.sample_rate,2),
                                'duration_s':round(len(v.samples)/self.sample_rate,2),
                                'end_s':round(v.end_frame/self.sample_rate,2),
-                               'position_deg':bearing(v)}
+                               **self._voice_position(v)}
                               for v in self.voices if v.end_frame>self.frame]}
+
+    def _voice_position(self, voice: Voice) -> dict:
+        """Display bearing incl. live offsets; path cues also report their current XY."""
+        t = np.array([max(0, self.frame-voice.start_frame)/self.sample_rate])
+        offset = self.project.global_rotation_deg
+        if self.project.global_envelope_enabled and self.show_start_frame is not None:
+            show_t = np.array([max(0, self.frame-self.show_start_frame)/self.sample_rate])
+            offset += envelope_offsets(show_t, self.project.global_modulation)[0]
+        if voice.cue.direction_mode == 'path' and voice.cue.path:
+            x, y = path_xy(t, voice.cue.path)
+            bearing = np.rad2deg(np.arctan2(x[0], y[0])) + offset
+            return {'position_deg': round(float(wrap_deg(bearing)), 2),
+                    'position_xy': [round(float(x[0]), 3), round(float(y[0]), 3)]}
+        offset += cue_direction_offsets(t, len(voice.samples)/self.sample_rate, voice.cue)[0]
+        return {'position_deg': round(float(wrap_deg(voice.cue.position_deg + offset)), 2)}
