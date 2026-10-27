@@ -4,7 +4,13 @@
 
 ## 新电脑第一次安装
 
-下载本分支完整源码（或 clone 此分支），保留 `show/` 文件夹。Mac 安装 Python 3.11–3.13（建议 3.12），按 [完整部署说明](DEPLOY.zh-CN.md) 安装音频依赖。双击 `Install SpatialStage.command`，再选：
+下载本分支完整源码，保留 `show/` 文件夹；本变更尚未合并 main，命令为：
+
+```bash
+git clone --branch feat/show-themes-programming https://github.com/ShawnZ1438/SpatialStage.git
+```
+
+Mac 安装 Python 3.11–3.13（建议 3.12），按 [完整部署说明](DEPLOY.zh-CN.md) 安装音频依赖。双击 `Install SpatialStage.command`，再选：
 
 - `Start SpatialStage.command`：正式项目数据，位于用户目录 `.spatialstage/projects`。
 - `Start Simulation (Mac).command`：隔离模拟项目，位于 checkout 的 `SpatialStage-test-data`。

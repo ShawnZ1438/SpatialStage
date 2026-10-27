@@ -511,3 +511,7 @@
 :root[data-theme="light"] .lang-toggle b.active{color:#153e45}
 :root[data-theme="light"] .brand strong span{color:#087b70}
 :root[data-theme="light"] .perf-cue .meta,:root[data-theme="light"] .perf-cue small{color:#41596e}
+:root[data-theme="light"] .perf-cue .tag{color:#15537f}
+:root[data-theme="light"] .perf-cue.playing .tag,:root[data-theme="light"] .perf-cue .preset.stored{color:#12603e}
+:root[data-theme="light"] .perf-cue.fading .tag,:root[data-theme="light"] .perf-cue .preset.changed{color:#805000}
+:root[data-theme="light"] .perf-cue .kind{color:#27635a}
