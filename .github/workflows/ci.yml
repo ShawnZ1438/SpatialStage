@@ -18,7 +18,9 @@ jobs:
         with:
           node-version: '22'
       - name: Audio library prerequisites
-        run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1 pulseaudio
+      - name: Headless audio service for PortAudio initialization
+        run: pulseaudio --start --exit-idle-time=-1
       - name: Install
         run: python -m pip install -e '.[dev]'
       - name: Python correctness lint
@@ -42,7 +44,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1
+      - run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1 pulseaudio
+      - name: Headless audio service for PortAudio initialization
+        run: pulseaudio --start --exit-idle-time=-1
       - run: python -m pip install -e '.[dev]'
       - run: python -m playwright install --with-deps chromium
       - name: Local server and browser interactions (no audio device)
