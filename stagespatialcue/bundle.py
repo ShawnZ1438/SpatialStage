@@ -78,10 +78,7 @@ def sync_bundled_show(store: ProjectStore, root: Path | None = None) -> Project 
         template.update(id=project.id, bundle_id=BUNDLE_ID, bundle_files=project.bundle_files,
                         active_calibration_id=None, calibration_enabled=False)
         project = Project.model_validate(template)
-        names = {m.filename: m.name for m in added}
         used = {m.media_relpath for m in project.media}
-        for item in project.media:
-            item.name = names.get(item.filename, item.name)
         project.media.extend(m for m in added if m.media_relpath not in used)
     else:
         project.media.extend(added)

@@ -6,6 +6,8 @@
   <title>SpatialStage</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/themes.css" />
+  <script src="/static/theme.js" defer></script>
 </head>
 <body>
 <div class="app">
@@ -18,6 +20,7 @@
         <button id="modePerform" aria-pressed="false" data-i18n="modeRun" data-i18n-title="modeRunTip">▶ 演出</button>
       </div>
       <button id="settingsToggle" class="quiet" data-i18n="stageSetup" data-i18n-title="stageSetupTip">⚙ 舞台设置</button>
+      <label class="theme-picker"><span data-i18n="themeLabel">配色</span><select id="themeSelect" aria-label="配色 / Theme"><option value="dark">深海 · Dark</option><option value="graphite">石墨 · Graphite</option><option value="warm">暖灰 · Warm</option><option value="light">浅色 · Light</option></select></label>
       <button id="langToggle" class="lang-toggle" data-i18n-title="langTip" title="切换语言 / Switch language"><b data-lang="zh">中</b><span>/</span><b data-lang="en">EN</b></button>
     </div>
   </header>

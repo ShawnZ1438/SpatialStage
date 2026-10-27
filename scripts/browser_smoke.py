@@ -81,7 +81,7 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
             html=(ROOT/'stagespatialcue/static/index.html').read_text()
             html=re.sub(r'<script[^>]*src=[^>]*></script>', '', html)
             html=re.sub(r'<link[^>]*stylesheet[^>]*>', '', html)
-            css=(ROOT/'stagespatialcue/static/style.css').read_text()
+            css=(ROOT/'stagespatialcue/static/style.css').read_text() + (ROOT/'stagespatialcue/static/themes.css').read_text()
             page.set_content(html.replace('</head>', '<style>'+css+'</style></head>'),wait_until='domcontentloaded')
             print('Offline DOM ready', flush=True)
             page.evaluate("""() => {
@@ -99,7 +99,7 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
                 return new Response(response.body,{status:response.status,headers:response.headers});
               };
             }""")
-            for script in ['i18n.js', 'save-queue.js', 'stage-map.js', 'app.js', 'simulation.js', 'editor.js']:
+            for script in ['theme.js', 'i18n.js', 'save-queue.js', 'stage-map.js', 'app.js', 'simulation.js', 'editor.js']:
                 page.add_script_tag(content=(ROOT/'stagespatialcue/static'/script).read_text(encoding='utf-8'))
         load_page()
         print('Scripts loaded', flush=True)
@@ -140,6 +140,18 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         expect(page.locator('#performCues .perf-cue')).to_have_count(3)
         assert page.locator('#performCues .perf-cue .title').all_text_contents() == ['Footsteps', 'Car', 'Wind']
         print('PASS library import, cues from library, manual ordering, row identity / held click')
+        for width in [1570, 1024, 700]:
+            page.set_viewport_size({'width':width, 'height':950})
+            for theme in ['dark', 'graphite', 'warm', 'light']:
+                page.select_option('#themeSelect', theme)
+                assert page.get_attribute('html', 'data-theme') == theme
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                assert page.evaluate("document.querySelector('.eventline').getBoundingClientRect().top >= document.querySelector('.layer-table').getBoundingClientRect().bottom")
+        page.locator('#modePerform').click()
+        assert page.get_attribute('html', 'data-theme') == 'light'
+        page.locator('#modeEdit').click()
+        page.set_viewport_size({'width':1570, 'height':950})
+        print('PASS four themes, three widths, layer/footer separation and shared mode preference')
 
         # Delay PUT acknowledgements, not server storage; reproduce overlapping edits.
         page.evaluate('''() => {

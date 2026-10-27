@@ -276,7 +276,7 @@ function renderInspector(force) {
       <button data-cue-action="delete" class="danger">${h(t('deleteCue'))}</button>`}
     </div>
     <div class="section-label">${h(t('layersTitle', {n:cue.layers.length}))}</div>
-    ${cue.layers.length ? `<table class="layer-table"><thead><tr><th></th><th>${h(t('audio'))}</th><th>${h(t('layerGainShort'))}</th><th>${h(t('layerDelayShort'))}</th><th>${h(t('layerMuteShort'))}</th><th></th></tr></thead><tbody>${layers}</tbody></table>` : ''}
+    ${cue.layers.length ? `<div class="layer-table-scroll" tabindex="0" role="region" aria-label="${h(t('layersTitle', {n:cue.layers.length}))}"><table class="layer-table"><thead><tr><th></th><th>${h(t('audio'))}</th><th>${h(t('layerGainShort'))}</th><th>${h(t('layerDelayShort'))}</th><th>${h(t('layerMuteShort'))}</th><th></th></tr></thead><tbody>${layers}</tbody></table></div>` : ''}
     <p class="micro">${h(t('layersHelp'))}</p>
     ${renderLayerEditor(cue, layer, lock)}
     <div class="section-label">${h(t('playback'))}</div>

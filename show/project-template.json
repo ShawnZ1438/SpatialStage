@@ -1,9 +1,9 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "id": "portable-show",
   "name": "Show audio (repository)",
   "created_at": "2026-10-27T00:03:15.598331+00:00",
-  "updated_at": "2026-10-27T01:45:30.752373+00:00",
+  "updated_at": "2026-10-27T08:16:07.289657+00:00",
   "speakers": [
     {
       "name": "L · IBO PS15 front left",
@@ -35,6 +35,7 @@
     }
   ],
   "distance_compensation": false,
+  "auto_replace": false,
   "global_rotation_deg": 0.0,
   "global_envelope_enabled": false,
   "global_modulation": [
@@ -69,778 +70,3974 @@
   ],
   "active_calibration_id": null,
   "calibration_enabled": false,
+  "media": [
+    {
+      "id": "882c9a7a2851",
+      "name": "第一幕 微风",
+      "filename": "01_第一幕_微风.flac",
+      "media_relpath": "media/01_第一幕_微风.flac",
+      "duration_s": 66.801,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "e604be81cd2b",
+      "name": "第一幕 花园鸟声",
+      "filename": "02_第一幕_花园鸟声.flac",
+      "media_relpath": "media/02_第一幕_花园鸟声.flac",
+      "duration_s": 105.349,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "9b3719b28d6c",
+      "name": "第一幕 远处走廊脚步",
+      "filename": "03_第一幕_远处走廊脚步.flac",
+      "media_relpath": "media/03_第一幕_远处走廊脚步.flac",
+      "duration_s": 20.952,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "c0e31e02986f",
+      "name": "第一幕 远钟",
+      "filename": "04_第一幕_远钟.wav",
+      "media_relpath": "media/04_第一幕_远钟.wav",
+      "duration_s": 4.985,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "0bb6981d4fc9",
+      "name": "第一幕 远处合唱声候选",
+      "filename": "05_第一幕_远处合唱声候选.wav",
+      "media_relpath": "media/05_第一幕_远处合唱声候选.wav",
+      "duration_s": 108.008,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "4e3f24f10beb",
+      "name": "第一幕 竖琴背景伴奏候选",
+      "filename": "06_第一幕_竖琴背景伴奏候选.wav",
+      "media_relpath": "media/06_第一幕_竖琴背景伴奏候选.wav",
+      "duration_s": 271.533,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "d0ecf9ab4b05",
+      "name": "第一幕 树叶间轻风",
+      "filename": "07_第一幕_树叶间轻风.flac",
+      "media_relpath": "media/07_第一幕_树叶间轻风.flac",
+      "duration_s": 60.0,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "71af96d5a2b6",
+      "name": "第二幕 风扇",
+      "filename": "08_第二幕_风扇.wav",
+      "media_relpath": "media/08_第二幕_风扇.wav",
+      "duration_s": 124.469,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "cb096a61a8aa",
+      "name": "第二幕 洗衣机注水起洗",
+      "filename": "09_第二幕_洗衣机注水起洗.flac",
+      "media_relpath": "media/09_第二幕_洗衣机注水起洗.flac",
+      "duration_s": 21.893,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "e183f1e2c47b",
+      "name": "第二幕 洗衣机脱水",
+      "filename": "10_第二幕_洗衣机脱水.flac",
+      "media_relpath": "media/10_第二幕_洗衣机脱水.flac",
+      "duration_s": 56.219,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "0f43e55ec993",
+      "name": "第二幕 烘干机",
+      "filename": "11_第二幕_烘干机.flac",
+      "media_relpath": "media/11_第二幕_烘干机.flac",
+      "duration_s": 112.977,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "ce0e315e5f84",
+      "name": "第二幕 远车流",
+      "filename": "12_第二幕_远车流.flac",
+      "media_relpath": "media/12_第二幕_远车流.flac",
+      "duration_s": 119.989,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "a19b1cb1f3b2",
+      "name": "第二幕 公交经过",
+      "filename": "13_第二幕_公交经过.flac",
+      "media_relpath": "media/13_第二幕_公交经过.flac",
+      "duration_s": 35.999,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "ca6ebdabd01d",
+      "name": "第二幕 电子铃 门铃替代",
+      "filename": "14_第二幕_电子铃_门铃替代.flac",
+      "media_relpath": "media/14_第二幕_电子铃_门铃替代.flac",
+      "duration_s": 2.151,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "5ffa89efcdb2",
+      "name": "第二幕 门外广场人群候选",
+      "filename": "15_第二幕_门外广场人群候选.flac",
+      "media_relpath": "media/15_第二幕_门外广场人群候选.flac",
+      "duration_s": 150.663,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "8b9923ff21d8",
+      "name": "第二幕 门外小群交谈候选 聚会笑声替代",
+      "filename": "16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+      "media_relpath": "media/16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+      "duration_s": 22.013,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "91eaf37ca55d",
+      "name": "第二幕 洗衣店运转底声",
+      "filename": "17_第二幕_洗衣店运转底声.flac",
+      "media_relpath": "media/17_第二幕_洗衣店运转底声.flac",
+      "duration_s": 141.733,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "312db1142a73",
+      "name": "第三幕 剧场室内底声",
+      "filename": "18_第三幕_剧场室内底声.flac",
+      "media_relpath": "media/18_第三幕_剧场室内底声.flac",
+      "duration_s": 66.247,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 75.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "1dc3b857f7fd",
+      "name": "第三幕 室内空调底声",
+      "filename": "19_第三幕_室内空调底声.flac",
+      "media_relpath": "media/19_第三幕_室内空调底声.flac",
+      "duration_s": 92.09,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    },
+    {
+      "id": "edc8be6c35fb",
+      "name": "第三幕 远处空间活动与车流",
+      "filename": "20_第三幕_远处空间活动与车流.wav",
+      "media_relpath": "media/20_第三幕_远处空间活动与车流.wav",
+      "duration_s": 120.139,
+      "source_channels": 2,
+      "gain_db": 0.0,
+      "trim_start_s": 0.0,
+      "trim_end_s": 0.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "loop": false,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "color": "cyan",
+      "notes": ""
+    }
+  ],
   "cues": [
     {
       "id": "678b4f1ea9dc",
       "title": "01 · 微风",
-      "filename": "01_第一幕_微风.flac",
-      "media_relpath": "media/01_第一幕_微风.flac",
-      "duration_s": 66.801,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "path",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 16.7,
+              "x_m": -2.44,
+              "y_m": -2.33
+            },
+            {
+              "time_s": 25.05,
+              "x_m": -1.2,
+              "y_m": -0.27
+            },
+            {
+              "time_s": 33.4,
+              "x_m": 0.67,
+              "y_m": 0.3
+            },
+            {
+              "time_s": 41.75,
+              "x_m": 1.29,
+              "y_m": 1.6
+            },
+            {
+              "time_s": 50.1,
+              "x_m": 2.55,
+              "y_m": 2.58
+            },
+            {
+              "time_s": 58.45,
+              "x_m": 2.02,
+              "y_m": 1.44
+            },
+            {
+              "time_s": 66.8,
+              "x_m": -0.41,
+              "y_m": 1.18
+            },
+            {
+              "time_s": 75.15,
+              "x_m": -0.45,
+              "y_m": -0.71
+            },
+            {
+              "time_s": 83.5,
+              "x_m": -1.98,
+              "y_m": -0.78
+            },
+            {
+              "time_s": 91.85,
+              "x_m": -1.77,
+              "y_m": -2.19
+            }
+          ],
+          "id": "30be18cad0ba",
+          "media_id": "882c9a7a2851",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 16.7,
+                "x_m": -2.44,
+                "y_m": -2.33
+              },
+              {
+                "time_s": 25.05,
+                "x_m": -1.2,
+                "y_m": -0.27
+              },
+              {
+                "time_s": 33.4,
+                "x_m": 0.67,
+                "y_m": 0.3
+              },
+              {
+                "time_s": 41.75,
+                "x_m": 1.29,
+                "y_m": 1.6
+              },
+              {
+                "time_s": 50.1,
+                "x_m": 2.55,
+                "y_m": 2.58
+              },
+              {
+                "time_s": 58.45,
+                "x_m": 2.02,
+                "y_m": 1.44
+              },
+              {
+                "time_s": 66.8,
+                "x_m": -0.41,
+                "y_m": 1.18
+              },
+              {
+                "time_s": 75.15,
+                "x_m": -0.45,
+                "y_m": -0.71
+              },
+              {
+                "time_s": 83.5,
+                "x_m": -1.98,
+                "y_m": -0.78
+              },
+              {
+                "time_s": 91.85,
+                "x_m": -1.77,
+                "y_m": -2.19
+              }
+            ],
+            "layer_id": "30be18cad0ba"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [
-        {
-          "time_s": 0.0,
-          "x_m": 0.0,
-          "y_m": 3.0
-        }
-      ],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "61e865e0216e",
       "title": "02 · 花园鸟声",
-      "filename": "02_第一幕_花园鸟声.flac",
-      "media_relpath": "media/02_第一幕_花园鸟声.flac",
-      "duration_s": 105.349,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -3.68,
+              "y_m": -0.01
+            },
+            {
+              "time_s": 13.17,
+              "x_m": -2.98,
+              "y_m": 1.31
+            },
+            {
+              "time_s": 26.34,
+              "x_m": -2.71,
+              "y_m": 0.72
+            },
+            {
+              "time_s": 39.51,
+              "x_m": -3.21,
+              "y_m": -0.67
+            },
+            {
+              "time_s": 52.68,
+              "x_m": -3.08,
+              "y_m": 0.31
+            },
+            {
+              "time_s": 65.85,
+              "x_m": -2.74,
+              "y_m": 2.03
+            },
+            {
+              "time_s": 79.02,
+              "x_m": -2.55,
+              "y_m": -1.15
+            },
+            {
+              "time_s": 92.19,
+              "x_m": -3.31,
+              "y_m": -0.25
+            },
+            {
+              "time_s": 105.36,
+              "x_m": -2.97,
+              "y_m": -1.87
+            },
+            {
+              "time_s": 118.53,
+              "x_m": -2.51,
+              "y_m": 1.27
+            },
+            {
+              "time_s": 131.7,
+              "x_m": -3.15,
+              "y_m": 1.61
+            },
+            {
+              "time_s": 144.87,
+              "x_m": -2.24,
+              "y_m": -0.5
+            },
+            {
+              "time_s": 158.04,
+              "x_m": -3.33,
+              "y_m": 0.7
+            }
+          ],
+          "id": "0b1568043e4b",
+          "media_id": "e604be81cd2b",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -3.68,
+                "y_m": -0.01
+              },
+              {
+                "time_s": 13.17,
+                "x_m": -2.98,
+                "y_m": 1.31
+              },
+              {
+                "time_s": 26.34,
+                "x_m": -2.71,
+                "y_m": 0.72
+              },
+              {
+                "time_s": 39.51,
+                "x_m": -3.21,
+                "y_m": -0.67
+              },
+              {
+                "time_s": 52.68,
+                "x_m": -3.08,
+                "y_m": 0.31
+              },
+              {
+                "time_s": 65.85,
+                "x_m": -2.74,
+                "y_m": 2.03
+              },
+              {
+                "time_s": 79.02,
+                "x_m": -2.55,
+                "y_m": -1.15
+              },
+              {
+                "time_s": 92.19,
+                "x_m": -3.31,
+                "y_m": -0.25
+              },
+              {
+                "time_s": 105.36,
+                "x_m": -2.97,
+                "y_m": -1.87
+              },
+              {
+                "time_s": 118.53,
+                "x_m": -2.51,
+                "y_m": 1.27
+              },
+              {
+                "time_s": 131.7,
+                "x_m": -3.15,
+                "y_m": 1.61
+              },
+              {
+                "time_s": 144.87,
+                "x_m": -2.24,
+                "y_m": -0.5
+              },
+              {
+                "time_s": 158.04,
+                "x_m": -3.33,
+                "y_m": 0.7
+              }
+            ],
+            "layer_id": "0b1568043e4b"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "d6b5a34806c1",
+      "title": "03 北边脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -1.02,
+              "y_m": 3.88
+            },
+            {
+              "time_s": 2.62,
+              "x_m": 1.11,
+              "y_m": 3.65
+            },
+            {
+              "time_s": 5.24,
+              "x_m": -0.92,
+              "y_m": 3.55
+            },
+            {
+              "time_s": 7.86,
+              "x_m": 0.88,
+              "y_m": 3.93
+            }
+          ],
+          "id": "f2b27da752be",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -1.02,
+                "y_m": 3.88
+              },
+              {
+                "time_s": 2.62,
+                "x_m": 1.11,
+                "y_m": 3.65
+              },
+              {
+                "time_s": 5.24,
+                "x_m": -0.92,
+                "y_m": 3.55
+              },
+              {
+                "time_s": 7.86,
+                "x_m": 0.88,
+                "y_m": 3.93
+              }
+            ],
+            "layer_id": "f2b27da752be"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "8746dbc796ed",
+      "title": "03 东北脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 2.36,
+              "y_m": 3.76
+            },
+            {
+              "time_s": 2.62,
+              "x_m": 3.86,
+              "y_m": 2.47
+            },
+            {
+              "time_s": 5.24,
+              "x_m": 2.66,
+              "y_m": 3.87
+            },
+            {
+              "time_s": 7.86,
+              "x_m": 4.04,
+              "y_m": 2.85
+            }
+          ],
+          "id": "45c7b1d7e83f",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 2.36,
+                "y_m": 3.76
+              },
+              {
+                "time_s": 2.62,
+                "x_m": 3.86,
+                "y_m": 2.47
+              },
+              {
+                "time_s": 5.24,
+                "x_m": 2.66,
+                "y_m": 3.87
+              },
+              {
+                "time_s": 7.86,
+                "x_m": 4.04,
+                "y_m": 2.85
+              }
+            ],
+            "layer_id": "45c7b1d7e83f"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "9883f47aa7ff",
+      "title": "03 东边脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 4.33,
+              "y_m": 0.94
+            },
+            {
+              "time_s": 2.62,
+              "x_m": 2.27,
+              "y_m": -0.31
+            },
+            {
+              "time_s": 5.24,
+              "x_m": 2.56,
+              "y_m": 0.67
+            },
+            {
+              "time_s": 7.86,
+              "x_m": 3.54,
+              "y_m": 0.02
+            }
+          ],
+          "id": "70c1c64339aa",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 4.33,
+                "y_m": 0.94
+              },
+              {
+                "time_s": 2.62,
+                "x_m": 2.27,
+                "y_m": -0.31
+              },
+              {
+                "time_s": 5.24,
+                "x_m": 2.56,
+                "y_m": 0.67
+              },
+              {
+                "time_s": 7.86,
+                "x_m": 3.54,
+                "y_m": 0.02
+              }
+            ],
+            "layer_id": "70c1c64339aa"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "1a3690413223",
+      "title": "03 东南脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 1.28,
+              "y_m": -2.97
+            },
+            {
+              "time_s": 2.62,
+              "x_m": 3.06,
+              "y_m": -2.18
+            },
+            {
+              "time_s": 5.24,
+              "x_m": 2.3,
+              "y_m": -2.98
+            },
+            {
+              "time_s": 7.86,
+              "x_m": 2.54,
+              "y_m": -1.34
+            }
+          ],
+          "id": "f9b9a75913d5",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 1.28,
+                "y_m": -2.97
+              },
+              {
+                "time_s": 2.62,
+                "x_m": 3.06,
+                "y_m": -2.18
+              },
+              {
+                "time_s": 5.24,
+                "x_m": 2.3,
+                "y_m": -2.98
+              },
+              {
+                "time_s": 7.86,
+                "x_m": 2.54,
+                "y_m": -1.34
+              }
+            ],
+            "layer_id": "f9b9a75913d5"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "39d5eb72785c",
-      "title": "03 · 远处走廊脚步",
-      "filename": "03_第一幕_远处走廊脚步.flac",
-      "media_relpath": "media/03_第一幕_远处走廊脚步.flac",
-      "duration_s": 20.952,
+      "title": "03 · 南边脚步",
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 0.94,
+              "y_m": -1.74
+            },
+            {
+              "time_s": 2.62,
+              "x_m": -0.51,
+              "y_m": -4.1
+            },
+            {
+              "time_s": 5.24,
+              "x_m": 0.63,
+              "y_m": -3.04
+            },
+            {
+              "time_s": 7.86,
+              "x_m": -0.51,
+              "y_m": -2.63
+            }
+          ],
+          "id": "0dedac397c15",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 0.94,
+                "y_m": -1.74
+              },
+              {
+                "time_s": 2.62,
+                "x_m": -0.51,
+                "y_m": -4.1
+              },
+              {
+                "time_s": 5.24,
+                "x_m": 0.63,
+                "y_m": -3.04
+              },
+              {
+                "time_s": 7.86,
+                "x_m": -0.51,
+                "y_m": -2.63
+              }
+            ],
+            "layer_id": "0dedac397c15"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "a2f4a9c21c64",
+      "title": "03 西南脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.18,
+              "y_m": -3.54
+            },
+            {
+              "time_s": 2.62,
+              "x_m": -3.56,
+              "y_m": -2.41
+            },
+            {
+              "time_s": 5.24,
+              "x_m": -2.54,
+              "y_m": -3.81
+            },
+            {
+              "time_s": 7.86,
+              "x_m": -3.2,
+              "y_m": -2.09
+            },
+            {
+              "time_s": 10.48,
+              "x_m": -1.01,
+              "y_m": -1.04
+            }
+          ],
+          "id": "7e1d3a7a95af",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.18,
+                "y_m": -3.54
+              },
+              {
+                "time_s": 2.62,
+                "x_m": -3.56,
+                "y_m": -2.41
+              },
+              {
+                "time_s": 5.24,
+                "x_m": -2.54,
+                "y_m": -3.81
+              },
+              {
+                "time_s": 7.86,
+                "x_m": -3.2,
+                "y_m": -2.09
+              },
+              {
+                "time_s": 10.48,
+                "x_m": -1.01,
+                "y_m": -1.04
+              }
+            ],
+            "layer_id": "7e1d3a7a95af"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "aae32470d66e",
+      "title": "03 西边脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -3.28,
+              "y_m": -0.34
+            },
+            {
+              "time_s": 2.62,
+              "x_m": -1.02,
+              "y_m": 0.06
+            },
+            {
+              "time_s": 5.24,
+              "x_m": -1.0,
+              "y_m": -0.85
+            },
+            {
+              "time_s": 7.86,
+              "x_m": -1.77,
+              "y_m": -0.11
+            }
+          ],
+          "id": "f9f567919467",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -3.28,
+                "y_m": -0.34
+              },
+              {
+                "time_s": 2.62,
+                "x_m": -1.02,
+                "y_m": 0.06
+              },
+              {
+                "time_s": 5.24,
+                "x_m": -1.0,
+                "y_m": -0.85
+              },
+              {
+                "time_s": 7.86,
+                "x_m": -1.77,
+                "y_m": -0.11
+              }
+            ],
+            "layer_id": "f9f567919467"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "b3ec92b9b801",
+      "title": "03 西北脚步",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -3.51,
+              "y_m": 1.95
+            },
+            {
+              "time_s": 2.62,
+              "x_m": -1.91,
+              "y_m": 3.09
+            },
+            {
+              "time_s": 5.24,
+              "x_m": -2.17,
+              "y_m": 1.68
+            },
+            {
+              "time_s": 7.86,
+              "x_m": -1.21,
+              "y_m": 1.27
+            },
+            {
+              "time_s": 10.48,
+              "x_m": -0.86,
+              "y_m": 1.56
+            },
+            {
+              "time_s": 13.1,
+              "x_m": -1.56,
+              "y_m": 1.16
+            },
+            {
+              "time_s": 15.72,
+              "x_m": -1.11,
+              "y_m": 1.69
+            }
+          ],
+          "id": "7ba2b699354c",
+          "media_id": "9b3719b28d6c",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -3.51,
+                "y_m": 1.95
+              },
+              {
+                "time_s": 2.62,
+                "x_m": -1.91,
+                "y_m": 3.09
+              },
+              {
+                "time_s": 5.24,
+                "x_m": -2.17,
+                "y_m": 1.68
+              },
+              {
+                "time_s": 7.86,
+                "x_m": -1.21,
+                "y_m": 1.27
+              },
+              {
+                "time_s": 10.48,
+                "x_m": -0.86,
+                "y_m": 1.56
+              },
+              {
+                "time_s": 13.1,
+                "x_m": -1.56,
+                "y_m": 1.16
+              },
+              {
+                "time_s": 15.72,
+                "x_m": -1.11,
+                "y_m": 1.69
+              }
+            ],
+            "layer_id": "7ba2b699354c"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "2ea5e6993ffc",
       "title": "04 · 远钟",
-      "filename": "04_第一幕_远钟.wav",
-      "media_relpath": "media/04_第一幕_远钟.wav",
-      "duration_s": 4.985,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.46,
+              "y_m": 0.02
+            },
+            {
+              "time_s": 0.62,
+              "x_m": -1.55,
+              "y_m": 0.03
+            }
+          ],
+          "id": "8919bd5bdf74",
+          "media_id": "c0e31e02986f",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.46,
+                "y_m": 0.02
+              },
+              {
+                "time_s": 0.62,
+                "x_m": -1.55,
+                "y_m": 0.03
+              }
+            ],
+            "layer_id": "8919bd5bdf74"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "a81a14470d00",
       "title": "05 · 远处合唱声候选",
-      "filename": "05_第一幕_远处合唱声候选.wav",
-      "media_relpath": "media/05_第一幕_远处合唱声候选.wav",
-      "duration_s": 108.008,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -0.05,
+              "y_m": -3.99
+            }
+          ],
+          "id": "141c0833e3ad",
+          "media_id": "0bb6981d4fc9",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -0.05,
+                "y_m": -3.99
+              }
+            ],
+            "layer_id": "141c0833e3ad"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "6d45cbb7f55c",
       "title": "06 · 竖琴背景伴奏候选",
-      "filename": "06_第一幕_竖琴背景伴奏候选.wav",
-      "media_relpath": "media/06_第一幕_竖琴背景伴奏候选.wav",
-      "duration_s": 271.533,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 3.91,
+              "y_m": 0.01
+            }
+          ],
+          "id": "33c7cf4b2e1d",
+          "media_id": "4e3f24f10beb",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 3.91,
+                "y_m": 0.01
+              }
+            ],
+            "layer_id": "33c7cf4b2e1d"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.933Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "86c5d82422b7",
       "title": "07 · 树叶间轻风",
-      "filename": "07_第一幕_树叶间轻风.flac",
-      "media_relpath": "media/07_第一幕_树叶间轻风.flac",
-      "duration_s": 60.0,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -4.22,
+              "y_m": -0.08
+            },
+            {
+              "time_s": 7.5,
+              "x_m": -3.64,
+              "y_m": 2.08
+            },
+            {
+              "time_s": 15.0,
+              "x_m": -3.72,
+              "y_m": -1.96
+            },
+            {
+              "time_s": 22.5,
+              "x_m": -2.83,
+              "y_m": 2.37
+            },
+            {
+              "time_s": 30.0,
+              "x_m": -2.63,
+              "y_m": -2.31
+            },
+            {
+              "time_s": 37.5,
+              "x_m": -2.34,
+              "y_m": 2.19
+            },
+            {
+              "time_s": 45.0,
+              "x_m": -2.02,
+              "y_m": -1.81
+            }
+          ],
+          "id": "22390c975207",
+          "media_id": "d0ecf9ab4b05",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 1.49,
+              "y_m": 2.32
+            },
+            {
+              "time_s": 7.5,
+              "x_m": 3.41,
+              "y_m": 1.31
+            },
+            {
+              "time_s": 15.0,
+              "x_m": 2.8,
+              "y_m": -0.23
+            },
+            {
+              "time_s": 22.5,
+              "x_m": 2.07,
+              "y_m": 3.05
+            },
+            {
+              "time_s": 30.0,
+              "x_m": 1.09,
+              "y_m": 3.19
+            },
+            {
+              "time_s": 37.5,
+              "x_m": 3.65,
+              "y_m": 0.45
+            },
+            {
+              "time_s": 45.0,
+              "x_m": 2.77,
+              "y_m": -1.03
+            },
+            {
+              "time_s": 52.5,
+              "x_m": 2.64,
+              "y_m": 2.29
+            },
+            {
+              "time_s": 60.0,
+              "x_m": 0.5,
+              "y_m": 2.78
+            }
+          ],
+          "id": "60bdf14c8e0f",
+          "media_id": "d0ecf9ab4b05",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -0.13,
+              "y_m": 2.52
+            },
+            {
+              "time_s": 7.5,
+              "x_m": -2.08,
+              "y_m": 2.66
+            },
+            {
+              "time_s": 15.0,
+              "x_m": -0.76,
+              "y_m": 1.88
+            },
+            {
+              "time_s": 22.5,
+              "x_m": 1.85,
+              "y_m": 2.8
+            },
+            {
+              "time_s": 30.0,
+              "x_m": 0.02,
+              "y_m": 2.95
+            },
+            {
+              "time_s": 37.5,
+              "x_m": -2.14,
+              "y_m": 2.05
+            },
+            {
+              "time_s": 45.0,
+              "x_m": 0.33,
+              "y_m": 2.59
+            },
+            {
+              "time_s": 52.5,
+              "x_m": -1.39,
+              "y_m": 1.53
+            }
+          ],
+          "id": "a0231c6ce350",
+          "media_id": "d0ecf9ab4b05",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -0.18,
+              "y_m": -2.69
+            },
+            {
+              "time_s": 7.5,
+              "x_m": 2.21,
+              "y_m": -1.14
+            },
+            {
+              "time_s": 15.0,
+              "x_m": 1.31,
+              "y_m": -2.99
+            },
+            {
+              "time_s": 22.5,
+              "x_m": 2.0,
+              "y_m": -0.19
+            },
+            {
+              "time_s": 30.0,
+              "x_m": 2.94,
+              "y_m": -1.49
+            },
+            {
+              "time_s": 37.5,
+              "x_m": 0.55,
+              "y_m": -1.95
+            },
+            {
+              "time_s": 45.0,
+              "x_m": 0.98,
+              "y_m": 0.38
+            },
+            {
+              "time_s": 52.5,
+              "x_m": -1.01,
+              "y_m": -0.63
+            },
+            {
+              "time_s": 60.0,
+              "x_m": 1.44,
+              "y_m": -0.9
+            }
+          ],
+          "id": "2052efc24178",
+          "media_id": "d0ecf9ab4b05",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -4.22,
+                "y_m": -0.08
+              },
+              {
+                "time_s": 7.5,
+                "x_m": -3.64,
+                "y_m": 2.08
+              },
+              {
+                "time_s": 15.0,
+                "x_m": -3.72,
+                "y_m": -1.96
+              },
+              {
+                "time_s": 22.5,
+                "x_m": -2.83,
+                "y_m": 2.37
+              },
+              {
+                "time_s": 30.0,
+                "x_m": -2.63,
+                "y_m": -2.31
+              },
+              {
+                "time_s": 37.5,
+                "x_m": -2.34,
+                "y_m": 2.19
+              },
+              {
+                "time_s": 45.0,
+                "x_m": -2.02,
+                "y_m": -1.81
+              }
+            ],
+            "layer_id": "22390c975207"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 1.49,
+                "y_m": 2.32
+              },
+              {
+                "time_s": 7.5,
+                "x_m": 3.41,
+                "y_m": 1.31
+              },
+              {
+                "time_s": 15.0,
+                "x_m": 2.8,
+                "y_m": -0.23
+              },
+              {
+                "time_s": 22.5,
+                "x_m": 2.07,
+                "y_m": 3.05
+              },
+              {
+                "time_s": 30.0,
+                "x_m": 1.09,
+                "y_m": 3.19
+              },
+              {
+                "time_s": 37.5,
+                "x_m": 3.65,
+                "y_m": 0.45
+              },
+              {
+                "time_s": 45.0,
+                "x_m": 2.77,
+                "y_m": -1.03
+              },
+              {
+                "time_s": 52.5,
+                "x_m": 2.64,
+                "y_m": 2.29
+              },
+              {
+                "time_s": 60.0,
+                "x_m": 0.5,
+                "y_m": 2.78
+              }
+            ],
+            "layer_id": "60bdf14c8e0f"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -0.13,
+                "y_m": 2.52
+              },
+              {
+                "time_s": 7.5,
+                "x_m": -2.08,
+                "y_m": 2.66
+              },
+              {
+                "time_s": 15.0,
+                "x_m": -0.76,
+                "y_m": 1.88
+              },
+              {
+                "time_s": 22.5,
+                "x_m": 1.85,
+                "y_m": 2.8
+              },
+              {
+                "time_s": 30.0,
+                "x_m": 0.02,
+                "y_m": 2.95
+              },
+              {
+                "time_s": 37.5,
+                "x_m": -2.14,
+                "y_m": 2.05
+              },
+              {
+                "time_s": 45.0,
+                "x_m": 0.33,
+                "y_m": 2.59
+              },
+              {
+                "time_s": 52.5,
+                "x_m": -1.39,
+                "y_m": 1.53
+              }
+            ],
+            "layer_id": "a0231c6ce350"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -0.18,
+                "y_m": -2.69
+              },
+              {
+                "time_s": 7.5,
+                "x_m": 2.21,
+                "y_m": -1.14
+              },
+              {
+                "time_s": 15.0,
+                "x_m": 1.31,
+                "y_m": -2.99
+              },
+              {
+                "time_s": 22.5,
+                "x_m": 2.0,
+                "y_m": -0.19
+              },
+              {
+                "time_s": 30.0,
+                "x_m": 2.94,
+                "y_m": -1.49
+              },
+              {
+                "time_s": 37.5,
+                "x_m": 0.55,
+                "y_m": -1.95
+              },
+              {
+                "time_s": 45.0,
+                "x_m": 0.98,
+                "y_m": 0.38
+              },
+              {
+                "time_s": 52.5,
+                "x_m": -1.01,
+                "y_m": -0.63
+              },
+              {
+                "time_s": 60.0,
+                "x_m": 1.44,
+                "y_m": -0.9
+              }
+            ],
+            "layer_id": "2052efc24178"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "a049ec7c18b4",
       "title": "08 · 风扇",
-      "filename": "08_第二幕_风扇.wav",
-      "media_relpath": "media/08_第二幕_风扇.wav",
-      "duration_s": 124.469,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.0,
+              "y_m": 1.94
+            }
+          ],
+          "id": "7cfd70b97293",
+          "media_id": "71af96d5a2b6",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.0,
+                "y_m": 1.94
+              }
+            ],
+            "layer_id": "7cfd70b97293"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "b6a3ac05fd3c",
       "title": "09 · 洗衣机注水起洗",
-      "filename": "09_第二幕_洗衣机注水起洗.flac",
-      "media_relpath": "media/09_第二幕_洗衣机注水起洗.flac",
-      "duration_s": 21.893,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 1.99,
+              "y_m": 1.99
+            }
+          ],
+          "id": "b39811e36b05",
+          "media_id": "cb096a61a8aa",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.02,
+              "y_m": 1.97
+            }
+          ],
+          "id": "d1a7b3836f20",
+          "media_id": "71af96d5a2b6",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 1.99,
+                "y_m": 1.99
+              }
+            ],
+            "layer_id": "b39811e36b05"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.02,
+                "y_m": 1.97
+              }
+            ],
+            "layer_id": "d1a7b3836f20"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "1f58f76a3a68",
       "title": "10 · 洗衣机脱水",
-      "filename": "10_第二幕_洗衣机脱水.flac",
-      "media_relpath": "media/10_第二幕_洗衣机脱水.flac",
-      "duration_s": 56.219,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -0.99,
+              "y_m": -1.03
+            }
+          ],
+          "id": "c0cee7e8f566",
+          "media_id": "e183f1e2c47b",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.0,
+              "y_m": 1.96
+            }
+          ],
+          "id": "097f3ff64466",
+          "media_id": "71af96d5a2b6",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -0.99,
+                "y_m": -1.03
+              }
+            ],
+            "layer_id": "c0cee7e8f566"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.0,
+                "y_m": 1.96
+              }
+            ],
+            "layer_id": "097f3ff64466"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "d7881598458f",
       "title": "11 · 烘干机",
-      "filename": "11_第二幕_烘干机.flac",
-      "media_relpath": "media/11_第二幕_烘干机.flac",
-      "duration_s": 112.977,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "path",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -0.03,
+              "y_m": -3.96
+            }
+          ],
+          "id": "d29841b4d7ed",
+          "media_id": "0f43e55ec993",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        },
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.01,
+              "y_m": 1.97
+            }
+          ],
+          "id": "23b0896a995e",
+          "media_id": "71af96d5a2b6",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -0.03,
+                "y_m": -3.96
+              }
+            ],
+            "layer_id": "d29841b4d7ed"
+          },
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.01,
+                "y_m": 1.97
+              }
+            ],
+            "layer_id": "23b0896a995e"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [
-        {
-          "time_s": 0.0,
-          "x_m": -0.06,
-          "y_m": 2.91
-        }
-      ],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "a4d186275896",
       "title": "12 · 远车流",
-      "filename": "12_第二幕_远车流.flac",
-      "media_relpath": "media/12_第二幕_远车流.flac",
-      "duration_s": 119.989,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -1.64,
+              "y_m": 3.58
+            },
+            {
+              "time_s": 15.0,
+              "x_m": -1.36,
+              "y_m": 3.61
+            },
+            {
+              "time_s": 30.0,
+              "x_m": 0.25,
+              "y_m": 3.57
+            },
+            {
+              "time_s": 45.0,
+              "x_m": 0.96,
+              "y_m": 3.58
+            },
+            {
+              "time_s": 60.0,
+              "x_m": 2.03,
+              "y_m": 3.74
+            },
+            {
+              "time_s": 75.0,
+              "x_m": 2.95,
+              "y_m": 3.7
+            },
+            {
+              "time_s": 90.0,
+              "x_m": 3.4,
+              "y_m": 3.09
+            },
+            {
+              "time_s": 105.0,
+              "x_m": 3.6,
+              "y_m": 2.33
+            },
+            {
+              "time_s": 120.0,
+              "x_m": 3.8,
+              "y_m": 1.35
+            },
+            {
+              "time_s": 135.0,
+              "x_m": 3.83,
+              "y_m": -0.45
+            }
+          ],
+          "id": "b5926521816e",
+          "media_id": "ce0e315e5f84",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -1.64,
+                "y_m": 3.58
+              },
+              {
+                "time_s": 15.0,
+                "x_m": -1.36,
+                "y_m": 3.61
+              },
+              {
+                "time_s": 30.0,
+                "x_m": 0.25,
+                "y_m": 3.57
+              },
+              {
+                "time_s": 45.0,
+                "x_m": 0.96,
+                "y_m": 3.58
+              },
+              {
+                "time_s": 60.0,
+                "x_m": 2.03,
+                "y_m": 3.74
+              },
+              {
+                "time_s": 75.0,
+                "x_m": 2.95,
+                "y_m": 3.7
+              },
+              {
+                "time_s": 90.0,
+                "x_m": 3.4,
+                "y_m": 3.09
+              },
+              {
+                "time_s": 105.0,
+                "x_m": 3.6,
+                "y_m": 2.33
+              },
+              {
+                "time_s": 120.0,
+                "x_m": 3.8,
+                "y_m": 1.35
+              },
+              {
+                "time_s": 135.0,
+                "x_m": 3.83,
+                "y_m": -0.45
+              }
+            ],
+            "layer_id": "b5926521816e"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "31fcfa4ceb26",
       "title": "13 · 公交经过",
-      "filename": "13_第二幕_公交经过.flac",
-      "media_relpath": "media/13_第二幕_公交经过.flac",
-      "duration_s": 35.999,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.31,
+              "y_m": 3.67
+            },
+            {
+              "time_s": 4.5,
+              "x_m": -2.99,
+              "y_m": 1.49
+            },
+            {
+              "time_s": 9.0,
+              "x_m": -3.33,
+              "y_m": 0.85
+            },
+            {
+              "time_s": 13.5,
+              "x_m": -3.46,
+              "y_m": 0.03
+            },
+            {
+              "time_s": 18.0,
+              "x_m": -2.98,
+              "y_m": -0.75
+            },
+            {
+              "time_s": 22.5,
+              "x_m": -2.8,
+              "y_m": -1.64
+            },
+            {
+              "time_s": 27.0,
+              "x_m": -2.6,
+              "y_m": -2.45
+            },
+            {
+              "time_s": 31.5,
+              "x_m": -2.35,
+              "y_m": -3.12
+            },
+            {
+              "time_s": 36.0,
+              "x_m": -2.15,
+              "y_m": -4.05
+            }
+          ],
+          "id": "33f7dfeb05c6",
+          "media_id": "a19b1cb1f3b2",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.31,
+                "y_m": 3.67
+              },
+              {
+                "time_s": 4.5,
+                "x_m": -2.99,
+                "y_m": 1.49
+              },
+              {
+                "time_s": 9.0,
+                "x_m": -3.33,
+                "y_m": 0.85
+              },
+              {
+                "time_s": 13.5,
+                "x_m": -3.46,
+                "y_m": 0.03
+              },
+              {
+                "time_s": 18.0,
+                "x_m": -2.98,
+                "y_m": -0.75
+              },
+              {
+                "time_s": 22.5,
+                "x_m": -2.8,
+                "y_m": -1.64
+              },
+              {
+                "time_s": 27.0,
+                "x_m": -2.6,
+                "y_m": -2.45
+              },
+              {
+                "time_s": 31.5,
+                "x_m": -2.35,
+                "y_m": -3.12
+              },
+              {
+                "time_s": 36.0,
+                "x_m": -2.15,
+                "y_m": -4.05
+              }
+            ],
+            "layer_id": "33f7dfeb05c6"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "01b6f2db9594",
       "title": "14 · 电子铃 · 门铃替代",
-      "filename": "14_第二幕_电子铃_门铃替代.flac",
-      "media_relpath": "media/14_第二幕_电子铃_门铃替代.flac",
-      "duration_s": 2.151,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 1.5,
+              "y_m": 1.05
+            }
+          ],
+          "id": "ecca5ce7c9f0",
+          "media_id": "ca6ebdabd01d",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 1.5,
+                "y_m": 1.05
+              }
+            ],
+            "layer_id": "ecca5ce7c9f0"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "b95e7345260e",
       "title": "15 · 门外广场人群候选",
-      "filename": "15_第二幕_门外广场人群候选.flac",
-      "media_relpath": "media/15_第二幕_门外广场人群候选.flac",
-      "duration_s": 150.663,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 0.03,
+              "y_m": -2.86
+            }
+          ],
+          "id": "ad2b1e557950",
+          "media_id": "5ffa89efcdb2",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 0.03,
+                "y_m": -2.86
+              }
+            ],
+            "layer_id": "ad2b1e557950"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "0fe8078e6506",
       "title": "16 · 门外小群交谈候选 · 聚会笑声替代",
-      "filename": "16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
-      "media_relpath": "media/16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
-      "duration_s": 22.013,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 2.73,
+              "y_m": 1.34
+            }
+          ],
+          "id": "34a37af9ea5c",
+          "media_id": "8b9923ff21d8",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 2.73,
+                "y_m": 1.34
+              }
+            ],
+            "layer_id": "34a37af9ea5c"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "a746288a180a",
       "title": "17 · 洗衣店运转底声",
-      "filename": "17_第二幕_洗衣店运转底声.flac",
-      "media_relpath": "media/17_第二幕_洗衣店运转底声.flac",
-      "duration_s": 141.733,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -1.97,
+              "y_m": -1.99
+            }
+          ],
+          "id": "c65168be4f5f",
+          "media_id": "91eaf37ca55d",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -1.97,
+                "y_m": -1.99
+              }
+            ],
+            "layer_id": "c65168be4f5f"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "5e559961442d",
       "title": "18 · 剧场室内底声",
-      "filename": "18_第三幕_剧场室内底声.flac",
-      "media_relpath": "media/18_第三幕_剧场室内底声.flac",
-      "duration_s": 66.247,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 8.28,
+              "x_m": 1.51,
+              "y_m": -1.51
+            }
+          ],
+          "id": "ab2bf2b230e8",
+          "media_id": "312db1142a73",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 8.28,
+                "x_m": 1.51,
+                "y_m": -1.51
+              }
+            ],
+            "layer_id": "ab2bf2b230e8"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "f254a32badaf",
+      "title": "18 剧场室内底声",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -1.49,
+              "y_m": 1.44
+            }
+          ],
+          "id": "e394b1b7fa53",
+          "media_id": "312db1142a73",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -1.49,
+                "y_m": 1.44
+              }
+            ],
+            "layer_id": "e394b1b7fa53"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "c4d1afaab56a",
       "title": "19 · 室内空调底声",
-      "filename": "19_第三幕_室内空调底声.flac",
-      "media_relpath": "media/19_第三幕_室内空调底声.flac",
-      "duration_s": 92.09,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 0.01,
+              "y_m": 2.28
+            }
+          ],
+          "id": "a77d22784ff3",
+          "media_id": "1dc3b857f7fd",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 0.01,
+                "y_m": 2.28
+              }
+            ],
+            "layer_id": "a77d22784ff3"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "aabf3afb81b8",
+      "title": "第三幕 室内空调底声",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 0.02,
+              "y_m": -2.54
+            }
+          ],
+          "id": "4d6e211c28e8",
+          "media_id": "1dc3b857f7fd",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 0.02,
+                "y_m": -2.54
+              }
+            ],
+            "layer_id": "4d6e211c28e8"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     },
     {
       "id": "9fb6d0ade300",
       "title": "20 · 远处空间活动与车流",
-      "filename": "20_第三幕_远处空间活动与车流.wav",
-      "media_relpath": "media/20_第三幕_远处空间活动与车流.wav",
-      "duration_s": 120.139,
       "color": "cyan",
-      "position_deg": 0.0,
-      "direction_mode": "keyframes",
-      "modulation": [
+      "notes": "",
+      "layers": [
         {
-          "time_s": 0.0,
-          "offset_deg": 0.0
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": 2.68,
+              "y_m": 2.71
+            }
+          ],
+          "id": "af1b89687ba9",
+          "media_id": "edc8be6c35fb",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
         }
       ],
-      "direction_adsr": {
-        "attack_s": 0.3,
-        "peak_offset_deg": 90.0,
-        "decay_s": 0.5,
-        "sustain_offset_deg": 90.0,
-        "release_s": 0.3,
-        "release_offset_deg": 0.0
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": 2.68,
+                "y_m": 2.71
+              }
+            ],
+            "layer_id": "af1b89687ba9"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
       },
-      "path": [],
-      "spatial_preset": null,
-      "source_channels": 2,
-      "stereo_mode": "width",
-      "stereo_width_deg": 90.0,
       "gain_db": -6.0,
-      "fade_in_s": 0.05,
-      "fade_out_s": 0.1,
       "transition_s": 2.5,
       "replace_style": "crossfade",
       "pre_wait_s": 0.0,
       "post_wait_s": 0.0,
       "start_mode": "replace",
-      "continue_mode": "manual"
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
+    },
+    {
+      "id": "2c0b83dc5115",
+      "title": "第三幕 远处空间活动与车流",
+      "color": "cyan",
+      "notes": "",
+      "layers": [
+        {
+          "position_deg": 0.0,
+          "direction_mode": "path",
+          "modulation": [
+            {
+              "time_s": 0.0,
+              "offset_deg": 0.0
+            }
+          ],
+          "direction_adsr": {
+            "attack_s": 0.3,
+            "peak_offset_deg": 90.0,
+            "decay_s": 0.5,
+            "sustain_offset_deg": 90.0,
+            "release_s": 0.3,
+            "release_offset_deg": 0.0
+          },
+          "path": [
+            {
+              "time_s": 0.0,
+              "x_m": -2.65,
+              "y_m": -2.66
+            }
+          ],
+          "id": "032d7875ce5c",
+          "media_id": "edc8be6c35fb",
+          "gain_db": 0.0,
+          "delay_s": 0.0,
+          "muted": false
+        }
+      ],
+      "spatial_preset": {
+        "layers": [
+          {
+            "position_deg": 0.0,
+            "direction_mode": "path",
+            "modulation": [
+              {
+                "time_s": 0.0,
+                "offset_deg": 0.0
+              }
+            ],
+            "direction_adsr": {
+              "attack_s": 0.3,
+              "peak_offset_deg": 90.0,
+              "decay_s": 0.5,
+              "sustain_offset_deg": 90.0,
+              "release_s": 0.3,
+              "release_offset_deg": 0.0
+            },
+            "path": [
+              {
+                "time_s": 0.0,
+                "x_m": -2.65,
+                "y_m": -2.66
+              }
+            ],
+            "layer_id": "032d7875ce5c"
+          }
+        ],
+        "stored_at": "2026-10-27T08:07:23.934Z"
+      },
+      "gain_db": 0.0,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual",
+      "stop_fade_s": 2.0
     }
   ]
 }

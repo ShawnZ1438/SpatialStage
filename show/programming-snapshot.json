@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "description": "Operator-saved show captured after local save confirmation on 2026-10-27; includes all cue/layer programming and stored spatial presets.",
+  "cues": 30,
+  "layers": 36,
+  "media": [
+    {
+      "filename": "01_第一幕_微风.flac",
+      "sha256": "d05692cc7fba6a28554e8ab911ca60f54d12012a1ae93ba8f472d15958ffc15f",
+      "bytes": 12321575
+    },
+    {
+      "filename": "02_第一幕_花园鸟声.flac",
+      "sha256": "352dc65f008d1c9ccca3c487c8a29569bbfb2469c541afc468cc1dcbf235b193",
+      "bytes": 18120908
+    },
+    {
+      "filename": "03_第一幕_远处走廊脚步.flac",
+      "sha256": "0016d5deb0caf7ac3710dbfbe653a0608ecf6deaf085a99dcb5b3abc283b447a",
+      "bytes": 3432798
+    },
+    {
+      "filename": "04_第一幕_远钟.wav",
+      "sha256": "0cf932fbf2bd6c43c0b12d23b6345b8810c09ee292c36703014035d7ba57e567",
+      "bytes": 1438240
+    },
+    {
+      "filename": "05_第一幕_远处合唱声候选.wav",
+      "sha256": "3166d43f637f99f9a5219be23cb3dff77bc610e7fd33d0cb91a946ba4437a38a",
+      "bytes": 31147552
+    },
+    {
+      "filename": "06_第一幕_竖琴背景伴奏候选.wav",
+      "sha256": "a2d5fd9576678af6737a3512ee3ab15029da87ee9bdcd065063f168e5677ad00",
+      "bytes": 78304074
+    },
+    {
+      "filename": "07_第一幕_树叶间轻风.flac",
+      "sha256": "b2d501a07434a47ddd9f4b4f553b678229431e36f7df58eaadcd68542a5bc6da",
+      "bytes": 5929445
+    },
+    {
+      "filename": "08_第二幕_风扇.wav",
+      "sha256": "329f8f5c21405e9bee8f407e6bb17d89c2a4c85dfcedaa1b11a876a1abc49a47",
+      "bytes": 71799372
+    },
+    {
+      "filename": "09_第二幕_洗衣机注水起洗.flac",
+      "sha256": "5d026c6594f6d9f63f756652f67dc94aefc88af0e8afad6e39fc178a43552f3a",
+      "bytes": 5138166
+    },
+    {
+      "filename": "10_第二幕_洗衣机脱水.flac",
+      "sha256": "442207597ca961c53d0a6d796a44c7bcc13c23e2f4cc36435849a35a00c70a76",
+      "bytes": 12334842
+    },
+    {
+      "filename": "11_第二幕_烘干机.flac",
+      "sha256": "a83d7509da44ae3e3c6a461ef21be45b2f5fcfed77019a6cae18320627615fbb",
+      "bytes": 20777899
+    },
+    {
+      "filename": "12_第二幕_远车流.flac",
+      "sha256": "cab41d15b71bad447fea0af8a4789946962723486e17e50e55668353d881f413",
+      "bytes": 23597950
+    },
+    {
+      "filename": "13_第二幕_公交经过.flac",
+      "sha256": "1b4ae68c1d722c7e310dc576ed1a907b7af6eca997f5511bb2800883b95787a7",
+      "bytes": 6606088
+    },
+    {
+      "filename": "14_第二幕_电子铃_门铃替代.flac",
+      "sha256": "7ad93bb89cac7d94bf92e8c299f6d0d24bc2d980fa9ec24abef5f27b7bbf1eef",
+      "bytes": 145201
+    },
+    {
+      "filename": "15_第二幕_门外广场人群候选.flac",
+      "sha256": "709e85c583a45707a3c2f9024958b254cb2848ce5eafe4a299ba62c1e6fb5bfa",
+      "bytes": 25353313
+    },
+    {
+      "filename": "16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+      "sha256": "f8a5568ea48f7103f9f96d9509e291cf17d2a2002151d0f7bce3f5f368a67939",
+      "bytes": 3820480
+    },
+    {
+      "filename": "17_第二幕_洗衣店运转底声.flac",
+      "sha256": "5304c4ef7a3621e94e96aa260259ef0519d830cb32c25b01b6055fa783b0e87d",
+      "bytes": 13485257
+    },
+    {
+      "filename": "18_第三幕_剧场室内底声.flac",
+      "sha256": "fe3a7d77c885448c932659f4d6672fcdee5202780714d450487a62d7a0e10dc8",
+      "bytes": 10544391
+    },
+    {
+      "filename": "19_第三幕_室内空调底声.flac",
+      "sha256": "66e12c2a8f76028c69c63679129f53792beced93c883360bbd359d7acda050c1",
+      "bytes": 14998740
+    },
+    {
+      "filename": "20_第三幕_远处空间活动与车流.wav",
+      "sha256": "6140ef38fbe47bec1fef1f4e4e07cf6723b62eda274449316506b9f6775a9ded",
+      "bytes": 69302140
+    }
+  ],
+  "portable_exclusions": [
+    "project identity regenerated on import",
+    "input device preference reset for new computer",
+    "machine calibration disabled"
+  ],
+  "source_project_saved_at": "2026-10-27T08:16:07.289657+00:00"
+}
