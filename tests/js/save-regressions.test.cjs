@@ -162,13 +162,15 @@ test('360 bearing input is zero while angular envelope offsets remain unwrapped'
 });
 
 
-test('Space on buttons or input never falls through to global GO; body Space still works',()=>{
- const h=harness();let goes=0,panics=0;
+test('Space never GOes from text fields; on a focused button it blurs and GOes exactly once',()=>{
+ const h=harness();let goes=0,panics=0,blurs=0;
  h.get('goButton').click=()=>goes++;h.get('panicButton').click=()=>panics++;
- const key=(tag,extra={})=>({target:{tagName:tag},code:'Space',key:' ',preventDefault(){},...extra});
- for(const tag of ['BUTTON','INPUT','SELECT','TEXTAREA','A'])h.documentListeners.keydown(key(tag));
+ const key=(tag,extra={})=>({target:{tagName:tag,blur(){blurs++;}},code:'Space',key:' ',preventDefault(){},...extra});
+ for(const tag of ['INPUT','SELECT','TEXTAREA'])h.documentListeners.keydown(key(tag));
  assert.equal(goes,0);
- h.documentListeners.keydown(key('BODY'));assert.equal(goes,1);
+ for(const tag of ['BUTTON','A','SUMMARY'])h.documentListeners.keydown(key(tag));
+ assert.equal(goes,3);assert.equal(blurs,3);
+ h.documentListeners.keydown(key('BODY'));assert.equal(goes,4);assert.equal(blurs,3);
  h.documentListeners.keydown(key('INPUT',{key:'Escape',code:'Escape',shiftKey:true}));assert.equal(panics,1);
 });
 test('PDF cue numbering preserves gaps and leaves unresolved material unnumbered',()=>{

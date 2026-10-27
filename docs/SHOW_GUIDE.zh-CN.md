@@ -32,7 +32,7 @@
 - Homebrew、Python 3.12、git、FFmpeg
 
 **演出素材**
-- 仓库里的 `show/audio/` 已经带了 15 个音频（立体声 FLAC），启动时自动导入，不需要另外拷贝。
+- 仓库里的 `show/audio/` 已经带了 20 个音频（15 个 FLAC + 5 个 WAV，全部立体声，约 409 MiB），连同演出配置 `show/project-template.json` 一起，启动时自动导入，不需要另外拷贝。来源与授权记录见 `show/RIGHTS.md`。
 
 ---
 
@@ -74,13 +74,30 @@ cd SpatialStage
 git clone -b feat/performance-mode https://github.com/ShawnZ1438/SpatialStage.git
 ```
 
-克隆完成后，`show/audio/` 里应该有 15 个 `.flac` 文件，约 169 MB。可以这样检查：
+仓库约 800 MB（Git 历史 + 音频各约 400 MB），全部是普通 Git 文件，不需要 Git LFS。请在网络好的地方克隆。
+
+克隆完成后，`show/audio/` 里应该有 20 个文件。检查数量和完整性：
 
 ```bash
 ls show/audio | wc -l
 ```
 
+```bash
+cd show && shasum -a 256 -c SHA256SUMS && cd ..
+```
+
+第一条应输出 `20`；第二条每行都应是 `OK`。
+
 ### 2.3 首次启动
+
+仓库根目录有 4 个双击启动文件：
+
+| 文件 | 作用 |
+|---|---|
+| **Install SpatialStage.command** | 只安装依赖，不启动。第一次可以先双击它（需要联网） |
+| **Start SpatialStage.command** | 正式启动，数据在 `~/.spatialstage/projects`（演出用这个） |
+| **Start Simulation (Mac).command** | 测试启动，数据放在仓库里的 `SpatialStage-test-data`，和演出数据完全隔开 |
+| **Stop SpatialStage.command** | 安全停止后台引擎（见 7.4） |
 
 **方法一（推荐）：** 在访达里打开 `SpatialStage` 文件夹，双击 **`Start SpatialStage.command`**。
 
@@ -90,19 +107,23 @@ ls show/audio | wc -l
 ./run_mac.command
 ```
 
+（测试数据目录用 `./run_mac.command --simulation`。）
+
 首次启动会发生这些事：
 1. 自动创建 `.venv` 并安装依赖，需要联网，大约 1–3 分钟。之后再启动不需要联网。
-2. 把 `show/audio/` 导入成项目 **Show audio (repository)**（15 个 Cue），音箱布局取自 `show/stage.json`（6 m × 6 m 四角）。终端会显示 `Repository show: Show audio (repository) (15 cues)`。
+2. 把 `show/audio/` 导入成项目 **Show audio (repository)**（20 个 Cue），并按 `show/project-template.json` 恢复已经编好的顺序、标题、增益、方向、路径和预设；音箱布局是 6 m × 6 m 四角。终端会显示 `Repository show: Show audio (repository) (20 cues)`。模板只在**第一次**导入时使用，以后不会覆盖你在软件里的修改。
 3. 浏览器自动打开 `http://127.0.0.1:8765`，显示完整界面。右上角的 **Edit | Performance** 开关随时切换编辑模式和演出模式，软件会记住上次的选择。
 
 **看到这些就说明启动成功：**
-- 终端显示 `SpatialStage running at http://127.0.0.1:8765`，窗口保持打开。
-- 浏览器左上角项目名是 *Show audio (repository)*，右侧列表有 15 个 Cue。
+- 终端显示 `SpatialStage: http://127.0.0.1:8765/` 和 `Data: …`（数据目录），窗口保持打开。
+- 浏览器左上角项目名是 *Show audio (repository)*，列表有 20 个 Cue，标题以 `01 ·` 到 `20 ·` 开头（素材编号）；最左边的 `#1`、`#2`… 是播放顺序。
+- 左下角显示当前数据目录 *Show data: …*。
 - 顶部状态显示 *Engine offline*。这是正常的，因为还没连接音频设备。
 
 **常见的首次启动问题：**
 - 双击后提示「无法打开，因为来自身份不明的开发者」：在文件上**右键 → 打开 → 打开**，只需做一次。用 `git clone` 拿到的代码一般不会出现这个提示。
-- 终端提示 `permission denied`：执行 `chmod +x run_mac.command "Start SpatialStage.command"`。
+- 终端提示 `permission denied`：执行 `chmod +x *.command`。
+- 提示 `Port 8765 belongs to a different/stale engine or data mode`：已经有另一个引擎（旧版本、另一份代码，或者另一个数据目录）在运行。先双击 **Stop SpatialStage.command**；如果它也停不掉（例如更早版本的引擎），找到那个旧的终端窗口按 `Ctrl + C`，再重新启动。启动器不会自动杀进程。
 - 提示 `Install supported Python first`：回到 2.1 安装 `python@3.12`。
 
 > 启动器运行期间会用 `caffeinate` 阻止 Mac 睡眠。**演出期间不要关闭这个终端窗口**，关掉就会停止音频引擎。浏览器窗口可以刷新、关闭再打开，声音不受影响。
@@ -128,7 +149,13 @@ cd ~/SpatialStage
 git pull --ff-only
 ```
 
-再双击启动文件即可。如果依赖有变化，会自动重新安装。`show/audio/` 里新增的音频会追加到项目里；你在软件里改过的 Cue 不会被覆盖。
+更新前先双击 **Stop SpatialStage.command** 停掉正在运行的引擎；更新后再双击启动文件。如果依赖有变化，会自动重新安装。`show/audio/` 里新增的音频会追加到项目里；你在软件里改过的 Cue 不会被覆盖。
+
+> **注意：** 如果这台 Mac 以前导入过早期 15 条版本的演出包，素材文件名已经改过，更新后新文件会追加在旧 Cue 后面造成重复，而且不会套用演出模板。想得到干净的 20 条演出包，请用一个新的空数据目录启动（不要删除旧项目）：
+>
+> ```bash
+> STAGE_SPATIAL_DATA=~/SpatialStage-show-v2 ./run_mac.command
+> ```
 
 ---
 
@@ -140,9 +167,10 @@ git pull --ff-only
 
 1. 展开页面上方的 **LOCAL SIMULATION** 面板（演出模式下默认收起）。
 2. 点 **Connect silent simulation**。顶部状态变为 *Connected / muted*。
-3. 点右上角 **✓ Preflight check**，应显示 `Preflight OK: 15 cues, … MiB decoded`。
+3. 点右上角 **✓ Preflight check**，应显示 `Preflight OK: 20 cues, 624.1 MiB decoded`（上限 700 MiB，见 11 节）。
 4. 点左侧 **MAIN MUTE · ON**，切到 **OFF**（主静音解除）。
 5. 按 **空格**（或 FADE GO）。左侧 CH1–4 电平表会动，地图上会出现黄色的实时声源点。
+6. 想单独听某一条：**双击**这一行，或选中后点顶部的 **试听选中 · 单条替换**（见 7.2）。
 
 ### 3.2 虚拟四音箱耳机监听（能听到方位）
 
@@ -193,7 +221,7 @@ ls ~/.spatialstage/projects
 
 - **项目**：左上角下拉框切换，**＋** 新建，**✎ Rename show** 改名。启动时打开最近修改过的项目。
 - **导入**：**＋ Import folder** 导入整个文件夹，**Files** 导入单个文件。文件名以数字开头（如 `001_Rain.wav`）的会按编号排序；新导入的 Cue 追加在列表末尾，不会打乱已经排好的顺序。
-- **调序**：用每行右边的 ↑ / ↓。
+- **调序**：用每行右边的 ↑ / ↓，或选中后点顶部的 **选中 ↑ 上移 / 选中 ↓ 下移**。有声音在播放或等待时不能调序，先 STOP。最左边的 `#` 是播放顺序，标题里的 `01`–`20` 是素材编号，调序后素材编号不变。
 - **自动保存**：右上角显示 *Saved locally* 就是已保存。如果出现 *Save failed — changes retained*，点 **Retry save**。
 - **只开一个编辑窗口**：同一个项目不要在两个浏览器标签里同时编辑。
 
@@ -241,7 +269,9 @@ ls ~/.spatialstage/projects
 
 **目标 Cue**
 - 默认编辑 **NEXT**（下一个要播放的 Cue），每次 GO 后自动跟到新的 NEXT。
-- 点右侧列表里的其他 Cue，可以提前准备；点 **↺ Follow NEXT** 恢复跟随。
+- 点右侧列表里的其他 Cue，可以提前准备（标记 **SEL**）；点 **↺ Follow NEXT** 恢复跟随。
+- 目标面板里可以直接改 **Cue volume (dB)**；**ARM SELECTED** 把这个 Cue 设为 NEXT。
+- 双击列表里的 Cue = 试听这一条（见 7.2）。
 
 **定位 / 画路径**
 1. 在地图上点击或拖动，就是设置 Cue 的位置。角度模式的 Cue 第一次被拖动时会自动转成平面位置，起点就是原来的方向，所以没动之前声音不变。
@@ -360,8 +390,8 @@ Mac ──USB──▶ M32R USB 声卡（Card 1–4）
 3. 点 **Connect audio** 选 M32R（MAIN MUTE 保持开）。
 4. 点 **✓ Preflight check**，必须显示 OK。
 5. 演出模式：点 **Recall all**，确认列表全部 ✓，勾选 **Lock**。
-6. 在列表里选第一个 Cue → 编辑模式点 **ARM SELECTED**（或者直接看 NEXT 是否就是第一个）。
-7. 低音量试播一个 Cue，然后 STOP。
+6. 点顶部 **回到第一条 · 仅准备**，确认 NEXT 是第一个 Cue。
+7. 低音量试听一个 Cue，然后 STOP，**再点一次「回到第一条 · 仅准备」**（试听会把 NEXT 改成试听的那条）。
 8. 调好 MASTER，关掉 MAIN MUTE，等候开场。
 9. 关掉其他应用，打开勿扰模式。
 
@@ -376,10 +406,20 @@ Mac ──USB──▶ M32R USB 声卡（Card 1–4）
 | PANIC | **Shift + Esc** | 立刻清空所有声音并打开 MAIN MUTE（在输入框里也有效） |
 | MAIN MUTE | 点按钮 | 15 ms 渐变静音；**时钟继续走，不是暂停** |
 
+顶部播放条上还有 5 个直接控制按钮：
+
+| 按钮 | 作用 |
+|---|---|
+| 回到第一条 · 仅准备 | 把 NEXT 设为第一个 Cue，不出声 |
+| 从选中 cue 开始 · 仅准备 | 把 NEXT 设为选中的 Cue，不出声，按 GO 才播 |
+| 试听选中 · 单条替换（或双击） | 立刻只播这一条，替换正在播放的声音，不自动接续；**NEXT 会变成这一条**。需要已连接、已 Preflight、MAIN MUTE 已解除 |
+| 选中 ↑ 上移 / 选中 ↓ 下移 | 调整播放顺序（先 STOP） |
+
 注意：
-- 光标在输入框里时，空格、C、S 不会触发，先点一下页面空白处。
+- 光标在输入框、下拉框里时，空格、C、S 不会触发，先点一下页面空白处。点过按钮或列表之后按空格仍然是 GO（不会重复触发按钮）。
+- **演出中不要用试听**：试听会立刻替换正在播放的声音，并改变 NEXT。
 - 如果 NEXT 显示 *Preparing NEXT audio…*，等它变成可播放再按 GO。音频还没准备好时，GO 会被拒绝，不会延迟乱播。
-- 想重播某个 Cue：切到编辑模式，在列表里选中它，点 **ARM SELECTED**。
+- 想重播某个 Cue：选中它，点 **从选中 cue 开始 · 仅准备**，再按 GO。
 - 列表里的 *BEFORE* 只表示排在 NEXT 前面，不代表已经播放过。
 
 ### 7.3 紧急情况
@@ -389,15 +429,15 @@ Mac ──USB──▶ M32R USB 声卡（Card 1–4）
 | 声音不对，需要立刻停 | 先按 **Shift+Esc（PANIC）**，同时调音台按 **Mute Group** |
 | USB 掉线 / 显示 *Output stream stopped or device lost* | 软件已自动静音。重新插线 → **Connect audio** → 确认 NEXT → 解除 MAIN MUTE → 从需要的 Cue 继续 |
 | 浏览器卡住或误关 | 重新打开 `http://127.0.0.1:8765`，声音不受影响 |
-| 终端窗口被关掉 | 引擎已停止。双击启动文件 → Connect audio → 编辑模式 ARM 需要的 Cue → 解除静音 |
-| 播错 Cue | 按 STOP；切到编辑模式，选正确的 Cue，点 ARM SELECTED |
+| 终端窗口被关掉 | 引擎已停止。双击启动文件 → Connect audio → Preflight → 选中需要的 Cue 点「从选中 cue 开始 · 仅准备」→ 解除静音 |
+| 播错 Cue | 按 STOP；选正确的 Cue，点「从选中 cue 开始 · 仅准备」 |
 
 ### 7.4 散场
 
 1. STOP → 打开 MAIN MUTE → **Connect audio** 按钮断开。
 2. 关机顺序：先关功放/音箱 → 再关调音台 → 最后关 Mac。
 3. 备份：点 **⇩ Export show ZIP**，同时复制整个 `~/.spatialstage/projects/` 文件夹。ZIP 目前只能导出，不能导回。
-4. 终端里按 `Ctrl + C`（或直接关掉窗口）停止引擎。
+4. 等右上角显示 *Saved locally*，确认 PANIC / MAIN MUTE 已开，然后双击 **Stop SpatialStage.command** 停止引擎（它只在没有声音、已静音、没有录音/测量时才会停，并核对是这份代码启动的引擎）。也可以在终端里按 `Ctrl + C`。
 
 ---
 
@@ -446,8 +486,10 @@ python scripts/browser_audit_regressions.py
 | *Save failed — changes retained* | 点 Retry save。如果是 Stage setup 保存失败，检查四路通道是否重复、音箱是否把中心包围住 |
 | AutoCal 提示 *Very weak microphone signal* | 「终端」的麦克风权限没开（2.4）、话筒通道选错、幻象电源没开、话放增益太低 |
 | 双击启动文件提示「身份不明的开发者」 | 右键 → 打开（只需一次） |
-| 启动后浏览器打开的不是新版本 | 旧引擎还占着 8765 端口：关掉旧的终端窗口；Windows 上新启动器会提示是否停掉旧引擎 |
-| 15 个 Cue 没有出现 | `show/audio/` 是空的（clone 不完整），或者没用启动文件/`spatialstage` 命令启动 → 检查 2.2 |
+| 启动时提示 *Port 8765 belongs to a different/stale engine* | 另一个引擎还占着 8765 端口：双击 Stop SpatialStage.command；停不掉就关掉旧的终端窗口（Ctrl + C）。Windows 上的启动器会提示是否停掉旧引擎 |
+| 20 个 Cue 没有出现 | `show/audio/` 是空的或不完整（用 2.2 的 `shasum` 检查），或者没用启动文件/`spatialstage` 命令启动 |
+| Cue 有重复、顺序乱 | 这台 Mac 以前导入过 15 条的旧版本 → 按 2.5 的方法用新数据目录启动 |
+| 试听按钮没反应 | 没连接输出、没 Preflight 或 MAIN MUTE 开着，看底部提示 |
 
 ---
 
@@ -467,8 +509,8 @@ python scripts/browser_audit_regressions.py
 | 8 | **Gatekeeper 拦截** | 双击启动文件提示「身份不明的开发者」 | 右键 → 打开（一次）；用 `git clone` 获取代码一般不会出现 |
 | 9 | **找不到 Python** | 提示 `Install supported Python first` | 启动器会自动查找 `/opt/homebrew/bin/python3.12`、`/usr/local/bin/python3.12` 和 python.org 的安装路径；还是找不到就执行 `brew install python@3.12` |
 | 10 | **Rosetta / Intel 版 Homebrew** | 能运行，但 CPU 占用高、容易爆音 | Apple Silicon 上应该用 `/opt/homebrew` 下的原生 Homebrew。检查命令：`.venv/bin/python -c "import platform; print(platform.machine())"`，结果应为 `arm64` |
-| 11 | **演出时第一次播放某个 Cue 时爆音** | 引擎在后台解码下一个 Cue 时会占用 CPU（44.1 kHz 的文件还要变频），可能导致 XRUNS 增加 | **开场前一定要点 ✓ Preflight check**，把所有 Cue 预先解码进缓存（15 个 Cue 约 394 MiB，在 700 MiB 上限内），演出中就不会再解码 |
-| 12 | **端口被旧引擎占用** | 浏览器打开的是旧版本界面 | 新的 `run_mac.command` 会检测并询问是否停掉旧引擎（按 `y`）；也可以手动查：`lsof -nP -iTCP:8765 -sTCP:LISTEN` |
+| 11 | **演出时第一次播放某个 Cue 时爆音** | 引擎在后台解码下一个 Cue 时会占用 CPU（44.1 kHz 的文件还要变频），可能导致 XRUNS 增加 | **开场前一定要点 ✓ Preflight check**，把所有 Cue 预先解码进缓存（20 个 Cue 约 624 MiB，在 700 MiB 上限内），演出中就不会再解码 |
+| 12 | **端口被旧引擎占用** | 启动器提示 *Port 8765 belongs to a different/stale engine*，不会启动 | 双击 **Stop SpatialStage.command**；停不掉（更早版本的引擎）就找到旧终端窗口按 `Ctrl + C`。手动查占用：`lsof -nP -iTCP:8765 -sTCP:LISTEN` |
 | 13 | **重插 USB 后设备不见了 / 选错设备** | macOS 重新枚举设备后，设备编号会变 | 插好后点 **↻** 刷新，再重新选设备并 Connect audio |
 | 14 | **蓝牙耳机做虚拟监听** | 延迟大；AirPods 一旦被当作麦克风使用就会降为低音质 | 排练监听用有线耳机或 USB 耳机 |
 | 15 | **Mac 睡眠 / 锁屏** | 演出中屏幕变黑、进入锁屏 | 启动器已用 caffeinate 阻止睡眠；另外接上电源，关闭屏保 |
@@ -480,6 +522,7 @@ python scripts/browser_audit_regressions.py
 
 ## 11. 已知限制
 
+- **解码缓存余量小**：全部 Cue 解码后要放进 700 MiB 内存缓存，现在 20 条已用约 624 MiB。再加约 3 分钟以上的立体声素材，Preflight 会报超限，需要拆分项目或缩短素材。
 - 排练原型：Python 音频回调没有硬实时保证，正式演出前一定要做长时间连排。
 - 没有真正的暂停/继续，MAIN MUTE 不是暂停。
 - 声像以舞台中心为参考，不跟踪演员；离中心越远，方向感越偏向最近的音箱。

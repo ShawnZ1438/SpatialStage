@@ -1,7 +1,7 @@
-function cueDisplayNumber(c, index) { return /^待定/.test(c.title) ? '—' : (c.title.match(/^(\d{2})\s*·/)?.[1] || String(index+1).padStart(3,'0')); }
 /* SpatialStage v0.3.1 — localhost control; multichannel output rendered in Python. */
 'use strict';
 const $ = (id) => document.getElementById(id);
+function cueDisplayNumber(c, index) { return /^待定/.test(c.title) ? '—' : (c.title.match(/^(\d{2})\s*·/)?.[1] || String(index+1).padStart(3,'0')); }
 const h = (str) => String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const fmt = (v, d=2) => num(v).toFixed(d);
@@ -596,8 +596,10 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey && e.key==='Escape'){e.preventDefault();$('panicButton').click();return;}
   if(e.repeat || e.metaKey || e.ctrlKey || e.altKey && e.code!=='ArrowDown')return;
   const tag=e.target.tagName;
-  if((e.code==='Space' && ['BUTTON','A'].includes(tag)) || ['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
-  if(e.code==='Space'){e.preventDefault();$('goButton').click();}
+  if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
+  // Space is always GO outside text fields. A focused button/link/summary is blurred
+  // first so its native Space activation never fires as well (no double GO, no re-click).
+  if(e.code==='Space'){e.preventDefault();if(['BUTTON','A','SUMMARY'].includes(tag))e.target.blur?.();$('goButton').click();}
   else if(e.key.toLowerCase()==='c' && !e.shiftKey){e.preventDefault();$('cutGoButton').click();}
   else if(e.key.toLowerCase()==='s' && !e.shiftKey){e.preventDefault();$('stopButton').click();}
   else if(e.altKey && e.key==='ArrowDown'){e.preventDefault();$('skipButton').click();}
