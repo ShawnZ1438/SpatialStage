@@ -1,6 +1,6 @@
 # SpatialStage 使用、测试与演出部署手册（Mac）
 
-适用版本：v0.4（`feat/cue-layers` 分支：音频库 + 多层 Cue + 中英界面；合并进 `main` 之后同样适用）。
+适用版本：v0.4.1（`main` 分支：音频库 + 多层 Cue + 中英界面 + 打开即演出）。
 现场配置：Apple Silicon Mac + Midas M32R（USB）+ 4 只 IBO PS15，约 6 m × 6 m 场地，音箱放四角。
 
 这份手册按顺序走一遍，分三个阶段：
@@ -66,12 +66,6 @@ brew install python@3.12 git ffmpeg portaudio libsndfile
 cd ~
 git clone https://github.com/ShawnZ1438/SpatialStage.git
 cd SpatialStage
-```
-
-**如果这个分支还没合并进 main**，请改用下面这条命令，直接拉 `feat/cue-layers` 分支：
-
-```bash
-git clone -b feat/cue-layers https://github.com/ShawnZ1438/SpatialStage.git
 ```
 
 仓库约 800 MB（Git 历史 + 音频各约 400 MB），全部是普通 Git 文件，不需要 Git LFS。请在网络好的地方克隆。

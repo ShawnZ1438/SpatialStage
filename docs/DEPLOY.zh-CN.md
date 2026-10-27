@@ -1,6 +1,6 @@
 # SpatialStage 完整部署手册（从 GitHub 到演出）
 
-版本：**v0.4.1** · 分支 **`feat/cue-layers`** · 仓库 <https://github.com/ShawnZ1438/SpatialStage>
+版本：**v0.4.1** · 分支 **`main`**（默认分支，普通 `git clone` 即可） · 仓库 <https://github.com/ShawnZ1438/SpatialStage>
 
 这一份手册覆盖从零部署到演出当天的全部步骤。更细的说明（每个参数的含义、AutoCal、故障排查全表）见 [使用、测试与演出部署手册](SHOW_GUIDE.zh-CN.md)。
 
@@ -73,7 +73,7 @@ cd ~
 ```
 
 ```bash
-git clone -b feat/cue-layers https://github.com/ShawnZ1438/SpatialStage.git
+git clone https://github.com/ShawnZ1438/SpatialStage.git
 ```
 
 ```bash
@@ -252,10 +252,10 @@ cd ~/SpatialStage && git pull --ff-only
 
 3. 双击启动文件，依赖有变化会自动重装。你在软件里做的修改不会被覆盖；`show/audio/` 新增的文件只会加进音频库。
 
-**从旧版本切过来**（以前用过 `feat/performance-mode` 或 `main`）：
+**从旧版本切过来**：以前克隆的是 `main`，直接按上面 `git pull --ff-only` 更新即可。以前切到过 `feat/performance-mode` 等其他分支的，先回到 `main` 再更新：
 
 ```bash
-cd ~/SpatialStage && git fetch origin feat/cue-layers && git switch feat/cue-layers
+cd ~/SpatialStage && git switch main && git pull --ff-only
 ```
 
 旧项目第一次打开会自动转换成「音频库 + 单层 Cue」，位置、路径、预设都保留。如果这台 Mac 以前导入过 15 条的早期演出包，想要干净的 20 条版本，用一个新的空数据目录启动（不会删除旧项目）：
@@ -298,6 +298,6 @@ STAGE_SPATIAL_DATA=~/SpatialStage-show-v2 ./run_mac.command
 
 ## 10. 这个版本的验证记录
 
-在 Windows 上从 GitHub 全新克隆 `feat/cue-layers` 后验证：20 个音频 SHA-256 全部一致；全新虚拟环境安装；Python 测试、JS 单元测试全部通过；Chrome 和 WebKit（Safari 内核）浏览器测试全部通过；用真实 20 条演出包测试了打开即演出、自动连接预检、▶ 叠加 / 从头重来、■ 只淡出一条、GO 不挤掉其他声音、多层 Cue、拖放、中英切换。
+在 Windows 上从 GitHub 全新克隆（`main` 与 `feat/cue-layers` 是同一个提交）后验证：20 个音频 SHA-256 全部一致；全新虚拟环境安装；Python 测试、JS 单元测试全部通过；Chrome 和 WebKit（Safari 内核）浏览器测试全部通过；用真实 20 条演出包测试了打开即演出、自动连接预检、▶ 叠加 / 从头重来、■ 只淡出一条、GO 不挤掉其他声音、多层 Cue、拖放、中英切换。
 
 **尚未验证**：真实 Mac 上的双击启动、M32R 与四只音箱的现场声音、从访达真实拖放文件。请在装台时按第 5 节逐路检查。
