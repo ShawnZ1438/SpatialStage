@@ -1,4 +1,4 @@
-> Current Mac package: **20 cues + saved show configuration**. See [current deployment and controls](docs/DEPLOY_CURRENT.zh-CN.md) and [audio rights record](show/RIGHTS.md). Older platform notes below may describe prior versions.
+> **Full deployment manual (GitHub → show night, Chinese): [docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.1 on branch `feat/cue-layers`: 20-cue show package, opens in Show mode, ▶ / ■ per cue, audio library + layered cues, 中 / EN. [Audio rights record](show/RIGHTS.md).
 
 # SpatialStage
 
@@ -41,7 +41,7 @@ Use native Apple Silicon Python **3.11–3.13**; Python 3.12 is the recommended 
 ```bash
 # First setup, with Homebrew already installed:
 brew install python@3.12 portaudio libsndfile ffmpeg
-git clone https://github.com/ShawnZ1438/SpatialStage.git
+git clone -b feat/cue-layers https://github.com/ShawnZ1438/SpatialStage.git
 cd SpatialStage
 ./run_mac.command
 ```

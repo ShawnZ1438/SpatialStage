@@ -1,4 +1,4 @@
-> Current Mac package: **20 cues + saved show configuration**. See [current deployment and controls](docs/DEPLOY_CURRENT.zh-CN.md) and [audio rights record](show/RIGHTS.md). Older platform notes below may describe prior versions.
+> **完整部署手册（从 GitHub 到演出）：[docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.1，分支 `feat/cue-layers`：自带 20 条演出包、打开即演出、每条 Cue ▶ / ■、音频库 + 多层 Cue、中 / EN。[音频授权记录](show/RIGHTS.md)。
 
 # SpatialStage · 四声道舞台声音 Cue 系统
 
@@ -13,7 +13,7 @@
 ```bash
 # 已有 Homebrew 的 Mac，首次准备依赖：
 brew install python@3.12 portaudio libsndfile ffmpeg
-git clone https://github.com/ShawnZ1438/SpatialStage.git
+git clone -b feat/cue-layers https://github.com/ShawnZ1438/SpatialStage.git
 cd SpatialStage
 ./run_mac.command
 ```
