@@ -15,6 +15,7 @@
     <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small data-i18n="brandSub">四声道空间声 Cue 系统</small></div></div>
     <div class="top-right">
       <span id="systemState" class="status"><i></i> <span data-i18n="engineOffline">引擎未连接</span></span>
+      <button id="sidebarToggle" class="secondary" aria-controls="settingsSidebar" aria-expanded="true" hidden>◀ 收起侧栏</button>
       <div class="mode-switch" role="group" data-i18n-aria="modeGroup" aria-label="界面模式">
         <button id="modeEdit" aria-pressed="true" data-i18n="modeDesign" data-i18n-title="modeDesignTip">✎ 编排</button>
         <button id="modePerform" aria-pressed="false" data-i18n="modeRun" data-i18n-title="modeRunTip">▶ 演出</button>
@@ -26,7 +27,7 @@
   </header>
 
   <div class="shell">
-    <aside class="sidebar">
+    <aside id="settingsSidebar" class="sidebar">
       <section class="side-section">
         <div class="section-heading" data-i18n="showProject">演出项目</div>
         <div class="project-picker"><select id="projectSelect" data-i18n-aria="projectSelect" aria-label="选择演出项目"></select><button id="newProject" class="square" data-i18n-title="newProject" title="新建项目">＋</button></div>

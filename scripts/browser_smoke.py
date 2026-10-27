@@ -152,6 +152,9 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         page.locator('#modeEdit').click()
         page.set_viewport_size({'width':1570, 'height':950})
         print('PASS four themes, three widths, layer/footer separation and shared mode preference')
+        from browser_sidebar_checks import check_sidebar
+        check_sidebar(page)
+        page.locator('#modeEdit').click()
 
         # Delay PUT acknowledgements, not server storage; reproduce overlapping edits.
         page.evaluate('''() => {

@@ -515,3 +515,8 @@
 :root[data-theme="light"] .perf-cue.playing .tag,:root[data-theme="light"] .perf-cue .preset.stored{color:#12603e}
 :root[data-theme="light"] .perf-cue.fading .tag,:root[data-theme="light"] .perf-cue .preset.changed{color:#805000}
 :root[data-theme="light"] .perf-cue .kind{color:#27635a}
+
+/* Show-only sidebar preference; no overlay or transformed map coordinates. */
+#sidebarToggle[hidden],#settingsSidebar[hidden]{display:none!important}
+#sidebarToggle{min-height:34px}
+@media(min-width:1101px){body.performing.sidebar-collapsed .studio{grid-template-columns:minmax(380px,1.35fr) minmax(420px,1fr)}}

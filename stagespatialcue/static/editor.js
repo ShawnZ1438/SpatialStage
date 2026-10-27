@@ -764,11 +764,32 @@ $('performMap').addEventListener('drop', e => {
 
 /* ---------- modes ---------- */
 // Design = full editing; Show = everything locked except GO/STOP/PANIC, ▶/■, NEXT and Recall.
+const SIDEBAR_KEY = 'spatialstage.performSidebarCollapsed';
+let sidebarCollapsed = edStorage(SIDEBAR_KEY) === 'true';
+function renderSidebar() {
+  const collapsed = runMode() && sidebarCollapsed;
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  $('settingsSidebar').hidden = collapsed;
+  $('sidebarToggle').hidden = !runMode();
+  $('sidebarToggle').setAttribute('aria-expanded', String(!collapsed));
+  $('sidebarToggle').textContent = t(collapsed ? 'sidebarShow' : 'sidebarHide');
+}
+$('sidebarToggle').addEventListener('click', () => {
+  if (!runMode()) return;
+  sidebarCollapsed = !sidebarCollapsed;
+  edStorage(SIDEBAR_KEY, String(sidebarCollapsed));
+  renderSidebar();
+});
+// Space activates this layout button, never the document's GO shortcut.
+$('sidebarToggle').addEventListener('keydown', event => {
+  if (event.code === 'Space') event.stopPropagation();
+});
 function setMode(run) {
   document.body.classList.toggle('performing', run);
   $('modeEdit').setAttribute('aria-pressed', String(!run));
   $('modePerform').setAttribute('aria-pressed', String(run));
-  if (run) { ed.follow = true; ed.lastNext = undefined; state.selectedMediaId = null; }
+  if (run) state.selectedMediaId = null; // preserve the selected cue and follow/manual choice
+  renderSidebar();
   render(true);
 }
 $('modeEdit').addEventListener('click', () => setMode(false));
@@ -779,12 +800,13 @@ if (simPanel) {
   if (saved) simPanel.open = saved === 'open';
   simPanel.addEventListener('toggle', () => edStorage(SIM_KEY, simPanel.open ? 'open' : 'closed'));
 }
-I18N.onChange(() => render(true));
+I18N.onChange(() => { renderSidebar(); render(true); });
 // Every launch opens in Show mode; ?mode=edit opens Design instead.
 const urlMode = new URLSearchParams(location.search).get('mode');
 document.body.classList.toggle('performing', urlMode !== 'edit');
 $('modeEdit').setAttribute('aria-pressed', String(!runMode()));
 $('modePerform').setAttribute('aria-pressed', String(runMode()));
 if (urlMode) history.replaceState(null, '', location.pathname);
+renderSidebar();
 requestAnimationFrame(animate);
 globalThis.SpatialEditor = {render, setMode};
