@@ -31,11 +31,15 @@ test('path interpolation holds the ends; presets compare canonically', () => {
   assert.deepEqual(StageMap.pathAt(path, 0), {x: -2, y: 0});
   assert.deepEqual(StageMap.pathAt(path, 2), {x: 0, y: 1});
   assert.deepEqual(StageMap.pathAt(path, 9), {x: 2, y: 2});
-  const cue = {direction_mode: 'path', position_deg: 0, modulation: [{time_s: 0, offset_deg: 0}], direction_adsr: {}, path};
+  const layer = {id: 'L1', media_id: 'm', direction_mode: 'path', position_deg: 0, modulation: [{time_s: 0, offset_deg: 0}], direction_adsr: {}, path};
+  const cue = {layers: [layer]};
   assert.equal(StageMap.presetState(cue), 'none');
-  cue.spatial_preset = {...structuredClone(cue), stored_at: 'x'};
+  cue.spatial_preset = {layers: StageMap.cueSnapshot(structuredClone(cue.layers)), stored_at: 'x'};
   assert.equal(StageMap.presetState(cue), 'stored');
-  cue.path[0].x_m = -1;
+  layer.path[0].x_m = -1;
+  assert.equal(StageMap.presetState(cue), 'changed');
+  layer.path[0].x_m = -2;
+  cue.layers.push({...structuredClone(layer), id: 'L2'});  // a new layer also counts as a change
   assert.equal(StageMap.presetState(cue), 'changed');
 });
 

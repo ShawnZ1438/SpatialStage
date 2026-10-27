@@ -10,14 +10,14 @@ $('simListen').onclick = async () => {
     const select=$('simDevice');
     if(!select.options.length) {
       select.innerHTML=devices.outputs.filter(d=>d.channels>=2).map(d=>`<option value="${d.index}">${h(d.name)}</option>`).join('');
-      notify('Choose a stereo monitor device, then click Connect stereo monitor again.'); return;
+      notify(t('simChooseDevice')); return;
     }
     document.querySelectorAll('.simGain').forEach(e=>e.value=1);
     document.querySelectorAll('.simMute,.simSolo').forEach(e=>e.checked=false);
     const mode=$('simMode').value;
     if(await action('/simulation/monitor',{device_index:Number(select.value),mode})){
       sendPose();
-      notify(`${mode==='virtual'?'Virtual 4-speaker':'Mono sum'} headphone monitor connected, MAIN MUTE remains on. Unmute deliberately, then GO.`);
+      notify(t(mode==='virtual'?'simVirtualConnected':'simSumConnected'));
     }
   } catch(e) { report(e); }
 };
@@ -32,7 +32,12 @@ function sendPose() {
   post('/simulation/monitor-pose',{x_m:p.x,y_m:p.y,head_deg:p.a*180/Math.PI}).catch(report);
 }
 for(const id of ['simX','simY','simHead'])$(id).addEventListener('input',()=>{clearTimeout(poseTimer);poseTimer=setTimeout(sendPose,120);});
-$('simChannels').innerHTML=[1,2,3,4].map(ch=>`<div><strong>CH${ch}</strong><input class="simGain" type="range" min="0" max="1" step="0.01" value="1" aria-label="Monitor CH${ch} gain"><label><input class="simMute" type="checkbox">Mute</label><label><input class="simSolo" type="checkbox">Solo</label></div>`).join('');
+function renderSimChannels() {
+  const old=[...document.querySelectorAll('#simChannels > div')].map(row=>[row.querySelector('.simGain')?.value??1,row.querySelector('.simMute')?.checked,row.querySelector('.simSolo')?.checked]);
+  $('simChannels').innerHTML=[1,2,3,4].map((ch,i)=>`<div><strong>CH${ch}</strong><input class="simGain" type="range" min="0" max="1" step="0.01" value="${old[i]?.[0]??1}" aria-label="${h(t('simGain',{ch}))}"><label><input class="simMute" type="checkbox" ${old[i]?.[1]?'checked':''}>${h(t('simMute'))}</label><label><input class="simSolo" type="checkbox" ${old[i]?.[2]?'checked':''}>${h(t('simSolo'))}</label></div>`).join('');
+}
+renderSimChannels();
+I18N.onChange(renderSimChannels);
 $('simChannels').onchange=()=>{
   const gains=[...document.querySelectorAll('.simGain')], mutes=[...document.querySelectorAll('.simMute')], solos=[...document.querySelectorAll('.simSolo')];
   const anySolo=solos.some(e=>e.checked);
@@ -42,13 +47,18 @@ function drawSimulation() {
   const project=state.project; if(!project)return;
   const sim=state.status?.simulation;
   $('simChannels').querySelectorAll('input').forEach(e=>e.disabled=!sim?.stereo_monitor);
-  $('simStatus').textContent=sim ? `${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'VIRTUAL 4-SPEAKER HEADPHONES (about -20 dB)':'MONO SUM MONITOR (-26 dB per channel)'):"SILENT ENGINE"} • monitor overload blocks: ${sim.monitor_peak_over_count||0} • ${sim.recording?'RECORDING':'capture stopped'} • ${sim.captured_seconds.toFixed(2)} / 60 s • ${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'approximate binaural preview; NOT four-output verification':'stereo fold-down; NOT four-output verification'):"no soundcard opened"}` : 'Simulation disconnected; hardware mode remains available.';
+  $('simStatus').textContent=sim ? [
+    t(sim.stereo_monitor?(sim.monitor_mode==='virtual'?'simStatusVirtual':'simStatusSum'):'simStatusSilent'),
+    t('simOverload',{n:sim.monitor_peak_over_count||0}),
+    t(sim.recording?'simRecording':'simNotRecording'),
+    `${sim.captured_seconds.toFixed(2)} / 60 s`,
+    t(sim.stereo_monitor?'simNotVerification':'simNoSoundcard')].join(' • ') : t('simDisconnected');
   const c=$('simCanvas'), g=c.getContext('2d'), p=simPose();
   const extent=Math.max(4,...project.speakers.map(s=>s.distance_m+0.8)), scale=150/extent;
   const xy=(x,y)=>[210+x*scale,180-y*scale];
   g.clearRect(0,0,c.width,c.height); g.font='12px sans-serif';
   g.strokeStyle='#71828e';g.setLineDash([5,5]);g.strokeRect(...xy(-3,3),6*scale,6*scale);g.setLineDash([]);
-  g.fillStyle='#c5d1dc';g.fillText('0° / FRONT / +Y',155,18);g.fillText('6 m × 6 m stage footprint',125,348);
+  g.fillStyle='#c5d1dc';g.fillText(t('mapFront'),150,18);g.fillText(t('simFootprint'),125,348);
   for(const s of project.speakers) {
     const a=s.angle_deg*Math.PI/180,[x,y]=xy(s.distance_m*Math.sin(a),s.distance_m*Math.cos(a));
     g.strokeStyle='#375e68';g.beginPath();g.moveTo(x,y);g.lineTo(210,180);g.stroke();

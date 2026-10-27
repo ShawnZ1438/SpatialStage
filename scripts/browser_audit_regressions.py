@@ -19,6 +19,7 @@ from stagespatialcue.server import create_app
 def exercise(page, base):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
+    page.add_init_script("try{localStorage.setItem('spatialstage.lang','en')}catch(e){}")  # assertions use English
     page.goto(base, wait_until='domcontentloaded')
     page.wait_for_selector('#projectSelect option', state='attached')
     pid = page.locator('#projectSelect').input_value()
@@ -27,51 +28,59 @@ def exercise(page, base):
     sf.write(data, np.zeros(4800), 48000, format='WAV')
     upload = {'name':'001_Initial.wav','mimeType':'audio/wav','buffer':data.getvalue()}
     page.locator('#fileInput').set_input_files(upload)
-    expect(page.locator('#cueRows tr')).to_have_count(1)
+    expect(page.locator('#libraryList .lib-item')).to_have_count(1)
     def saved():
         page.wait_for_function('!state.mediaOperation && !saveQueue.dirty && !saveQueue.running')
         expect(page.locator('#saveIndicator')).to_have_text('Saved locally')
-    def edit(key, value):
-        field = page.locator(f'[data-cue="{key}"]')
+    def edit(selector, value):
+        field = page.locator(selector)
         field.fill(str(value)); field.dispatch_event('change')
     saved()
-    page.locator('#cueRows tr').first.click()
+    page.locator('#libraryList .lib-item').first.click()
+    page.locator('[data-md="new-cue"]').click()
+    expect(page.locator('#performCues .perf-cue')).to_have_count(1)
+    title = '[data-cue-field="title"]'
     # Hold real HTTP responses after the server committed their older snapshots.
     for replacement in [False, True]:
-        edit('title','before'); saved()
+        edit(title,'before'); saved()
         held=[]
         def hold(route):
             held.append((route,route.fetch()))
-        pattern='**/replace-media' if replacement else '**/upload'
+        pattern='**/replace' if replacement else '**/upload*'
         page.route(pattern,hold)
         payload={**upload,'name':'002_Replacement.wav' if replacement else '002_Added.wav'}
-        page.locator('#replaceCueAudio' if replacement else '#fileInput').set_input_files(payload)
+        if replacement:
+            page.locator('#libraryList .lib-item').first.click()
+            page.locator('#replaceMediaFile').set_input_files(payload)
+        else:
+            page.locator('#fileInput').set_input_files(payload)
         for _ in range(100):
             page.wait_for_timeout(25)
             if held: break
         assert held, 'media response not intercepted'
-        edit('title','edited while media pending')
+        edit(title,'edited while media pending')
         page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
         assert page.request.get(url).json()['cues'][0]['title']=='edited while media pending'
         route,response=held.pop();route.fulfill(response=response);page.unroute(pattern)
         saved()
-        expect(page.locator('[data-cue="title"]')).to_have_value('edited while media pending')
-        edit('gain_db',-12);saved()  # later PUT must not persist the old title
-        page.reload(wait_until='domcontentloaded');page.wait_for_selector('#cueRows tr')
-        page.locator('#cueRows tr').first.click()
-        expect(page.locator('[data-cue="title"]')).to_have_value('edited while media pending')
+        expect(page.locator(title)).to_have_value('edited while media pending')
+        edit('[data-cue-field="gain_db"]',-12);saved()  # later PUT must not persist the old title
+        page.reload(wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
+        page.locator('#performCues .perf-cue').first.click()
+        expect(page.locator(title)).to_have_value('edited while media pending')
         project=page.request.get(url).json()
-        assert project['cues'][0]['gain_db']==-12 and len(project['cues'])==2
-        if replacement: assert project['cues'][0]['filename']=='002_Replacement.wav'
+        assert project['cues'][0]['gain_db']==-12 and len(project['cues'])==1 and len(project['media'])==2
+        if replacement: assert project['media'][0]['filename']=='002_Replacement.wav'
         print('PASS real media race and persistence:', 'replace' if replacement else 'import', flush=True)
-    edit('position_deg',360);saved()
-    expect(page.locator('[data-cue="position_deg"]')).to_have_value('0.00')
-    assert page.request.get(url).json()['cues'][0]['position_deg']==0
-    page.reload(wait_until='domcontentloaded');page.wait_for_selector('#cueRows tr')
-    page.locator('#cueRows tr').first.click()
-    expect(page.locator('[data-cue="position_deg"]')).to_have_value('0.00')
-    assert page.locator('#dialSvg').is_visible()
-    print('PASS 360 input, saved zero, reload and dial render',flush=True)
+    bearing = '[data-layer-field="position_deg"]'
+    edit(bearing,360);saved()
+    expect(page.locator(bearing)).to_have_value('0.00')
+    assert page.request.get(url).json()['cues'][0]['layers'][0]['position_deg']==0
+    page.reload(wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
+    page.locator('#performCues .perf-cue').first.click()
+    expect(page.locator(bearing)).to_have_value('0.00')
+    assert page.locator('#performMap .sm-point.angle').is_visible()
+    print('PASS 360 input, saved zero, reload and map render',flush=True)
     # Real geometry editor: place CH2 directly atop CH1; invalid save stays open.
     page.locator('#settingsToggle').click()
     for key in ['x_m','y_m']:
@@ -94,6 +103,7 @@ def exercise(page, base):
     page.locator('#connectAudio').click()
     expect(page.locator('#toast')).to_contain_text('Output connection failed')
     assert not page.request.get(base+'/api/audio/status').json()['connected']
+    page.locator('.simulation-panel summary').click()
     page.locator('#simListen').click()
     expect(page.locator('#simDevice option')).to_have_count(1)
     page.locator('#simListen').click()
@@ -103,7 +113,6 @@ def exercise(page, base):
     assert page.request.post(base+'/api/audio/connect',data={'device_index':-999}).status==422
     assert not errors, errors
     print('PASS controlled hardware/stereo connection errors, muted state; zero page errors',flush=True)
-
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

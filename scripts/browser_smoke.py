@@ -36,6 +36,16 @@ def silent_wave() -> bytes:
     return stream.getvalue()
 
 
+# HTML5 drag & drop with real DragEvents inside the page (works in Chromium and WebKit).
+DRAG = """([source, target, fx, fy]) => {
+  const src = document.querySelector(source), dst = document.querySelector(target);
+  const r = dst.getBoundingClientRect(), x = r.left + r.width * fx, y = r.top + r.height * fy;
+  const dt = new DataTransfer();
+  const fire = (el, type) => el.dispatchEvent(new DragEvent(type, {bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y}));
+  fire(src, 'dragstart'); fire(dst, 'dragenter'); fire(dst, 'dragover'); fire(dst, 'drop'); fire(src, 'dragend');
+}"""
+
+
 def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_transport=False, engine='chromium'):
     with sync_playwright() as playwright:
         kwargs = {'headless': True}
@@ -46,6 +56,7 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         print(f'{engine} ready', flush=True)
         page = browser.new_page(viewport={'width': 1570, 'height': 950})
         page.set_default_timeout(10000)
+        page.add_init_script("try{localStorage.setItem('spatialstage.lang','en')}catch(e){}")  # assertions use English
         errors = []
         page.on('pageerror', lambda error: (errors.append(str(error)),print('Browser error:',error,flush=True)))
         if inline_transport:
@@ -88,33 +99,45 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
                 return new Response(response.body,{status:response.status,headers:response.headers});
               };
             }""")
-            for script in ['save-queue.js', 'stage-map.js', 'app.js', 'simulation.js', 'perform.js']:
+            for script in ['i18n.js', 'save-queue.js', 'stage-map.js', 'app.js', 'simulation.js', 'editor.js']:
                 page.add_script_tag(content=(ROOT/'stagespatialcue/static'/script).read_text(encoding='utf-8'))
         load_page()
         print('Scripts loaded', flush=True)
         page.wait_for_selector('#projectSelect option', state='attached')
         expect(page.locator('#goButton')).to_be_disabled()
         wav = silent_wave()
+        def drag(source, target, fx=.5, fy=.5):
+            page.evaluate(DRAG, [source, target, fx, fy])
         def upload(names):
             page.locator('#fileInput').set_input_files([
                 {'name':name, 'mimeType':'audio/wav', 'buffer':wav} for name in names
             ])
         upload(['002_Car.wav', '001_Footsteps.wav'])
-        expect(page.locator('#cueRows tr')).to_have_count(2)
-        expect(page.locator('.cue-title').nth(0)).to_have_text('Footsteps')
-        # Hold the pointer down across at least one status poll: row/button must survive.
-        page.evaluate("window.__rowProbe=document.querySelector('#cueRows tr')")
-        button = page.locator('#cueRows tr').first.locator('[data-move="1"]')
-        button.hover()
+        expect(page.locator('#libraryList .lib-item')).to_have_count(2)
+        expect(page.locator('.lib-name').nth(0)).to_have_text('Footsteps')
+        assert page.locator('#performCues .perf-cue').count() == 0  # the library never creates cues by itself
+        # Two cues from the library: the drop zone, then the sound designer button.
+        drag('#libraryList .lib-item:nth-child(2)', '.cue-dropzone')
+        expect(page.locator('#performCues .perf-cue')).to_have_count(1)
+        page.locator('#libraryList .lib-item').nth(0).click()
+        page.locator('[data-md="new-cue"]').click()
+        expect(page.locator('#performCues .perf-cue')).to_have_count(2)
+        assert page.locator('#performCues .perf-cue .title').all_text_contents() == ['Car', 'Footsteps']
+        # Hold the pointer down across at least one status poll: the row must survive.
+        page.evaluate("window.__rowProbe=document.querySelector('#performCues .perf-cue')")
+        page.locator('#performCues .perf-cue').first.hover()
         page.mouse.down()
         page.wait_for_timeout(650)
-        assert page.evaluate("window.__rowProbe===document.querySelector('#cueRows tr')")
+        assert page.evaluate("window.__rowProbe===document.querySelector('#performCues .perf-cue')")
         page.mouse.up()
-        expect(page.locator('.cue-title').nth(0)).to_have_text('Car')
+        page.locator('#cueDown').click()  # Car is selected: move it below Footsteps
+        expect(page.locator('#performCues .perf-cue .title').nth(0)).to_have_text('Footsteps')
         upload(['003_Wind.wav'])
-        expect(page.locator('#cueRows tr')).to_have_count(3)
-        assert page.locator('.cue-title').all_text_contents() == ['Car','Footsteps','Wind']
-        print('PASS numbered import, preserve manual ordering, row identity / held click')
+        expect(page.locator('#libraryList .lib-item')).to_have_count(3)
+        drag('#libraryList .lib-item:nth-child(3)', '.cue-dropzone')
+        expect(page.locator('#performCues .perf-cue')).to_have_count(3)
+        assert page.locator('#performCues .perf-cue .title').all_text_contents() == ['Footsteps', 'Car', 'Wind']
+        print('PASS library import, cues from library, manual ordering, row identity / held click')
 
         # Delay PUT acknowledgements, not server storage; reproduce overlapping edits.
         page.evaluate('''() => {
@@ -159,17 +182,19 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         project = page.request.get(base_url + '/api/projects/' + pid).json()
         assert status['next_cue_id'] == project['cues'][1]['id']
         load_page()
-        expect(page.locator('#cueRows tr')).to_have_count(3)
+        expect(page.locator('#performCues .perf-cue')).to_have_count(3)
         expect(page.locator('#globalRotation')).to_have_value('222.22')
         page.locator('#autocalOpen').click()
         expect(page.locator('#autocalDialog')).to_be_visible()
         expect(page.locator('#acCancel')).to_be_disabled()
         page.locator('#autocalClose').click()
+        page.locator('.simulation-panel summary').click()
         page.locator('#simConnect').click()
         page.wait_for_function("state.status?.output_mode === 'simulation'")
         assert page.evaluate('state.status.mixer.master_mute')
         page.locator('#simRecord').click()
         page.wait_for_function('state.status?.simulation?.recording === true')
+        page.wait_for_function('state.status?.simulation?.captured_seconds > 0')
         page.locator('#simStopRecord').click()
         page.wait_for_function('state.status?.simulation?.recording === false')
         capture=httpx.get(base_url+'/api/simulation/capture.wav')
@@ -178,69 +203,73 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         page.locator('#simHead').fill('270')
         print('PASS silent simulation, muted connection, bounded capture download, actor markers')
 
-        # Performance mode: place/draw NEXT on the stage map, Store / Reset / Recall, lock.
-        def next_cue():
-            nid = page.evaluate('state.status.next_cue_id')
-            cues = page.request.get(base_url + '/api/projects/' + pid).json()['cues']
-            return next(c for c in cues if c['id'] == nid)
+        # Stage map: two layers in one cue, path drawing, Store / Reset / Recall, Show-mode lock.
+        def cue_by_id(cid):
+            return next(c for c in page.request.get(base_url + '/api/projects/' + pid).json()['cues'] if c['id'] == cid)
         def map_click(fx, fy):
-            # The SVG is re-rendered on every status poll: scroll its stable host,
-            # then read the current SVG rectangle in one step.
             page.locator('#performMap').scroll_into_view_if_needed()
             box = page.evaluate("(() => { const r = document.querySelector('#performMap svg').getBoundingClientRect(); return {x:r.x, y:r.y, width:r.width, height:r.height}; })()")
             page.mouse.click(box['x'] + box['width']*fx, box['y'] + box['height']*fy)
         def settled():
             page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
-        page.locator('#modePerform').click()
-        expect(page.locator('#performView')).to_be_visible()
-        expect(page.locator('.cue-panel')).to_be_hidden()
-        page.wait_for_function("state.selectedCueId === state.status.next_cue_id")
+        page.locator('#performCues .perf-cue').nth(0).click()
+        cid = page.evaluate('state.selectedCueId')
+        page.locator('#performMap').scroll_into_view_if_needed()
+        drag('#libraryList .lib-item:nth-child(3)', '#performMap svg', .75, .75)  # Wind, rear right
+        settled()
+        cue = cue_by_id(cid)
+        assert len(cue['layers']) == 2, cue
+        wind = cue['layers'][1]
+        assert wind['direction_mode'] == 'path' and wind['path'][0]['x_m'] > 1 and wind['path'][0]['y_m'] < -1, wind
+        expect(page.locator('#performTarget tr.layer-row')).to_have_count(2)
+        page.locator('#performTarget tr.layer-row').nth(0).locator('.layer-name').click()
         map_click(.25, .5)
-        page.locator('[data-perf="tool"][data-tool="add"]').click()
+        page.locator('[data-ly="tool"][data-tool="add"]').click()
         map_click(.75, .5)
         settled()
-        cue = next_cue()
-        assert cue['direction_mode'] == 'path' and len(cue['path']) == 2, cue
-        assert cue['path'][0]['x_m'] < -1 and cue['path'][1]['x_m'] > 1 and cue['path'][1]['time_s'] > 0
-        page.locator('[data-perf="store"]').click()
+        first = cue_by_id(cid)['layers'][0]
+        assert first['direction_mode'] == 'path' and len(first['path']) == 2, first
+        assert first['path'][0]['x_m'] < -1 and first['path'][1]['x_m'] > 1 and first['path'][1]['time_s'] > 0
+        page.locator('[data-cue-action="store"]').click()
         expect(page.locator('.perf-preset-state')).to_contain_text('Matches stored preset')
-        page.locator('[data-perf="reset"]').click()
+        page.locator('[data-cue-action="reset"]').click()
         settled()
-        assert len(next_cue()['path']) == 1
+        assert all(len(l['path']) == 1 for l in cue_by_id(cid)['layers'])
         expect(page.locator('.perf-preset-state')).to_contain_text('Changed since stored preset')
-        page.locator('[data-perf="recall"]').click()
+        page.locator('[data-cue-action="recall"]').click()
         settled()
-        recalled = next_cue()
-        assert recalled['path'] == cue['path'] and recalled['spatial_preset']['path'] == cue['path']
-        page.locator('#perfLock').check()
+        recalled = cue_by_id(cid)
+        assert recalled['layers'][0]['path'] == first['path'] and recalled['layers'][1]['path'] == wind['path']
+        page.locator('#modePerform').click()
+        expect(page.locator('#libraryPanel')).to_be_hidden()
         map_click(.5, .2)
         settled()
-        assert next_cue()['path'] == cue['path']
+        assert cue_by_id(cid)['layers'][0]['path'] == first['path']  # Show mode: map is locked
         load_page()
-        expect(page.locator('#performView')).to_be_visible()
-        expect(page.locator('#perfLock')).to_be_checked()
-        page.locator('#perfLock').uncheck()
-        page.locator('#performCues [data-cue-id]').filter(has_text='Car').click()
-        page.locator('#modeEdit').click()  # same cue opens in the Edit inspector
-        expect(page.locator('.cue-panel')).to_be_visible()
-        expect(page.locator('#inspectTitle')).to_have_text(page.evaluate('currentCue().title'))
-        page.locator(f"#cueRows tr[data-id='{cue['id']}']").click()
-        expect(page.locator('#openPerform')).to_be_visible()
+        expect(page.locator('#modePerform')).to_have_attribute('aria-pressed', 'true')
+        page.locator('#modeEdit').click()
+        expect(page.locator('#libraryPanel')).to_be_visible()
         if not inline_transport:  # the remembered mode wins after ?mode= is used once
             page.goto(base_url + '/?mode=perform', wait_until='domcontentloaded')
-            expect(page.locator('#performView')).to_be_visible()
+            expect(page.locator('#libraryPanel')).to_be_hidden()
             assert '?' not in page.url
             page.locator('#modeEdit').click()
             page.reload(wait_until='domcontentloaded')
-            expect(page.locator('.cue-panel')).to_be_visible()
             expect(page.locator('#modeEdit')).to_have_attribute('aria-pressed', 'true')
-        print('PASS performance map: convert, add path point, store/reset/recall, lock persists, Edit-cue jump, mode switch memory')
+        print('PASS stage map: drop layer, add path point, store/reset/recall all layers, Show-mode lock, mode memory')
+
+        page.wait_for_selector('#libraryList .lib-item')
+        page.locator('#langToggle').click()
+        expect(page.locator('#modeEdit')).to_have_text('✎ 编排')
+        expect(page.locator('#libraryPanel .section-heading').first).to_have_text('音频库')
+        page.locator('#langToggle').click()
+        expect(page.locator('#modeEdit')).to_have_text('✎ Design')
+        print('PASS zh / English switch')
         screenshot.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshot), full_page=True)
         assert not errors, f'Browser exceptions: {errors}'
         print('PASS reload, stable NEXT, AutoCal dialog, zero uncaught browser errors')
         browser.close()
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

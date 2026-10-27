@@ -14,11 +14,11 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from . import __version__
-from .audio import StageController, audio_channels, audio_duration, filename_key, media_cue
+from .audio import StageController, audio_channels, audio_duration, filename_key, media_item, single_layer_cue
 from .bundle import sync_bundled_show
 from .http_safety import RequestSizeLimit
 from .autocal import AutoCalConfig, AutoCalManager, geometry_signature
-from .models import Cue, Project
+from .models import Project
 from .spatial import calibration_preview
 from .storage import AUDIO_EXT, ProjectStore
 
@@ -42,6 +42,10 @@ class ProjectPayload(BaseModel):
 
 class GoPayload(ProjectPayload):
     cut: bool = False
+
+
+class MediaAuditionPayload(ProjectPayload):
+    media_id: str
 
 
 class DevicePayload(BaseModel):
@@ -119,7 +123,8 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         # Launchers use `features` to tell a current engine from a stale one on the port.
         return {"version": __version__, "mode": "local", "sample_rate": 48000,
                 "runtime": identity,
-                "features": ["simulation", "performance", "bundled-show", "stereo-width", "virtual-monitor"]}
+                "features": ["simulation", "performance", "bundled-show", "stereo-width", "virtual-monitor",
+                             "cue-layers"]}
 
     @app.get("/api/projects")
     def projects():
@@ -139,9 +144,9 @@ def create_app(data_root: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail="Project ID cannot change")
         if not (store.directory(project_id) / "project.json").exists():
             raise HTTPException(status_code=404, detail="Project missing")
-        for cue in project.cues:
-            if cue.media_relpath:
-                store.media_path(project_id, cue.media_relpath)  # validate only; missing file allowed in editor
+        for item in project.media:
+            if item.media_relpath:
+                store.media_path(project_id, item.media_relpath)  # validate only; missing file allowed in editor
         stage.can_update(project)
         previous = store.get(project_id)
         # Never let a general project editor bypass deliberate AutoCal approval.
@@ -152,14 +157,15 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 or project.distance_compensation != previous.distance_compensation):
             project.active_calibration_id = None
             project.calibration_enabled = False
-        project.schema_version = 3
+        project.schema_version = 4
         saved = store.save(project)
         stage.sync(saved)
         stage.log("project_saved", cue_count=len(saved.cues))
         return saved
 
     @app.post("/api/projects/{project_id}/upload")
-    async def upload_audio(project_id: str, files: list[UploadFile] = File(...)):
+    async def upload_audio(project_id: str, files: list[UploadFile] = File(...), create_cues: bool = True):
+        """Files go into the audio library; create_cues=false skips the one-layer cue per file."""
         project = store.get(project_id)
         if len(files) > 250:
             raise HTTPException(status_code=413, detail="Maximum 250 files per upload")
@@ -183,21 +189,25 @@ def create_app(data_root: Path | None = None) -> FastAPI:
                 finally:
                     temp.close()  # Windows cannot unlink an open upload file.
                     temp_path.unlink(missing_ok=True)
-            added.append(media_cue(store.media_path(project_id, relative), relative, display_name))
+            added.append(media_item(store.media_path(project_id, relative), relative, display_name))
         # Decoding/upload awaits may overlap ordinary saves. Re-read current fields.
         project = store.get(project_id)
-        project.cues.extend(sorted(added, key=filename_key))
+        added.sort(key=filename_key)
+        project.media.extend(added)
+        cues = [single_layer_cue(m) for m in added] if create_cues else []
+        project.cues.extend(cues)
         store.save(project)
         stage.sync(project)
         stage.log("media_import", added=len(added), ignored=len(ignored))
-        return {"added": len(added), "ignored": ignored, "project": project}
+        return {"added": len(added), "ignored": ignored, "media_ids": [m.id for m in added],
+                "cue_ids": [c.id for c in cues], "project": project}
 
-    @app.post("/api/projects/{project_id}/cues/{cue_id}/replace-media")
-    async def replace_cue_media(project_id: str, cue_id: str, file: UploadFile = File(...)):
+    @app.post("/api/projects/{project_id}/media/{media_id}/replace")
+    async def replace_media_file(project_id: str, media_id: str, file: UploadFile = File(...)):
+        """New file for a library sound: every cue layer using it plays the new file next GO."""
         project = store.get(project_id)
-        cue = next((c for c in project.cues if c.id == cue_id), None)
-        if cue is None:
-            raise HTTPException(status_code=404, detail="Cue not found")
+        if media_id not in project.media_by_id():
+            raise HTTPException(status_code=404, detail="Audio not found in library")
         name = Path((file.filename or "").replace("\\", "/")).name
         if Path(name).suffix.lower() not in AUDIO_EXT:
             raise HTTPException(status_code=400, detail="Unsupported audio format")
@@ -218,16 +228,22 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         duration = audio_duration(store.media_path(project_id, relative))
         channels = audio_channels(store.media_path(project_id, relative))
         project = store.get(project_id)
-        cue = next((c for c in project.cues if c.id == cue_id), None)
-        if cue is None:
-            raise HTTPException(status_code=404, detail="Cue was deleted during media upload")
-        cue.filename = display
-        cue.media_relpath = relative
-        cue.duration_s = duration
-        cue.source_channels = channels
+        item = project.media_by_id().get(media_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="Audio was deleted during upload")
+        item.filename = display
+        item.media_relpath = relative
+        item.duration_s = duration
+        item.source_channels = channels
+        if channels != 2:
+            item.stereo_mode = "mono"
+        if item.trim_end_s and item.trim_end_s > duration:
+            item.trim_end_s = 0
+        if item.trim_start_s >= duration:
+            item.trim_start_s = 0
         saved = store.save(project)
         stage.sync(saved)
-        return {"cue": cue, "project": saved,
+        return {"media": item, "project": saved,
                 "note": "Playing/pre-scheduled voices retain their original audio samples; fresh GO uses replacement."}
 
     @app.post("/api/calibration/preview")
@@ -375,6 +391,10 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         if not payload.cue_id:
             raise ValueError("Select a cue first")
         return stage.audition(payload.project_id, payload.cue_id)
+
+    @app.post("/api/audio/audition-media")
+    def audition_media(payload: MediaAuditionPayload):
+        return stage.audition_media(payload.project_id, payload.media_id)
 
     @app.post("/api/audio/go")
     def go(payload: GoPayload):

@@ -31,7 +31,8 @@ jobs:
           node --check stagespatialcue/static/save-queue.js
           node --check stagespatialcue/static/simulation.js
           node --check stagespatialcue/static/stage-map.js
-          node --check stagespatialcue/static/perform.js
+          node --check stagespatialcue/static/editor.js
+          node --check stagespatialcue/static/i18n.js
           node --test tests/js/*.test.cjs
   browser:
     runs-on: ubuntu-latest

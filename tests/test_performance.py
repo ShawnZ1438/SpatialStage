@@ -5,7 +5,8 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from stagespatialcue.mixer import Mixer
-from stagespatialcue.models import Cue, PathPoint, Project, SpatialPreset, Speaker
+from stagespatialcue.models import (Cue, CueLayer, LayerPreset, MediaItem, PathPoint, PlaybackSpec, Project,
+                                   SpatialPreset, Speaker)
 from stagespatialcue.server import create_app
 from stagespatialcue.spatial import path_xy, point_gains, vbap_gains
 
@@ -64,16 +65,16 @@ def test_path_interpolates_and_holds_ends():
 
 def test_path_mode_requires_points_and_sorts_them():
     with pytest.raises(ValidationError):
-        Cue(direction_mode='path', path=[])
-    cue = Cue(direction_mode='path', path=[PathPoint(time_s=2, x_m=1, y_m=0), PathPoint(time_s=0, x_m=0, y_m=1)])
-    assert [p.time_s for p in cue.path] == [0, 2]
+        CueLayer(media_id='m', direction_mode='path', path=[])
+    layer = CueLayer(media_id='m', direction_mode='path',
+                     path=[PathPoint(time_s=2, x_m=1, y_m=0), PathPoint(time_s=0, x_m=0, y_m=1)])
+    assert [p.time_s for p in layer.path] == [0, 2]
 
 
 def test_mixer_moves_a_path_cue_from_left_to_right():
     p = Project(speakers=corner_speakers())
-    cue = Cue(gain_db=0, fade_in_s=0, fade_out_s=0, start_mode='layer', direction_mode='path',
-              path=[PathPoint(time_s=0, x_m=-3, y_m=0), PathPoint(time_s=1, x_m=3, y_m=0)])
-    p.cues = [cue]
+    cue = PlaybackSpec(gain_db=0, fade_in_s=0, fade_out_s=0, start_mode='layer', direction_mode='path',
+                       path=[PathPoint(time_s=0, x_m=-3, y_m=0), PathPoint(time_s=1, x_m=3, y_m=0)])
     mixer = Mixer(p, sample_rate=1000)
     mixer.master_mute = False
     mixer.master_db = 0
@@ -88,8 +89,7 @@ def test_mixer_moves_a_path_cue_from_left_to_right():
 
 def test_status_reports_live_path_position():
     p = Project(speakers=corner_speakers())
-    cue = Cue(direction_mode='path', path=[PathPoint(time_s=0, x_m=0, y_m=2), PathPoint(time_s=1, x_m=2, y_m=0)])
-    p.cues = [cue]
+    cue = PlaybackSpec(direction_mode='path', path=[PathPoint(time_s=0, x_m=0, y_m=2), PathPoint(time_s=1, x_m=2, y_m=0)])
     mixer = Mixer(p, sample_rate=1000)
     mixer.queue(cue, np.ones(1000, dtype=np.float32))
     mixer.render(500)
@@ -100,11 +100,16 @@ def test_status_reports_live_path_position():
 def test_preset_and_path_survive_project_save(tmp_path, monkeypatch):
     client = TestClient(create_app(tmp_path), base_url='http://127.0.0.1:8765')
     project = client.post('/api/projects', json={'name': 'perform'}).json()
-    cue = Cue(direction_mode='path', path=[PathPoint(time_s=0, x_m=1, y_m=2)])
-    cue.spatial_preset = SpatialPreset(direction_mode='path', path=cue.path, stored_at='2026-10-26T00:00:00Z')
+    media = MediaItem(name='wind')
+    layer = CueLayer(media_id=media.id, direction_mode='path', path=[PathPoint(time_s=0, x_m=1, y_m=2)])
+    cue = Cue(layers=[layer])
+    cue.spatial_preset = SpatialPreset(layers=[LayerPreset(layer_id=layer.id, direction_mode='path', path=layer.path)],
+                                       stored_at='2026-10-26T00:00:00Z')
+    project['media'] = [media.model_dump(mode='json')]
     project['cues'] = [cue.model_dump(mode='json')]
     saved = client.put(f"/api/projects/{project['id']}", json=project)
     assert saved.status_code == 200, saved.text
     again = client.get(f"/api/projects/{project['id']}").json()['cues'][0]
-    assert again['path'] == [{'time_s': 0, 'x_m': 1, 'y_m': 2}]
-    assert again['spatial_preset']['direction_mode'] == 'path'
+    assert again['layers'][0]['path'] == [{'time_s': 0, 'x_m': 1, 'y_m': 2}]
+    assert again['spatial_preset']['layers'][0]['direction_mode'] == 'path'
+    assert again['spatial_preset']['layers'][0]['layer_id'] == layer.id

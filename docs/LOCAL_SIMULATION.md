@@ -7,7 +7,7 @@ Implemented on local branch `local/simulation-platform` from verified remote mai
 
 Double-click **`Start Simulation (Windows).cmd`** (or run `./run_simulation.ps1`). On first run it
 creates `.venv` with Python 3.11–3.13 and installs dependencies; it then opens
-http://127.0.0.1:8765 with the full interface (Edit | Performance switch at the top right). Data lives in `SpatialStage-test-data`,
+http://127.0.0.1:8765 with the full interface (Design | Show and 中 / EN switches at the top right). Data lives in `SpatialStage-test-data`,
 separate from shows under the user profile, and the repository show (`show/audio`) is
 imported there as *Show audio (repository)*. If an older SpatialStage engine already holds
 port 8765, the launcher shows its PID/command and asks before stopping it.
@@ -23,7 +23,7 @@ speakers at their Stage setup positions, heard from **Listener X/Y** facing **He
 time difference, broadband level difference, far-ear head shadow and slight darkening
 behind. At the centre it matches the console-levelled venue; walk the listener towards a
 corner to hear how close performers perceive cues (the panning reference stays at the centre).
-The listener is drawn on the Performance map. This is approximate (no HRTF, no room
+The listener is drawn on the stage map. This is approximate (no HRTF, no room
 reflections); front/back cues are weak on headphones. *Mono sum* remains for content checks.
 
 Offline headphone render of one GO: `scripts/render_simulation.py --project ID --headphones 2,2,0`

@@ -7,10 +7,10 @@ import pytest
 import soundfile as sf
 from fastapi.testclient import TestClient
 
-from stagespatialcue.audio import decode_audio, media_cue
+from stagespatialcue.audio import decode_audio, media_item
 from stagespatialcue.bundle import BUNDLE_ID, sync_bundled_show
 from stagespatialcue.mixer import Mixer
-from stagespatialcue.models import Cue, PathPoint, Project, Speaker
+from stagespatialcue.models import PathPoint, PlaybackSpec as Cue, Project, Speaker
 from stagespatialcue.server import create_app
 from stagespatialcue.simulation import VirtualMonitorStream, VirtualRoom
 from stagespatialcue.storage import ProjectStore
@@ -23,7 +23,7 @@ def corners():
 
 
 def render(cue, samples, frames=200):
-    p = Project(speakers=corners(), cues=[cue])
+    p = Project(speakers=corners())
     mixer = Mixer(p, sample_rate=1000)
     mixer.master_mute = False
     mixer.master_db = 0
@@ -46,10 +46,10 @@ def test_decode_keeps_stereo_and_resamples(tmp_path):
     assert decode_audio(write_wav(tmp_path / 'q.wav', 4)).shape[1] == 1  # >2 channels: mono
 
 
-def test_media_cue_defaults_stereo_files_to_width(tmp_path):
-    cue = media_cue(write_wav(tmp_path / '003_Car_pass.wav', 2), 'media/003_Car_pass.wav', '003_Car_pass.wav')
-    assert (cue.title, cue.source_channels, cue.stereo_mode) == ('Car pass', 2, 'width')
-    assert media_cue(write_wav(tmp_path / 'bell.wav', 1), 'media/bell.wav', 'bell.wav').stereo_mode == 'mono'
+def test_media_item_defaults_stereo_files_to_width(tmp_path):
+    item = media_item(write_wav(tmp_path / '003_Car_pass.wav', 2), 'media/003_Car_pass.wav', '003_Car_pass.wav')
+    assert (item.name, item.source_channels, item.stereo_mode) == ('Car pass', 2, 'width')
+    assert media_item(write_wav(tmp_path / 'bell.wav', 1), 'media/bell.wav', 'bell.wav').stereo_mode == 'mono'
 
 
 def test_width_places_left_and_right_channels_on_the_front_pair():
@@ -83,14 +83,18 @@ def test_bundle_imports_once_keeps_deletions_and_appends_new_files(tmp_path):
     store = ProjectStore(tmp_path / 'data')
     project = sync_bundled_show(store, show)
     assert project.bundle_id == BUNDLE_ID and project.name == 'Black box'
-    assert [c.filename for c in project.cues] == ['001_Bell.wav', 'BRS_Crowd.wav']
-    assert project.cues[1].stereo_mode == 'width' and store.media_path(project.id, project.cues[1].media_relpath).is_file()
+    assert [m.filename for m in project.media] == ['001_Bell.wav', 'BRS_Crowd.wav']
+    assert [c.layers[0].media_id for c in project.cues] == [m.id for m in project.media]  # one cue per file
+    crowd = project.media[1]
+    assert crowd.stereo_mode == 'width' and store.media_path(project.id, crowd.media_relpath).is_file()
     project.cues.pop(0)  # operator deletes a cue in the app
     store.save(project)
     write_wav(show / 'audio' / 'Door.wav', 1)
     again = sync_bundled_show(store, show)
     assert again.id == project.id and len(store.all()) == 1
-    assert [c.filename for c in again.cues] == ['BRS_Crowd.wav', 'Door.wav']
+    # Later files join the audio library only; cues stay as the operator left them.
+    assert [m.filename for m in again.media] == ['001_Bell.wav', 'BRS_Crowd.wav', 'Door.wav']
+    assert [c.id for c in again.cues] == [c.id for c in project.cues]
     assert sync_bundled_show(store, tmp_path / 'missing') is None
 
 
@@ -147,12 +151,14 @@ def test_virtual_monitor_stream_and_pose_api(tmp_path, monkeypatch):
 
 
 def test_repository_show_folder_is_real_audio():
-    files = sorted(Path(__file__).resolve().parents[1].joinpath('show', 'audio').glob('*.flac'))
+    folder = Path(__file__).resolve().parents[1].joinpath('show', 'audio')
+    files = sorted([*folder.glob('*.flac'), *folder.glob('*.wav')])
     if not files:
         pytest.skip('no bundled show audio in this checkout')
     for path in files:
         info = sf.info(path)
-        assert info.samplerate in (44100, 48000) and info.channels == 2 and path.stat().st_size < 50 * 1024 * 1024
+        assert info.samplerate in (44100, 48000, 96000) and info.channels == 2
+        assert path.stat().st_size < 95 * 1024 * 1024  # GitHub rejects files over 100 MB
 
 
 def test_bundle_applies_stage_layout_only_when_creating(tmp_path):

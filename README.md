@@ -21,9 +21,11 @@ The performers are the listeners; there is no audience-facing coordinate system.
 | Direction | Clockwise 0.00–359.99° dial (360° input normalizes to 0°); 0=12 o'clock, 90=right, 180=bottom, 270=left |
 | Spatialization | 2D adjacent-speaker constant-power VBAP at one fixed reference center |
 | Movement | Per-cue relative angular keyframes or angular ADSR, or a stage-map XY position/path; plus global rotation and show envelope |
-| Edit / Performance | Switch at the top right at any time. Edit = cue table + inspector; Performance = stage map that follows NEXT (drag position, timed path, Store / Recall / Reset, lock). Transport, sidebar and simulation panel stay available in both |
+| Library + layered cues | Audio library holds each sound's design (level, trim, fades, loop, stereo); a cue holds up to 32 layers, each with its own position/path, level and delay; drag sounds onto the stage map or a cue |
+| Design / Show | Switch at the top right. Design = library + stage map + cue list/inspector; Show = editing locked, GO / STOP / PANIC / NEXT / Recall only |
+| Language | 中 / EN switch at the top right; Chinese by default, remembered per browser |
 | Cue playback | Replace, layer or queue; per-cue gain, fades, transition, pre/post waits |
-| Operator controls | FADE GO, CUT GO, STOP, SKIP, ARM SELECTED, MAIN MUTE, PANIC |
+| Operator controls | FADE GO, CUT GO, STOP, SKIP, set NEXT, audition cue / sound, MAIN MUTE, PANIC |
 | Media / projects | Local numbered-file/folder upload, stable manual ordering, file replacement, autosave, multiple projects, ZIP export |
 | Live edits | Bearing, gain, angular envelopes and natural fade settings; no PCM reload or rescheduling of already queued voices |
 | AutoCal | One center point, balanced, XLR input, EQ disabled; sequential sweeps, diagnostic plots, persisted reports, explicit human APPLY |
@@ -46,7 +48,7 @@ cd SpatialStage
 
 **Show audio in the repository:** the launcher imports every file in `show/audio/` into a project called *Show audio (repository)*, with the speaker layout from `show/stage.json` (6 m × 6 m corners). It is copied into the data folder once; files added to `show/audio/` later (e.g. after `git pull`) are appended on the next launch. Cues you delete, reorder or reposition in the app are never overwritten. The bundled files are FLAC (lossless; files above 48 kHz were downsampled to the engine's 48 kHz).
 
-**Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the full interface in the browser (Edit / Performance switch at the top right; the last choice is remembered). Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
+**Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the full interface in the browser (Design / Show and 中 / EN switches at the top right; both are remembered). Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
 
 Open `http://127.0.0.1:8765`. The launcher creates `.venv` and installs dependencies on first use or when `pyproject.toml` changes. That installation may need Internet access. Subsequent launches with installed dependencies are local/offline. `SPATIALSTAGE_PYTHON=/path/to/python3.12 ./run_mac.command` selects an interpreter for a new environment. An incompatible existing `.venv` must be recreated deliberately, not silently deleted.
 
@@ -98,11 +100,11 @@ The geometry preview computes theoretical relative gain/delay suggestions only; 
 
 ### Import and editing
 
-Name sources `001_Footsteps.wav`, `002_Car.wav`, `003_Wind.wav`. Import a folder or multiple files. **Only the newly imported batch is numerically sorted**, then appended; existing hand-arranged rows never get sorted again. Up/down buttons reorder rows. Click a row to edit it; selecting a row does not change NEXT. ARM SELECTED explicitly sets NEXT by immutable cue ID. Deleting NEXT clears it and requires re-arming.
+Name sources `001_Footsteps.wav`, `002_Car.wav`, `003_Wind.wav`. Import a folder or multiple files into the **audio library** (numbered names sort numerically); build cues from it by drag and drop (see below). Reorder cues with ↑/↓ or by dragging. Clicking a cue selects it for editing; it does not change NEXT. **Set as NEXT** (or *Start from selected*) explicitly sets NEXT by immutable cue ID. Deleting NEXT clears it and requires setting it again.
 
-WAV/AIFF/FLAC/OGG use libsndfile; formats not accepted there use FFmpeg when installed. Sources are resampled to 48 kHz and predecoded. **Stereo files stay stereo** (more than two channels are downmixed to mono): per cue choose *Keep stereo · L/R width* (default for stereo imports) or *Mono downmix*. With width *w*, the file's L channel is placed at cue position − *w*/2 and R at + *w*/2, each panned like a normal source at equal power: 90° puts L/R on the speaker pair in front of the cue, 180° on the left and right halves (good for ambience beds), 0° behaves like mono without phase cancellation. On stage-map cues the pair rotates around the centre with the path and merges into all four speakers near the centre. Use mono downmix for point-like effects that should come from one place. Clip decoding is capped at 30 minutes (the FFmpeg fallback truncates at that limit); split longer sources. Maximum decoded cache is 700 MiB, not a total application memory guarantee. Upload limit is 150 MiB per file, 256 MiB per whole request and 250 files per request; split large batches.
+WAV/AIFF/FLAC/OGG use libsndfile; formats not accepted there use FFmpeg when installed. Sources are resampled to 48 kHz and predecoded. **Stereo files stay stereo** (more than two channels are downmixed to mono): per library sound choose *Keep stereo · L/R width* (default for stereo imports) or *Mono downmix*. With width *w*, the file's L channel is placed at layer position − *w*/2 and R at + *w*/2, each panned like a normal source at equal power: 90° puts L/R on the speaker pair in front of the cue, 180° on the left and right halves (good for ambience beds), 0° behaves like mono without phase cancellation. On stage-map cues the pair rotates around the centre with the path and merges into all four speakers near the centre. Use mono downmix for point-like effects that should come from one place. Clip decoding is capped at 30 minutes (the FFmpeg fallback truncates at that limit); split longer sources. Maximum decoded cache is 700 MiB, not a total application memory guarantee. Upload limit is 150 MiB per file, 256 MiB per whole request and 250 files per request; split large batches.
 
-Changing a cue's media affects its **next fresh playback**. Already playing or scheduled voices retain their existing PCM. Editing direction/gain/envelope updates matching voices; changing trigger timing does not retroactively reschedule them. Use STOP then ARM/GO to audition a new schedule. Live fade-in/out changes are blended over 15 ms rather than stepping their natural gain envelope.
+Replacing a sound's file affects its **next fresh playback**. Already playing or scheduled voices retain their existing PCM. Editing direction/gain/envelope updates matching voices; changing trigger timing does not retroactively reschedule them. Use STOP then ARM/GO to audition a new schedule. Live fade-in/out changes are blended over 15 ms rather than stepping their natural gain envelope.
 
 ### Transport and timing
 
@@ -134,17 +136,19 @@ effective angle = wrap360(base cue angle
 
 Keyframe offsets are unwrapped: `0 → 360` is one clockwise revolution, not zero motion. For a car going from left through the top to right, base=270°, offsets=0→180°. Through the bottom use 0→−180°. Cue ADSR uses angular peak/sustain/final offsets, not loudness; its release is tied to file duration, **not a STOP key-off event**. The global envelope starts with the first scheduled cue, continues during mute and silent gaps, and is reset when re-arming an idle show. End-relative release and clock controls remain design decisions, not full synthesizer ADSR semantics.
 
-### Performance mode and the stage map
+### Audio library, layered cues and the stage map (v0.4)
 
-**▶ Performance** in the top-right **Edit | Performance** switch (or `?mode=perform` once) replaces the cue table with a stage map in metres around the actor centre. The map targets the NEXT cue and follows it after each GO; click another cue in the list to prepare it ahead (**↺ Follow NEXT** returns).
+The workspace has three columns: **audio library** (left), **stage map** (centre), **cue list + inspector** (right).
 
-- **Position:** click or drag on the map. An angle-mode cue converts to a stage-map position the first time; its current bearing becomes the starting point on the speaker edge, so it sounds the same until moved.
-- **Path:** choose **＋ Add path point** (or Shift+click) to append timed points; drag points to move them and edit time/X/Y in the table. Time is seconds from the start of the file; the source holds the first/last point before/after them. **Preview path time** scrubs a ghost position.
-- **How a point sounds:** bearing comes from the centre as before. Distance only sets spread: on or beyond the dashed speaker edge = that speaker pair only (identical to plain VBAP); toward the centre the sound blends into all four speakers equally, so a path crossing the centre does not jump between opposite pairs. Power stays constant; there is no distance attenuation. Global rotation and the show envelope still rotate the result. The panel shows the four channel gains at the selected point; speaker labels show trims and active AutoCal values.
-- **Store / Recall / Reset:** Store saves the cue's current position/path (and its angle settings) in the project. Recall restores it. Reset sets one static point at the front (0°). The list marks each cue ✓ stored, ● changed since stored, — none. **Store all / Recall all** act on every cue.
-- **Lock:** tick *Lock map and presets* once the show is set; the map and editing are disabled (remembered in this browser). GO / STOP / PANIC and Recall still work.
+- **Audio library = the sounds.** Imported files go here and never create cues by themselves. Selecting a sound opens its *sound design*: name, level, trim start/end (0 = file end), fade in/out, loop, stereo handling (*Keep stereo · L/R width* or *Mono downmix*) and notes. A sound can be used by several cues; changing its design changes every cue that uses it. Double-click or ▷ auditions it alone (front centre, NEXT untouched). *Replace file* swaps the file for every cue using it. A sound still used by a cue cannot be deleted.
+- **Cue = what fires on GO.** A cue holds up to 32 **layers**; each layer plays one library sound with its **own position or path, level and delay**. GO starts every layer together, each after its own delay. Start action, auto-next, transition and pre/post waits belong to the cue. A layer's level = sound level + layer level + cue level. A cue with no layers is allowed: as a *replace* cue it simply fades out what is playing.
+- **Drag and drop.** Drag a sound onto the stage map = add a layer to the current cue at the drop point; onto a cue in the list = add it to that cue; onto the empty list area = new cue. Audio files from Finder can be dropped onto the library. Cue rows can be dragged to reorder.
+- **Stage map.** The selected layer is editable (move point / add path point, Shift+click appends); the cue's other layers are shown in their own colours — click one to edit it. Bearing still comes from the centre; on or beyond the dashed speaker edge = that speaker pair only (identical to VBAP), toward the centre the sound spreads to all four, power stays constant. Layers can also use angle + keyframes or angle ADSR.
+- **Store / Recall / Reset** act on all layers of the cue. The list marks ✓ stored, ● changed since stored, — none; **Store all / Recall all** act on every cue.
+- **Design | Show** (top right): Show mode hides the library and locks every edit; GO / STOP / PANIC, setting NEXT and Recall keep working. The mode is remembered per browser (`?mode=perform` once forces it).
+- **中 / EN** (top right) switches the whole interface between Chinese and English, including server messages; your cue and sound names are not translated. Chinese is the default; the choice is remembered.
 
-Edits autosave like any other cue edit and apply to a cue that is already playing after ~300 ms. Edit mode's inspector shows a mini map for stage-map cues; *Modulation curve → Stage-map position / XY path* converts a cue there too. Stage setup draws the speaker layout with theoretical delay/level hints as you type.
+Projects from earlier versions (one file per cue) convert automatically on first load: each file becomes a library sound and each cue keeps its position, path and preset as a one-layer cue.
 
 ### Saves and recovery
 
@@ -173,7 +177,8 @@ node --check stagespatialcue/static/app.js
 node --check stagespatialcue/static/save-queue.js
 node --check stagespatialcue/static/simulation.js
 node --check stagespatialcue/static/stage-map.js
-node --check stagespatialcue/static/perform.js
+node --check stagespatialcue/static/editor.js
+node --check stagespatialcue/static/i18n.js
 node --test tests/js/*.test.cjs
 python -m ruff check stagespatialcue tests
 python -m playwright install chromium

@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import soundfile as sf
 
-from stagespatialcue.models import Cue, ModPoint
+from stagespatialcue.models import Cue, CueLayer, MediaItem, ModPoint
 from stagespatialcue.storage import ProjectStore
 
 
@@ -24,11 +24,12 @@ def main():
         path = store.directory(project.id) / "media" / filename
         path.parent.mkdir(exist_ok=True)
         sf.write(path, audio, fs)
+        media = MediaItem(name=name, filename=filename, media_relpath=f"media/{filename}", duration_s=sec)
+        project.media.append(media)
         project.cues.append(Cue(
-            title=name, filename=filename, media_relpath=f"media/{filename}",
-            duration_s=sec, position_deg=angle,
-            modulation=[ModPoint(time_s=0,offset_deg=0), ModPoint(time_s=sec,offset_deg=120)] if n==1 else [ModPoint(time_s=0,offset_deg=0)],
-            start_mode="layer" if n==2 else "replace",
+            title=name, gain_db=-6, start_mode="layer" if n==2 else "replace",
+            layers=[CueLayer(media_id=media.id, position_deg=angle,
+                             modulation=[ModPoint(time_s=0,offset_deg=0), ModPoint(time_s=sec,offset_deg=120)] if n==1 else [ModPoint(time_s=0,offset_deg=0)])],
         ))
     store.save(project)
     print(f"Created {project.name} (ID {project.id}) under {store.directory(project.id)}")

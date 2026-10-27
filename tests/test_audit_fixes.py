@@ -5,7 +5,7 @@ import pytest
 import soundfile as sf
 from fastapi.testclient import TestClient
 
-from stagespatialcue.models import Cue, Project
+from stagespatialcue.models import Cue, CueLayer, MediaItem, Project
 from stagespatialcue.server import create_app
 from stagespatialcue.spatial import vbap_gains
 
@@ -21,10 +21,12 @@ def test_duplicate_and_wrap_near_duplicate_speakers_rejected(tmp_path, angles):
 def test_360_canonical_persistence_and_render(tmp_path):
     with TestClient(create_app(tmp_path),base_url='http://127.0.0.1:8765') as c:
         p=c.post('/api/projects',json={'name':'bearing'}).json()
-        p['cues']=[Cue().model_dump()];p['cues'][0]['position_deg']=360
+        media=MediaItem()
+        p['media']=[media.model_dump()]
+        p['cues']=[Cue(layers=[CueLayer(media_id=media.id)]).model_dump()];p['cues'][0]['layers'][0]['position_deg']=360
         result=c.put('/api/projects/'+p['id'],json=p)
-        assert result.status_code==200 and result.json()['cues'][0]['position_deg']==0
-        assert c.get('/api/projects/'+p['id']).json()['cues'][0]['position_deg']==0
+        assert result.status_code==200 and result.json()['cues'][0]['layers'][0]['position_deg']==0
+        assert c.get('/api/projects/'+p['id']).json()['cues'][0]['layers'][0]['position_deg']==0
         np.testing.assert_array_equal(vbap_gains(360,Project().speakers),vbap_gains(0,Project().speakers))
 
 
@@ -64,7 +66,8 @@ def test_media_commit_rereads_edits_made_during_decode(tmp_path,monkeypatch,repl
     app=create_app(tmp_path)
     with TestClient(app,base_url='http://127.0.0.1:8765') as c:
         p=c.post('/api/projects',json={'name':'before'}).json()
-        project=Project.model_validate(p);project.cues=[Cue(title='original')]
+        media=MediaItem(name='original sound')
+        project=Project.model_validate(p);project.media=[media];project.cues=[Cue(title='original')]
         app.state.store.save(project)
         def duration(path):
             latest=app.state.store.get(project.id)
@@ -72,9 +75,9 @@ def test_media_commit_rereads_edits_made_during_decode(tmp_path,monkeypatch,repl
             app.state.store.save(latest)
             return .1
         monkeypatch.setattr('stagespatialcue.server.audio_duration',duration)
-        monkeypatch.setattr('stagespatialcue.audio.audio_duration',duration)  # uploads via media_cue
+        monkeypatch.setattr('stagespatialcue.audio.audio_duration',duration)  # uploads via media_item
         wave=BytesIO();sf.write(wave,np.zeros(4800),48000,format='WAV')
-        suffix=f'/cues/{project.cues[0].id}/replace-media' if replacement else '/upload'
+        suffix=f'/media/{media.id}/replace' if replacement else '/upload'
         r=c.post('/api/projects/'+project.id+suffix,files={('file' if replacement else 'files'):('001.wav',wave.getvalue(),'audio/wav')})
         assert r.status_code==200
         latest=app.state.store.get(project.id)

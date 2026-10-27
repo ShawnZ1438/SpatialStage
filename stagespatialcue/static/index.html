@@ -1,154 +1,167 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpatialStage — Four-channel stage sound control</title>
+  <title>SpatialStage</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 <div class="app">
   <header class="topbar">
-    <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small>SPATIAL SHOW CONTROL / MAC LOCAL</small></div></div>
-    <div class="top-right"><span class="pill">4-CHANNEL</span><span id="systemState" class="status"><i></i> Engine offline</span><div class="mode-switch" role="group" aria-label="Interface mode"><button id="modeEdit" aria-pressed="true" title="Cue list, inspector, import and all settings">✎ Edit</button><button id="modePerform" aria-pressed="false" title="Stage map for placing the next cue; transport stays above">▶ Performance</button></div><button id="settingsToggle" class="quiet" title="Open stage / speaker configuration">⚙ Stage setup</button></div>
+    <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small data-i18n="brandSub">四声道空间声 Cue 系统</small></div></div>
+    <div class="top-right">
+      <span id="systemState" class="status"><i></i> <span data-i18n="engineOffline">引擎未连接</span></span>
+      <div class="mode-switch" role="group" data-i18n-aria="modeGroup" aria-label="界面模式">
+        <button id="modeEdit" aria-pressed="true" data-i18n="modeDesign" data-i18n-title="modeDesignTip">✎ 编排</button>
+        <button id="modePerform" aria-pressed="false" data-i18n="modeRun" data-i18n-title="modeRunTip">▶ 演出</button>
+      </div>
+      <button id="settingsToggle" class="quiet" data-i18n="stageSetup" data-i18n-title="stageSetupTip">⚙ 舞台设置</button>
+      <button id="langToggle" class="lang-toggle" data-i18n-title="langTip" title="切换语言 / Switch language"><b data-lang="zh">中</b><span>/</span><b data-lang="en">EN</b></button>
+    </div>
   </header>
 
   <div class="shell">
     <aside class="sidebar">
       <section class="side-section">
-        <div class="section-heading">SHOW PROJECT <span class="mini">01 / STAGE</span></div>
-        <div class="project-picker"><select id="projectSelect" aria-label="Select show project"></select><button id="newProject" class="square" title="Create new show">＋</button></div>
-        <div class="subactions"><button id="exportProject" class="linklike">⇩ Export show ZIP</button><span id="saveIndicator">Saved locally</span><button id="retrySave" class="linklike" hidden>Retry save</button></div>
+        <div class="section-heading" data-i18n="showProject">演出项目</div>
+        <div class="project-picker"><select id="projectSelect" data-i18n-aria="projectSelect" aria-label="选择演出项目"></select><button id="newProject" class="square" data-i18n-title="newProject" title="新建项目">＋</button></div>
+        <div class="subactions"><button id="exportProject" class="linklike" data-i18n="exportZip">⇩ 导出项目 ZIP</button><span id="saveIndicator" data-i18n="saved">已保存到本机</span><button id="retrySave" class="linklike" hidden data-i18n="retrySave">重试保存</button></div>
       </section>
       <section class="side-section">
-        <div class="section-heading">AUDIO DEVICES</div>
-        <label for="outputSelect" class="small-label">OUTPUT / 4 discrete channels required</label>
-        <select id="outputSelect" aria-label="Choose four-channel audio interface"></select>
-        <div class="inline-btn"><button id="connectAudio" class="secondary" title="Open selected output device">Connect audio</button><button id="refreshDevices" class="square" title="Refresh audio devices">↻</button></div>
-        <p class="micro">Cue input uses numbered local audio files. Optional AutoCal uses an XLR measurement mic before the show; no live microphone mix.</p>
+        <div class="section-heading" data-i18n="audioDevices">音频设备</div>
+        <label for="outputSelect" class="small-label" data-i18n="outputLabel">输出 · 需要 4 个独立通道</label>
+        <select id="outputSelect" data-i18n-aria="outputSelect" aria-label="选择四声道音频接口"></select>
+        <div class="inline-btn"><button id="connectAudio" class="secondary" data-i18n="connectAudio">连接音频</button><button id="refreshDevices" class="square" data-i18n-title="refreshDevices" title="刷新设备">↻</button></div>
       </section>
       <section class="side-section">
-        <div class="section-heading">MASTER OUTPUT <span id="masterDbLabel" class="value-label">−18 dB</span></div>
-        <input type="range" min="-60" max="0" step="1" value="-18" id="masterSlider" aria-label="Master volume dB" />
-        <div class="master-actions"><button id="muteButton" class="mute on">● MAIN MUTE · ON</button><button id="speakerTests" class="quiet" title="One-second 440 Hz calibration tone">Test CH</button></div>
-        <button id="autocalOpen" class="autocal-open">◉ AutoCal · XLR measurement</button>
+        <div class="section-heading"><span data-i18n="masterOutput">主输出</span> <span id="masterDbLabel" class="value-label">−18 dB</span></div>
+        <input type="range" min="-60" max="0" step="1" value="-18" id="masterSlider" data-i18n-aria="masterVolume" aria-label="主音量 dB" />
+        <div class="master-actions"><button id="muteButton" class="mute on">● MAIN MUTE · ON</button><button id="speakerTests" class="quiet" data-i18n="testCh" data-i18n-title="testChTip">测试通道</button></div>
+        <button id="autocalOpen" class="autocal-open" data-i18n="autocalOpen">◉ AutoCal · XLR 测量</button>
         <div id="meters" class="meter-area"><div><b>1</b><div class="meter"><i></i></div></div><div><b>2</b><div class="meter"><i></i></div></div><div><b>3</b><div class="meter"><i></i></div></div><div><b>4</b><div class="meter"><i></i></div></div></div>
-        <p class="micro" id="audioInfo">Muted by default. Never test channels at performance volume.</p>
+        <p class="micro" id="audioInfo" data-i18n="audioInfoDefault">默认静音。不要用演出音量测试通道。</p>
       </section>
       <section class="side-section stage-compact">
-        <div class="section-heading">SPATIAL MASTER</div>
-        <label class="small-label" for="globalRotation">Global rotation · live offset (°)</label>
+        <div class="section-heading" data-i18n="spatialMaster">空间总控</div>
+        <label class="small-label" for="globalRotation" data-i18n="globalRotation">整体旋转 · 实时 (°)</label>
         <input id="globalRotation" type="number" min="-3600" max="3600" step="0.01" value="0" />
-        <label class="check"><input type="checkbox" id="distanceComp" /> Apply approximate distance compensation</label>
-        <label class="check"><input type="checkbox" id="globalEnvelopeEnabled" /> Enable show-wide direction envelope</label>
+        <label class="check"><input type="checkbox" id="distanceComp" /> <span data-i18n="distanceComp">近似距离补偿</span></label>
+        <label class="check"><input type="checkbox" id="globalEnvelopeEnabled" /> <span data-i18n="globalEnvelope">启用全场方向包络</span></label>
         <div id="globalEnvelopeFields" class="global-keys"></div>
-        <button id="globalAddPoint" class="quiet" style="margin-top:8px;width:100%">＋ Global keyframe</button>
-        <p class="micro">Global keyframe time starts at the first GO. Values are angular offsets in degrees. Both global controls affect live sounds.</p>
+        <button id="globalAddPoint" class="quiet wide" data-i18n="globalAddPoint">＋ 全局关键帧</button>
+        <p class="micro" data-i18n="globalHelp">全局关键帧从第一次 GO 开始计时，数值是角度偏移（度）。两个全局控制都会影响正在播放的声音。</p>
       </section>
-      <div class="side-bottom"><b>LOCAL-FIRST</b><p id="dataLocation">Show data: loading local folder…</p></div>
+      <div class="side-bottom"><b data-i18n="localFirst">本地运行</b><p id="dataLocation"></p></div>
     </aside>
 
     <main class="main">
-      <div class="workspace-header"><div><div class="eyebrow">SHOW CONTROL / LIVE OPERATOR</div><h1 id="showName">Untitled show</h1><button id="renameProject" class="linklike">✎ Rename show</button><div class="help-line">Space = FADE GO · C = CUT GO · S = STOP · Alt/⌥+↓ = SKIP · Shift+Esc = PANIC</div></div><button id="preflight" class="secondary">✓ Preflight check</button></div>
+      <div class="workspace-header">
+        <div><div class="eyebrow" data-i18n="liveOperator">演出控制</div><h1 id="showName">—</h1><button id="renameProject" class="linklike" data-i18n="renameShow">✎ 重命名</button>
+          <div class="help-line" data-i18n="shortcuts">空格 = FADE GO · C = CUT GO · S = STOP · ⌥/Alt+↓ = SKIP · Shift+Esc = PANIC</div></div>
+        <button id="preflight" class="secondary" data-i18n="preflight">✓ 预检 Preflight</button>
+      </div>
 
       <section class="transport">
-        <div class="now-next"><span class="section-heading">NEXT TO FIRE</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted">Arm and connect a 4-output interface</div></div>
-        <div class="cue-direct"><button id="cueFirst">回到第一条 · 仅准备</button><button id="cueStart">从选中 cue 开始 · 仅准备</button><button id="cueAudition">试听选中 · 单条替换</button><button id="cueUp">选中 ↑ 上移</button><button id="cueDown">选中 ↓ 下移</button><small>单击选择 · 双击试听（立即替换、不自动接续；需已连接、预检且解除静音） · 顺序 # 与素材编号独立</small></div><div class="transport-buttons"><button id="goButton" class="go" title="Space / normal transition">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" title="C / bypass waits and transition">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
+        <div class="now-next"><span class="section-heading" data-i18n="nextToFire">下一个 NEXT</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted"></div></div>
+        <div class="transport-buttons"><button id="goButton" class="go" data-i18n-title="goTip">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" data-i18n-title="cutGoTip">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt / ⌥ + ↓">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Esc">PANIC</button></div>
+        <div class="cue-direct"><button id="cueFirst" data-i18n="cueFirst">⏮ 回到第一条</button><button id="cueStart" data-i18n="cueStart">从选中 Cue 开始</button><button id="cueAudition" data-i18n="cueAudition">▷ 试听选中 Cue</button><button id="cueUp" data-i18n="cueUp">↑ 上移</button><button id="cueDown" data-i18n="cueDown">↓ 下移</button><small data-i18n="cueDirectHelp">「回到第一条」「从选中开始」只设定 NEXT，不出声 · 试听会立刻替换正在播放的声音，并把 NEXT 设为这一条</small></div>
       </section>
 
-      <details class="simulation-panel" open>
-        <summary>LOCAL SIMULATION / real engine + headphone monitor (virtual 4 speakers)</summary>
-        <p>Approx. 6 m × 6 m stage; four IBO PS 15 (specifications unverified). Dashed square is a stage footprint, NOT room walls. Speaker positions are editable placeholders in Stage setup.</p>
-        <button id="simConnect">Connect silent simulation</button>
-        <button id="simRecord">Start new capture</button><button id="simStopRecord">Stop capture</button>
-        <a href="/api/simulation/capture.wav" download>Download 4-channel WAV</a>
-        <select id="simMode" aria-label="Headphone monitor type"><option value="virtual">Virtual 4 speakers (headphones)</option><option value="sum">Mono sum (content check)</option></select><select id="simDevice" aria-label="Stereo monitor device"></select><button id="simListen">Connect headphone monitor</button><button id="simStopListen">Disconnect output</button><div id="simChannels"></div>
-        <p id="simStatus" role="status">Simulation disconnected. No hardware output.</p>
-        <div class="simulation-view"><canvas id="simCanvas" width="420" height="360" aria-label="Stage geometry, actor and live cue bearings"></canvas><div>
-          <label>Listener X (m) <input id="simX" type="number" value="0" min="-6" max="6" step="0.1"></label>
-          <label>Listener Y (m) <input id="simY" type="number" value="0" min="-6" max="6" step="0.1"></label>
-          <label>Head bearing (°) <input id="simHead" type="range" value="0" min="0" max="359"></label>
-          <p>0° front / +Y; 90° right; 270° left. With the <b>virtual 4-speaker</b> monitor you hear the four speakers from this position and head direction (level and arrival differences, approximate head shadow) — move off-centre to hear how an actor near a speaker perceives the cue. The panning reference itself stays at the centre.</p>
-          <p>CH1–4 meters show actual clipped engine output. Capture is post-master, post-routing at 48 kHz, capped at 60 s. Download before reconnecting.</p>
-          <p>Mono sum monitor: real CH1–4 output summed at low gain to both L/R. Solo/mute/gain controls affect monitoring only, not meters, capture or show routing. This tests audible content, NOT surround perception or hardware routing. Indoor venue confirmed; room acoustics and onsite console leveling are outside this console.</p>
+      <details class="simulation-panel">
+        <summary data-i18n="simSummary">本地模拟 · 真实引擎 + 耳机监听（虚拟四音箱）</summary>
+        <div class="sim-actions">
+          <button id="simConnect" data-i18n="simConnect">连接静音模拟</button>
+          <button id="simRecord" data-i18n="simRecord">开始录制</button><button id="simStopRecord" data-i18n="simStopRecord">停止录制</button>
+          <a href="/api/simulation/capture.wav" download data-i18n="simDownload">下载 4 声道 WAV</a>
+          <select id="simMode" data-i18n-aria="simMode" aria-label="耳机监听方式"><option value="virtual" data-i18n="simVirtual">虚拟四音箱（耳机）</option><option value="sum" data-i18n="simSum">单声道合并（内容检查）</option></select><select id="simDevice" data-i18n-aria="simDevice" aria-label="监听设备"></select><button id="simListen" data-i18n="simListen">连接耳机监听</button><button id="simStopListen" data-i18n="simStopListen">断开输出</button>
+        </div>
+        <div id="simChannels"></div>
+        <p id="simStatus" role="status"></p>
+        <div class="simulation-view"><canvas id="simCanvas" width="420" height="360" data-i18n-aria="simCanvas" aria-label="舞台、听者与实时声源"></canvas><div>
+          <label><span data-i18n="simX">听者 X (m)</span> <input id="simX" type="number" value="0" min="-6" max="6" step="0.1"></label>
+          <label><span data-i18n="simY">听者 Y (m)</span> <input id="simY" type="number" value="0" min="-6" max="6" step="0.1"></label>
+          <label><span data-i18n="simHead">头部朝向 (°)</span> <input id="simHead" type="range" value="0" min="0" max="359"></label>
+          <p data-i18n="simHelp1">0° 前方（+Y），90° 右，270° 左。虚拟四音箱监听会按这个位置和朝向模拟四只音箱（电平差、到达时间差、近似头部遮挡）；声像的参考点仍是舞台中心。</p>
+          <p data-i18n="simHelp2">CH1–4 电平表是引擎真实输出。录制在主推子和路由之后，48 kHz，最长 60 秒，重新连接前先下载。监听的增益/静音/独奏只影响耳机，不影响电平表、录制和演出输出。</p>
         </div></div>
       </details>
-      <section id="performView" class="perform-view" aria-label="Performance mode">
-        <div class="perform-stage">
-          <div class="perform-map-head"><span class="section-heading">STAGE MAP · metres from actor centre (0,0)</span><span class="micro">Dashed line = speaker edge · yellow = live sound</span></div>
+
+      <section class="studio" id="studio">
+        <aside class="library-panel panel-card" id="libraryPanel">
+          <div class="panel-title"><div><span class="section-heading" data-i18n="library">音频库</span><span id="libraryCount" class="count"></span></div>
+            <div class="panel-actions"><label class="import-button"><span data-i18n="importFolder">＋ 文件夹</span><input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button"><span data-i18n="importFiles">文件</span><input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
+          <input id="librarySearch" type="search" class="library-search" data-i18n-placeholder="librarySearch" placeholder="搜索音频…" />
+          <div id="libraryList" class="library-list" data-i18n-aria="library" aria-label="音频库"></div>
+          <p class="micro library-hint" data-i18n="libraryHint">把音频拖到舞台图上 = 在落点给当前 Cue 加一层；拖到 Cue 上 = 加进那个 Cue；拖到列表空白处 = 新建 Cue。双击 = 试听。电脑里的音频文件也可以直接拖进来。</p>
+          <div id="mediaDesigner" class="media-designer"></div>
+        </aside>
+
+        <section class="stage-panel panel-card">
+          <div class="perform-map-head"><span class="section-heading" data-i18n="stageMap">舞台平面图 · 以演员为中心 (0,0)，单位米</span><span class="micro" data-i18n="stageMapLegend">虚线 = 音箱连线 · 黄色 = 正在播放</span></div>
           <div id="performMap" class="perform-map"></div>
-        </div>
-        <aside class="perform-side">
-          <div id="performTarget" class="perform-card"></div>
-          <div id="performOutputs" class="perform-card"></div>
-          <div id="performCues" class="perform-card perform-cues"></div>
+          <div id="performOutputs" class="outputs-card"></div>
+        </section>
+
+        <aside class="cue-column">
+          <div id="performCues" class="panel-card perform-cues"></div>
+          <div id="performTarget" class="panel-card perform-card"></div>
         </aside>
       </section>
-      <div class="work-area">
-        <section class="cue-panel">
-          <div class="panel-title"><div><span class="section-heading">CUE STACK</span><span id="cueCount" class="count">0 cues</span></div><div class="panel-actions"><label class="import-button">＋ Import folder<input type="file" id="folderInput" multiple webkitdirectory directory accept="audio/*" /></label><label class="secondary file-button">Files<input type="file" id="fileInput" multiple accept=".wav,.aif,.aiff,.flac,.ogg,.mp3,.aac,.m4a" /></label></div></div>
-          <div class="cue-list-scroller"><table class="cue-table"><thead><tr><th>STATUS</th><th>NO.</th><th>CUE / TRACK</th><th>START</th><th>BEARING</th><th>GAIN</th><th>TIME</th><th></th></tr></thead><tbody id="cueRows"></tbody></table><div id="emptyCues" class="empty"><div>◎</div><b>Your stage starts here.</b><p>Import a numbered folder of WAV / AIFF / FLAC / MP3 files to populate your cue sequence.</p></div></div>
-
-          <div class="cue-footer"><span id="queueSummary">No scheduled audio</span><span>Live direction/gain edits update active voices · Media swap is next playback</span></div>
-        </section>
-
-        <section class="inspector" id="inspector">
-          <div class="panel-title"><div><span class="section-heading">CUE INSPECTOR</span><div id="inspectTitle" class="inspect-name">Select a cue</div></div><button id="armSelected" class="secondary">ARM SELECTED</button></div>
-          <div id="inspectorContent" class="inspector-content"><p class="small-muted">Select a cue from the stack to edit it.</p></div>
-        </section>
-      </div>
-      <section class="eventline"><div><span class="led"></span><span id="eventLog">Ready to design. Hardware audio is muted until connected and unmuted.</span></div><span id="xrunIndicator">XRUNS 0</span></section>
+      <section class="eventline"><div><span class="led"></span><span id="eventLog"></span></div><span id="xrunIndicator">XRUNS 0</span></section>
     </main>
   </div>
 </div>
 
-<dialog id="stageDialog"><div class="modal-head"><div><span class="eyebrow">STAGE-CENTER CALIBRATION</span><h2>Four loudspeakers · geometry and routing</h2></div><button class="square" id="closeSettings">✕</button></div>
-  <p>The <b>actor reference point is (0,0)</b>. +X points to 3 o'clock; +Y points to 12 o'clock. Enter measured speaker positions in metres. Angles and distances recalculate automatically. Each speaker should physically face the center. MAIN MUTE must be ON when changing routing.</p>
+<dialog id="stageDialog"><div class="modal-head"><div><span class="eyebrow" data-i18n="setupEyebrow">舞台中心校准</span><h2 data-i18n="setupTitle">四只音箱 · 位置与路由</h2></div><button class="square" id="closeSettings">✕</button></div>
+  <p data-i18n="setupIntro">演员参考点是 (0,0)。+X 指向 3 点钟方向，+Y 指向 12 点钟方向。填入实测的音箱位置（米），角度和距离会自动计算。每只音箱应正对中心。修改路由时 MAIN MUTE 必须打开。</p>
   <div id="speakerFields"></div>
   <div id="setupMap" class="setup-map"></div>
   <div id="calibrationHints" class="calibration-hints"></div>
-  <p class="micro">This panel computes geometry only. For physical measurements, use AutoCal with an XLR measurement microphone. AutoCal measures relative latency/level (NOT absolute SPL) and never applies corrections without explicit confirmation.</p>
-  <div class="modal-footer"><button id="cancelSettings" class="secondary">Cancel</button><button id="previewSettings" class="secondary">Preview calibration</button><button id="saveSettings" class="primary">Save geometry</button></div></dialog>
+  <p class="micro" data-i18n="setupNote">这里只计算几何关系。实际测量请用 AutoCal 和 XLR 测量话筒。AutoCal 测的是相对延迟和电平（不是绝对声压级），不经确认绝不会应用。</p>
+  <div class="modal-footer"><button id="cancelSettings" class="secondary" data-i18n="cancel">取消</button><button id="previewSettings" class="secondary" data-i18n="previewCalibration">预览校准</button><button id="saveSettings" class="primary" data-i18n="saveGeometry">保存几何</button></div></dialog>
 <dialog id="autocalDialog" class="autocal-dialog" aria-labelledby="autocalTitle">
-  <div class="modal-head"><div><span class="eyebrow">SPATIALSTAGE · SINGLE-POINT AUTOCAL</span><h2 id="autocalTitle">XLR measurement & compensation review</h2></div><button class="square" id="autocalClose" aria-label="Close AutoCal">✕</button></div>
-  <p class="autocal-notice">One measurement at the stage center (0,0). <b>Balanced mode is center-only with one point</b>; it cannot optimize the moving-actor area. Experimental EQ is OFF. No participant audio is retained.</p>
+  <div class="modal-head"><div><span class="eyebrow" data-i18n="acEyebrow">SPATIALSTAGE · 单点 AUTOCAL</span><h2 id="autocalTitle" data-i18n="acTitle">XLR 测量与补偿审核</h2></div><button class="square" id="autocalClose" data-i18n-aria="close" aria-label="关闭">✕</button></div>
+  <p class="autocal-notice" data-i18n="acNotice">在舞台中心 (0,0) 测量一次。平衡模式只针对中心一个点，无法优化演员的移动范围。实验性 EQ 关闭。不保留任何参与者音频。</p>
   <div class="autocal-grid">
     <section class="autocal-config">
-      <h3>1 · Configure hardware</h3>
-      <label>XLR microphone input interface<select id="acInputDevice"></select></label>
-      <label>Microphone input channel<input id="acInputChannel" type="number" min="1" max="16" value="1" step="1"/></label>
-      <label>Independent four-channel output<select id="acOutputDevice"></select></label>
-      <label>Test stimulus peak level (digital dBFS)<select id="acLevel"><option value="-36">−36 dBFS · quietest</option><option value="-33">−33 dBFS</option><option value="-30">−30 dBFS · default</option><option value="-27">−27 dBFS</option><option value="-24">−24 dBFS · maximum</option></select></label>
-      <div class="autocal-facts">1 point · balanced · XLR · 48 kHz · EQ disabled. Measure each speaker separately in CH1 → CH4 order.</div>
-      <button id="acSaveConfig" class="secondary">Save AutoCal setup</button>
-      <h3>2 · Capture four loudspeakers</h3>
-      <p class="micro">Place XLR measurement microphone at center at actor ear height; point it as its manufacturer specifies. Phantom power only when microphone requires it. Fixed preamp gain and no AGC. Disconnect show output and MAIN MUTE before capture; use minimal analogue amp level, no actors on stage.</p>
-      <label class="check"><input id="acSafe" type="checkbox"/> I confirm the stage is empty, mic is connected, show audio is disconnected, analogue output level is low.</label>
-      <button id="acStart" class="primary">◉ Measure CH1–CH4</button>
-      <button id="acCancel" class="danger" disabled>Cancel measurement</button>
-      <p class="ac-progress" id="acProgress" role="status" aria-live="polite">No measurement running.</p>
+      <h3 data-i18n="acStep1">1 · 设置硬件</h3>
+      <label><span data-i18n="acInputDevice">XLR 话筒输入接口</span><select id="acInputDevice"></select></label>
+      <label><span data-i18n="acInputChannel">话筒输入通道</span><input id="acInputChannel" type="number" min="1" max="16" value="1" step="1"/></label>
+      <label><span data-i18n="acOutputDevice">独立四通道输出</span><select id="acOutputDevice"></select></label>
+      <label><span data-i18n="acLevel">测试信号峰值电平 (dBFS)</span><select id="acLevel"><option value="-36">−36 dBFS</option><option value="-33">−33 dBFS</option><option value="-30">−30 dBFS</option><option value="-27">−27 dBFS</option><option value="-24">−24 dBFS</option></select></label>
+      <div class="autocal-facts" data-i18n="acFacts">1 个测量点 · 平衡 · XLR · 48 kHz · 关闭 EQ。按 CH1 → CH4 顺序逐只测量。</div>
+      <button id="acSaveConfig" class="secondary" data-i18n="acSaveConfig">保存 AutoCal 设置</button>
+      <h3 data-i18n="acStep2">2 · 测量四只音箱</h3>
+      <p class="micro" data-i18n="acStep2Help">把 XLR 测量话筒放在中心、演员耳朵高度，按厂家说明指向。只有话筒需要时才开幻象电源。固定话放增益，不要自动增益。测量前断开演出输出并打开 MAIN MUTE；功放调到最小，台上无人。</p>
+      <label class="check"><input id="acSafe" type="checkbox"/> <span data-i18n="acSafe">我确认舞台无人、话筒已连接、演出输出已断开、模拟输出电平很低。</span></label>
+      <button id="acStart" class="primary" data-i18n="acStart">◉ 测量 CH1–CH4</button>
+      <button id="acCancel" class="danger" disabled data-i18n="acCancel">取消测量</button>
+      <p class="ac-progress" id="acProgress" role="status" aria-live="polite"></p>
     </section>
     <section class="autocal-results">
-      <div class="ac-results-head"><h3>3 · Inspect measurement results</h3><select id="acSessionSelect" aria-label="Select saved AutoCal session"></select></div>
-      <div id="acMetrics"><p class="micro">No measurement yet. Save a configuration, then measure all four outputs.</p></div>
-      <h4>Relative microphone levels</h4><div id="acLevelChart" class="ac-chart"></div>
-      <h4>Measured relative arrival time</h4><div id="acDelayChart" class="ac-chart"></div>
-      <h4>Response curves · normalized to 1 kHz (diagnostic only)</h4><div id="acFrequencyChart" class="ac-chart"></div>
-      <div class="ac-review"><h3>4 · Human approval gate</h3>
-        <p class="micro">Recommendations only: attenuate louder channels to match quietest; optionally delay earlier arrivals to the latest. Compensation never boosts gains. No EQ, no absolute SPL calibration. Stop all cues, disconnect performance audio, and keep MAIN MUTE on before applying.</p>
-        <label class="check"><input id="acApproveCheck" type="checkbox"/> I inspected the four channel measurements and understand their limitations.</label>
-        <label>Type <b>APPLY</b> to enable these compensation values<input id="acApproveText" autocomplete="off" placeholder="APPLY"/></label>
-        <div class="ac-actions"><button id="acApply" class="primary" disabled>Apply approved profile</button><button id="acDisable" class="danger">Disable AutoCal</button></div>
-        <p id="acActive" class="micro">Calibration currently disabled.</p>
+      <div class="ac-results-head"><h3 data-i18n="acStep3">3 · 查看测量结果</h3><select id="acSessionSelect" data-i18n-aria="acSession" aria-label="选择已保存的测量"></select></div>
+      <div id="acMetrics"></div>
+      <h4 data-i18n="acLevels">相对话筒电平</h4><div id="acLevelChart" class="ac-chart"></div>
+      <h4 data-i18n="acArrival">相对到达时间</h4><div id="acDelayChart" class="ac-chart"></div>
+      <h4 data-i18n="acResponse">频响曲线 · 以 1 kHz 归一（仅供诊断）</h4><div id="acFrequencyChart" class="ac-chart"></div>
+      <div class="ac-review"><h3 data-i18n="acStep4">4 · 人工审批</h3>
+        <p class="micro" data-i18n="acReviewHelp">只是建议：把较响的通道衰减到与最小的一致；可选地把较早到达的通道延迟到最晚的。补偿从不提升增益，不做 EQ，不做绝对声压校准。应用前停止所有 Cue、断开演出输出、保持 MAIN MUTE 打开。</p>
+        <label class="check"><input id="acApproveCheck" type="checkbox"/> <span data-i18n="acApproveCheck">我已检查四个通道的测量结果并了解其局限。</span></label>
+        <label><span data-i18n="acApproveText">输入 APPLY 以启用这些补偿值</span><input id="acApproveText" autocomplete="off" placeholder="APPLY"/></label>
+        <div class="ac-actions"><button id="acApply" class="primary" disabled data-i18n="acApply">应用已批准的配置</button><button id="acDisable" class="danger" data-i18n="acDisable">停用 AutoCal</button></div>
+        <p id="acActive" class="micro"></p>
       </div>
     </section>
   </div>
 </dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/static/i18n.js"></script>
 <script src="/static/save-queue.js"></script>
 <script src="/static/stage-map.js"></script>
 <script src="/static/app.js" defer></script>
 <script src="/static/simulation.js" defer></script>
-<script src="/static/perform.js" defer></script>
+<script src="/static/editor.js" defer></script>
 </body>
 </html>

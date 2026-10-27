@@ -1,6 +1,6 @@
 import numpy as np
 from stagespatialcue.mixer import Mixer
-from stagespatialcue.models import Project, Cue, ModPoint
+from stagespatialcue.models import Project, PlaybackSpec as Cue, ModPoint
 
 
 def cue(**kwargs):

@@ -12,20 +12,22 @@ from typing import Optional
 
 import numpy as np
 
-from .models import Cue, Project
+from .models import PlaybackSpec, Project
 from .ramps import LinearRamp
 from .spatial import cue_direction_offsets, envelope_offsets, path_xy, point_gains, vbap_gains, wrap_deg
 
 SAMPLE_RATE = 48_000
 DECLICK_S = 0.005
 SMOOTH_S = 0.015
+LOOP_FOREVER = 1 << 62  # frames; a looping sound only ends when stopped
 
 
 @dataclass
 class Voice:
-    cue: Cue
+    cue: PlaybackSpec  # one sound: cue scheduling + layer position + library design
     samples: np.ndarray
     start_frame: int
+    loop: bool = False
     test_channel: Optional[int] = None
     stop_frame: Optional[int] = None
     stop_fade_frames: int = 0
@@ -62,7 +64,7 @@ class Voice:
 
     @property
     def end_frame(self) -> int:
-        natural = self.start_frame + len(self.samples)
+        natural = self.start_frame + (LOOP_FOREVER if self.loop else len(self.samples))
         if self.stop_frame is None:
             return natural
         if self.stop_frame <= self.start_frame:
@@ -125,9 +127,12 @@ class Mixer:
         """
         with self.lock:
             self.project = project
-            lookup = {c.id: c for c in project.cues}
+            lookup = {}
+            for c in project.cues:
+                for spec in project.cue_specs(c):
+                    lookup[(spec.cue_id, spec.layer_id)] = spec
             for voice in self.voices:
-                fresh = lookup.get(voice.cue.id)
+                fresh = lookup.get((voice.cue.cue_id, voice.cue.layer_id))
                 if fresh is not None and voice.test_channel is None:
                     if ((fresh.fade_in_s, fresh.fade_out_s) !=
                             (voice.cue.fade_in_s, voice.cue.fade_out_s)
@@ -142,12 +147,22 @@ class Mixer:
                 raise ValueError("STOP active cues before restarting the global show envelope")
             self.show_start_frame = None
 
-    def queue(self, cue: Cue, samples: np.ndarray, *, anchored_frame: int | None = None,
+    def queue(self, cue: PlaybackSpec, samples: np.ndarray, *, anchored_frame: int | None = None,
               force_cut: bool = False, chain_id: str | None = None) -> Voice:
-        """Queue a voice; CUT GO overrides start behavior and all pre-waits.
+        """Queue one sound as its own cue (see queue_group for multi-layer cues)."""
+        return self.queue_group(cue, [(cue, samples, 0)], anchored_frame=anchored_frame,
+                                force_cut=force_cut, chain_id=chain_id)[1][0]
 
-        FADE GO honors replace/layer/queue and the cue's configured transition.
-        CUT GO kills existing voices with a 5ms de-click (not digital hard cut).
+    def queue_group(self, cue, layers: list[tuple[PlaybackSpec, np.ndarray, int]], *,
+                    anchored_frame: int | None = None, force_cut: bool = False,
+                    chain_id: str | None = None) -> tuple[int, list[Voice]]:
+        """Schedule one cue: every layer starts at the cue start + its own delay.
+
+        `cue` supplies start_mode / pre_wait / transition (a Cue or PlaybackSpec).
+        CUT GO overrides start behavior and all pre-waits; FADE GO honors
+        replace/layer/queue and the configured transition. CUT GO kills existing
+        voices with a 5 ms de-click (not a digital hard cut). An empty cue still
+        applies its start behaviour (a replace cue with no layers fades others out).
         """
         with self.lock:
             now = max(self.frame, anchored_frame if anchored_frame is not None else self.frame)
@@ -173,15 +188,20 @@ class Mixer:
                 if force_cut or cue.replace_style == 'cut':
                     fade_override = max(1, round(DECLICK_S * self.sample_rate))
                 elif had_active_replacement and transition_s:
-                    # Long transitions on short FX would hide the whole sound.
-                    fade_override = min(round(transition_s * self.sample_rate),
-                                        max(1, len(samples) // 2))
-            voice = Voice(cue=cue.model_copy(deep=True), samples=samples,
-                          start_frame=start, start_fade_frames=fade_override, chain_id=chain_id)
-            self.voices.append(voice)
+                    fade_override = round(transition_s * self.sample_rate)
+            voices = []
+            for spec, samples, delay_frames in layers:
+                fade = fade_override
+                if fade is not None and not (force_cut or cue.replace_style == 'cut'):
+                    fade = min(fade, max(1, len(samples) // 2))  # long transitions would hide short FX
+                voice = Voice(cue=spec.model_copy(deep=True), samples=samples, loop=spec.loop,
+                              start_frame=start + max(0, int(delay_frames)),
+                              start_fade_frames=fade, chain_id=chain_id)
+                self.voices.append(voice)
+                voices.append(voice)
             if self.show_start_frame is None:
                 self.show_start_frame = start
-            return voice
+            return start, voices
 
     def speaker_test(self, channel: int) -> Voice:
         if not 1 <= channel <= 4:
@@ -189,7 +209,7 @@ class Mixer:
         n = int(1.0 * self.sample_rate)
         t = np.arange(n) / self.sample_rate
         data = (np.sin(2 * np.pi * 440.0 * t) * (10 ** (-22 / 20))).astype(np.float32)
-        cue = Cue(title=f"Speaker test {channel}", fade_in_s=0.025, fade_out_s=0.15, gain_db=0)
+        cue = PlaybackSpec(title=f"Speaker test {channel}", fade_in_s=0.025, fade_out_s=0.15, gain_db=0)
         with self.lock:
             voice = Voice(cue=cue, samples=data, start_frame=self.frame, test_channel=channel)
             self.voices.append(voice)
@@ -222,17 +242,18 @@ class Mixer:
                 global_offsets = envelope_offsets(show_t, self.project.global_modulation)
             for voice in self.voices:
                 if voice.end_frame > voice.start_frame and self.frame <= voice.start_frame < self.frame+frames:
-                    self.lifecycle_events.append({'event':'cue_audio_start','cue_id':voice.cue.id,'frame':voice.start_frame})
+                    self.lifecycle_events.append({'event':'cue_audio_start','cue_id':voice.cue.group_id,'frame':voice.start_frame})
                 if self.frame < voice.end_frame <= self.frame + frames:
-                    self.lifecycle_events.append({'event':'cue_audio_end','cue_id':voice.cue.id,'frame':voice.end_frame})
+                    self.lifecycle_events.append({'event':'cue_audio_end','cue_id':voice.cue.group_id,'frame':voice.end_frame})
                 rel = index - voice.start_frame
-                valid = (rel >= 0) & (rel < len(voice.samples))
+                valid = (rel >= 0) & (voice.loop | (rel < len(voice.samples)))
                 if voice.stop_frame is not None:
                     valid &= index < voice.stop_frame + voice.stop_fade_frames
                 if not np.any(valid):
                     continue
-                positions = rel[valid]
-                seconds = positions / self.sample_rate
+                elapsed = rel[valid]  # frames since this sound started (keeps counting through loops)
+                positions = elapsed % len(voice.samples) if voice.loop else elapsed
+                seconds = elapsed / self.sample_rate
                 source = voice.samples[positions]
                 if source.ndim == 1:
                     source = source[:, None]
@@ -246,8 +267,8 @@ class Mixer:
                 fadeout = int(round(cue.fade_out_s * self.sample_rate))
                 natural_fade = np.ones(len(source), dtype=np.float32)
                 if fadein:
-                    natural_fade *= np.sin(0.5*np.pi*np.minimum(1,positions/fadein)).astype(np.float32)
-                if fadeout:
+                    natural_fade *= np.sin(0.5*np.pi*np.minimum(1,elapsed/fadein)).astype(np.float32)
+                if fadeout and not voice.loop:  # a loop fades out only when stopped
                     remaining = len(voice.samples)-positions-1
                     natural_fade *= np.sin(0.5*np.pi*np.minimum(1,remaining/fadeout)).astype(np.float32)
                 if voice.fade_edit_frame is not None:
@@ -328,11 +349,12 @@ class Mixer:
                     'autocal_enabled':self.project.calibration_enabled,
                     'autocal_gain_db':self.calibration_gain_db[:],
                     'autocal_delay_ms':[round(1000*x/self.sample_rate,3) for x in self.calibration_delay_samples],
-                    'voices':[{'cue_id':v.cue.id,'title':v.cue.title,
+                    'voices':[{'cue_id':v.cue.group_id,'layer_id':v.cue.layer_id,
+                               'media_id':v.cue.media_id,'title':v.cue.title,'loop':v.loop,
                                'state':'queued' if v.start_frame>self.frame else 'playing',
                                'elapsed_s':round(max(0,self.frame-v.start_frame)/self.sample_rate,2),
                                'duration_s':round(len(v.samples)/self.sample_rate,2),
-                               'end_s':round(v.end_frame/self.sample_rate,2),
+                               'end_s':None if v.end_frame>=LOOP_FOREVER else round(v.end_frame/self.sample_rate,2),
                                **self._voice_position(v)}
                               for v in self.voices if v.end_frame>self.frame]}
 

@@ -20,7 +20,7 @@ import soundfile as sf
 from scipy.signal import resample_poly
 
 from .mixer import Mixer, SAMPLE_RATE
-from .models import Project, Cue
+from .models import Cue, CueLayer, MediaItem, PlaybackSpec, Project, media_display_name
 from .storage import ProjectStore
 
 MAX_CLIP_SECONDS = 30 * 60  # pre-decoded prototype; no long-file streaming
@@ -114,23 +114,28 @@ def audio_duration(path: Path) -> float:
             return 0
 
 
-def media_cue(path: Path, relative: str, display_name: str) -> Cue:
-    """New cue for an imported file: title from the name, duration and channel count.
+def media_item(path: Path, relative: str, display_name: str) -> MediaItem:
+    """Library entry for an imported file: name, duration and channel count.
 
-    Stereo files keep stereo (width 90° = L/R on the speaker pair around the cue).
+    Stereo files keep stereo (width 90° = L/R on the speaker pair around the layer).
     """
-    match = re.match(r"^\d{1,5}[-_ ](.+)$", Path(display_name).stem)
-    title = (match.group(1) if match else Path(display_name).stem).replace("_", " ")
     channels = audio_channels(path)
-    return Cue(title=title, filename=display_name, media_relpath=relative,
-               duration_s=audio_duration(path), source_channels=channels,
-               stereo_mode="width" if channels == 2 else "mono")
+    return MediaItem(name=media_display_name(display_name), filename=display_name, media_relpath=relative,
+                     duration_s=audio_duration(path), source_channels=channels,
+                     stereo_mode="width" if channels == 2 else "mono")
 
 
-def filename_key(cue: Cue):
+def single_layer_cue(media: MediaItem, **fields) -> Cue:
+    """A cue that plays one library sound at the front (the pre-v4 import behaviour)."""
+    return Cue(title=fields.pop("title", media.name),
+               layers=[CueLayer(media_id=media.id)], gain_db=fields.pop("gain_db", -6), **fields)
+
+
+def filename_key(item):
     """Numbered names (001_...) first in numeric order, then alphabetical."""
-    match = re.match(r"^(\d{1,5})[-_ ]", cue.filename)
-    return (0, int(match.group(1)), cue.filename.lower()) if match else (1, cue.filename.lower(), "")
+    name = item.filename
+    match = re.match(r"^(\d{1,5})[-_ ]", name)
+    return (0, int(match.group(1)), name.lower()) if match else (1, name.lower(), "")
 
 
 class StageController:
@@ -167,6 +172,31 @@ class StageController:
         self.next_cue_id = cues[index].id if index < len(cues) else None
         self.needs_rearm = False
 
+    def _cue_media(self, project: Project, cue: Cue) -> list[MediaItem]:
+        media = project.media_by_id()
+        return [media[layer.media_id] for layer in cue.layers if not layer.muted]
+
+    def _sources(self, project: Project, cue: Cue, *, allow_decode: bool = True) -> list[tuple[PlaybackSpec, np.ndarray, int]]:
+        """(spec, trimmed samples, delay frames) for every audible layer of a cue."""
+        media = project.media_by_id()
+        result = []
+        for spec in project.cue_specs(cue):
+            item = media[spec.media_id]
+            clip = self._clip(project, item, allow_decode=allow_decode)
+            samples = self._trimmed(clip, item)
+            result.append((spec, samples, int(round(next(layer.delay_s for layer in cue.layers
+                                                         if layer.id == spec.layer_id) * SAMPLE_RATE))))
+        return result
+
+    @staticmethod
+    def _trimmed(clip: np.ndarray, item: MediaItem) -> np.ndarray:
+        start = int(round(item.trim_start_s * SAMPLE_RATE))
+        end = int(round(item.trim_end_s * SAMPLE_RATE)) if item.trim_end_s else len(clip)
+        samples = clip[min(start, len(clip)):min(end, len(clip))]  # a view, never a copy
+        if not len(samples):
+            raise ValueError(f"Audio trim leaves no sound: {item.name}")
+        return samples
+
     def _chain(self, project: Project, *, cut: bool = False) -> list[Cue]:
         index = next((i for i, c in enumerate(project.cues) if c.id == self.next_cue_id), len(project.cues))
         chain = []
@@ -179,7 +209,7 @@ class StageController:
     def _warm_next(self, project: Project) -> None:
         """ARM/sync primes the next automatic group; no decoder in GO or callback."""
         chain = self._chain(project)
-        key = (project.id, tuple((c.id, c.media_relpath) for c in chain))
+        key = (project.id, tuple((c.id, tuple(m.media_relpath for m in self._cue_media(project, c))) for c in chain))
         if key == self._prepare_key:
             return
         self._prepare_key = key
@@ -195,7 +225,8 @@ class StageController:
                 for cue in chain:
                     if self._prepare_key != key:
                         return
-                    self._clip(snapshot, cue)
+                    for item in self._cue_media(snapshot, cue):
+                        self._clip(snapshot, item)
             except Exception as exc:
                 error = str(exc)
             finally:
@@ -211,7 +242,7 @@ class StageController:
         chain = self._chain(self.mixer.project)
         try:
             for cue in chain:
-                self._clip(self.mixer.project, cue, allow_decode=False)
+                self._sources(self.mixer.project, cue, allow_decode=False)
             return bool(chain)
         except (ValueError, OSError):
             return False
@@ -422,16 +453,19 @@ class StageController:
             self.log("output_disconnected")
             return self.status()
 
-    def _clip(self, project: Project, cue: Cue, *, allow_decode: bool = True) -> np.ndarray:
-        path = self.store.media_path(project.id, cue.media_relpath)
+    def _clip(self, project: Project, media: MediaItem, *, allow_decode: bool = True) -> np.ndarray:
+        """Whole decoded file, shared by every layer and cue that uses it."""
+        if not media.media_relpath:
+            raise ValueError(f"Audio has no file: {media.name}")
+        path = self.store.media_path(project.id, media.media_relpath)
         stat = path.stat()
-        key = f"{project.id}:{cue.media_relpath}:{stat.st_mtime_ns}:{stat.st_size}"
+        key = f"{project.id}:{media.media_relpath}:{stat.st_mtime_ns}:{stat.st_size}"
         with self.cache_lock:
             if key in self.cache:
                 self.cache.move_to_end(key)
                 return self.cache[key]
         if not allow_decode:
-            raise ValueError(f"Cue not ready: {cue.title}. Run Preflight / wait for ARM preload before GO")
+            raise ValueError(f"Audio not ready: {media.name}. Run Preflight / wait for ARM preload before GO")
         # This lock serializes decoders only, never the render/control/status path.
         with self.decode_lock:
             with self.cache_lock:
@@ -439,7 +473,7 @@ class StageController:
                     return self.cache[key]
             audio = decode_audio(path)
             if not len(audio) or not np.isfinite(audio).all():
-                raise ValueError(f"Empty or non-finite audio: {cue.filename}")
+                raise ValueError(f"Empty or non-finite audio: {media.filename}")
             if audio.nbytes > MAX_CACHE_BYTES:
                 raise ValueError("Clip exceeds the 700 MiB decoded cache; split the source file")
             audio.flags.writeable = False
@@ -453,17 +487,23 @@ class StageController:
         project = self.store.get(project_id)
         problems = []
         total = 0
+        decoded = set()
         for cue in project.cues:
             try:
-                clip = self._clip(project, cue)
-                total += clip.nbytes
+                for item in self._cue_media(project, cue):
+                    clip = self._clip(project, item)
+                    self._trimmed(clip, item)
+                    if item.media_relpath not in decoded:  # one cache entry per file
+                        decoded.add(item.media_relpath)
+                        total += clip.nbytes
             except Exception as e:
                 problems.append(f"{cue.title}: {e}")
         if total > MAX_CACHE_BYTES:
             problems.append("Total decoded audio exceeds 700 MiB cache: split the show or preload each next group; GO never decodes")
         if not self._output_active():
             problems.append("Select and connect a 4-output sound interface")
-        return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1), "count": len(project.cues)}
+        return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1),
+                "count": len(project.cues), "files": len(decoded)}
 
     def go(self, project_id: str, *, cut: bool = False) -> dict:
         with self.lock:
@@ -486,27 +526,31 @@ class StageController:
             chain = []
             while idx < len(project.cues):
                 cue = project.cues[idx]
-                chain.append((cue, self._clip(project, cue, allow_decode=False)))
+                sources = self._sources(project, cue, allow_decode=False)
+                chain.append((cue, sources))
                 idx += 1
-                if cut or cue.continue_mode == "manual":
+                # A looping layer never ends, so nothing can follow "after it ends".
+                endless = any(spec.loop for spec, _, _ in sources)
+                if cut or cue.continue_mode == "manual" or (cue.continue_mode == "auto_follow" and endless):
                     break
             with self.mixer.lock:
                 anchor = None
                 chain_id = uuid4().hex
-                for n, (cue, clip) in enumerate(chain):
-                    voice = self.mixer.queue(cue, clip, anchored_frame=anchor, force_cut=(cut and n == 0), chain_id=chain_id)
+                for n, (cue, sources) in enumerate(chain):
+                    start, voices = self.mixer.queue_group(cue, sources, anchored_frame=anchor,
+                                                           force_cut=(cut and n == 0), chain_id=chain_id)
                     if cue.continue_mode == "auto_continue":
-                        anchor = voice.start_frame + int(round(cue.post_wait_s * SAMPLE_RATE))
+                        anchor = start + int(round(cue.post_wait_s * SAMPLE_RATE))
                     elif cue.continue_mode == "auto_follow":
-                        anchor = voice.end_frame + int(round(cue.post_wait_s * SAMPLE_RATE))
+                        end = max([v.end_frame for v in voices], default=start)
+                        anchor = end + int(round(cue.post_wait_s * SAMPLE_RATE))
                     else:
                         anchor = None
             self.next_index = idx
             self._warm_next(project)
             self.log("operator_cut_go" if cut else "operator_fade_go", first_index=self.next_index-len(chain),
-                     scheduled=[{"cue_id": c.id, "title": c.title,
-                                 "bearing_deg": c.position_deg, "mode": c.start_mode}
-                                for c, _ in chain])
+                     scheduled=[{"cue_id": c.id, "title": c.title, "layers": len(sources),
+                                 "mode": c.start_mode} for c, sources in chain])
             return self.status()
 
     def audition(self, project_id: str, cue_id: str) -> dict:
@@ -522,11 +566,38 @@ class StageController:
             cue = next((c for c in project.cues if c.id == cue_id), None)
             if cue is None:
                 raise ValueError("Cue missing")
-            clip = self._clip(project, cue, allow_decode=False)
+            sources = self._sources(project, cue, allow_decode=False)
             self.mixer.update_project(project)
-            self.mixer.queue(cue, clip, force_cut=True)
+            self.mixer.queue_group(cue, sources, force_cut=True)
             self.next_index = project.cues.index(cue)
             self.log("operator_audition", cue_id=cue_id)
+            return self.status()
+
+    def audition_media(self, project_id: str, media_id: str) -> dict:
+        """Preview one library sound with its design, front centre; NEXT is untouched.
+
+        Decoding is allowed here (never in GO): it runs in the request thread.
+        """
+        with self.lock:
+            if self.measurement_active or not self._output_active() or self.audio_error:
+                raise ValueError("Connect an output first; measurement must be stopped")
+            if self.project_id != project_id or self.mixer is None:
+                raise ValueError("Arm this project first")
+            if self.mixer.master_mute:
+                raise ValueError("MAIN MUTE is ON. Unmute deliberately before audition")
+            project = self.store.get(project_id)
+            item = project.media_by_id().get(media_id)
+            if item is None:
+                raise ValueError("Audio is not in the library")
+        samples = self._trimmed(self._clip(project, item), item)
+        spec = PlaybackSpec(id=f"audition:{item.id}", media_id=item.id, title=item.name,
+                            duration_s=item.play_duration_s, gain_db=item.gain_db - 6,
+                            source_channels=item.source_channels, stereo_mode=item.stereo_mode,
+                            stereo_width_deg=item.stereo_width_deg, fade_in_s=item.fade_in_s,
+                            fade_out_s=item.fade_out_s, loop=item.loop)
+        with self.lock:
+            self.mixer.queue_group(spec, [(spec, samples, 0)], force_cut=True)
+            self.log("operator_audition_media", media_id=media_id)
             return self.status()
 
     def can_update(self, project: Project) -> None:

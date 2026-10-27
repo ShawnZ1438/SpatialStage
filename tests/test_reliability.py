@@ -18,6 +18,7 @@ from stagespatialcue.http_safety import RequestSizeLimit
 from stagespatialcue.models import Cue, Project
 from stagespatialcue.server import create_app
 from test_regressions import make_chain, plain, running_mixer
+from legacy import with_cues
 
 
 def test_next_tracks_identity_through_reorder_and_import(tmp_path):
@@ -116,13 +117,13 @@ def test_inactive_stream_latches_mute_and_rejects_go(tmp_path):
 @pytest.mark.parametrize('field,value', [('fade_in_s', 2), ('fade_out_s', 4)])
 def test_live_fade_edits_are_smoothed_without_restarting_audio(field, value):
     mx = running_mixer()
-    cue = plain(position_deg=315, start_mode='layer')
-    project = Project(cues=[cue])
+    project = with_cues(Project(), [dict(gain_db=0, fade_in_s=0, fade_out_s=0, position_deg=315, start_mode='layer',
+                                         filename='a.wav', media_relpath='media/a.wav')])
     mx.update_project(project)
-    voice = mx.queue(cue, np.ones(5000,dtype=np.float32))
+    voice = mx.queue(project.cue_specs(project.cues[0])[0], np.ones(5000,dtype=np.float32))
     before = mx.render(1500)
     edited = project.model_copy(deep=True)
-    setattr(edited.cues[0], field, value)
+    setattr(edited.media[0], field, value)  # fades belong to the library sound
     mx.update_project(edited)
     output = mx.render(40)
     assert output[0,0] == pytest.approx(before[-1,0],abs=1e-6)

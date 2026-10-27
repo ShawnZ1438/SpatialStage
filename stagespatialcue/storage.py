@@ -46,12 +46,21 @@ class ProjectStore:
         path = self.directory(project_id) / "project.json"
         if not path.exists():
             raise FileNotFoundError("Project not found")
-        return Project.model_validate_json(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        project = Project.model_validate(data)
+        if data.get("schema_version", 1) < project.schema_version:
+            # Persist the migration once (keeping updated_at) so every reader
+            # sees the same library/layer IDs from now on.
+            self._write(project)
+        return project
 
     def save(self, project: Project) -> Project:
+        project.updated_at = datetime.now(timezone.utc).isoformat()
+        return self._write(project)
+
+    def _write(self, project: Project) -> Project:
         folder = self.directory(project.id)
         folder.mkdir(parents=True, exist_ok=True)
-        project.updated_at = datetime.now(timezone.utc).isoformat()
         fd, temp_path = tempfile.mkstemp(prefix=".save-", dir=folder, text=True)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -99,9 +108,9 @@ class ProjectStore:
         stream = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024, mode="w+b")
         try:
             members = {"project.json": folder / "project.json"}
-            for cue in project.cues:
-                if cue.media_relpath:
-                    members[cue.media_relpath] = self.media_path(project_id, cue.media_relpath)
+            for item in project.media:
+                if item.media_relpath:
+                    members[item.media_relpath] = self.media_path(project_id, item.media_relpath)
             for path in (folder / "autocal").glob("*.json"):
                 if not path.name.startswith('.') and path.resolve().is_relative_to(folder.resolve()):
                     members[path.relative_to(folder).as_posix()] = path

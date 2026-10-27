@@ -7,7 +7,8 @@ import soundfile as sf
 from fastapi.testclient import TestClient
 
 from stagespatialcue.mixer import Mixer
-from stagespatialcue.models import Cue, ModPoint, Project
+from stagespatialcue.models import ModPoint, PlaybackSpec, Project
+from legacy import with_cues
 from stagespatialcue.server import create_app
 from stagespatialcue.simulation import SimulationStream, StereoMonitorStream
 
@@ -48,7 +49,7 @@ def test_simulation_api_go_stop_save_capture(tmp_path, monkeypatch):
         path = app.state.store.directory(project.id) / 'tone.wav'
         sf.write(path, np.full(4800, .1, dtype=np.float32), 48000)
         rel, name = app.state.store.add_file(project.id, path, '001_tone.wav')
-        project.cues = [Cue(filename=name, media_relpath=rel, fade_in_s=0, fade_out_s=0)]
+        project = with_cues(project, [dict(filename=name, media_relpath=rel, fade_in_s=0, fade_out_s=0)])
         app.state.store.save(project)
         pid = project.id
         assert client.post('/api/audio/arm', json={'project_id':pid}).status_code == 200
@@ -95,7 +96,7 @@ def test_monitor_solo_gain_and_capture_do_not_change_stems(monkeypatch):
 
 
 def test_status_bearing_includes_cue_and_global_envelopes():
-    cue = Cue(position_deg=270, modulation=[ModPoint(time_s=0,offset_deg=0), ModPoint(time_s=1,offset_deg=90)])
+    cue = PlaybackSpec(position_deg=270, modulation=[ModPoint(time_s=0,offset_deg=0), ModPoint(time_s=1,offset_deg=90)])
     mix = Mixer(Project(global_rotation_deg=45,global_envelope_enabled=True,
                         global_modulation=[ModPoint(time_s=0,offset_deg=10)]))
     mix.queue(cue,np.zeros(96000,dtype=np.float32))

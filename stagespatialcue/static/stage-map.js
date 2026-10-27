@@ -86,9 +86,13 @@ const StageMap = (() => {
       path: (src.path || []).map(p => ({time_s: Number(p.time_s), x_m: Number(p.x_m), y_m: Number(p.y_m)})),
     };
   }
+  // A cue preset stores every layer's spatial fields, keyed by layer id.
+  function cueSnapshot(layers) {
+    return (layers || []).map(l => ({layer_id: l.layer_id ?? l.id, ...spatialSnapshot(l)}));
+  }
   function presetState(cue) {
     if (!cue?.spatial_preset) return 'none';
-    return JSON.stringify(spatialSnapshot(cue)) === JSON.stringify(spatialSnapshot(cue.spatial_preset)) ? 'stored' : 'changed';
+    return JSON.stringify(cueSnapshot(cue.layers)) === JSON.stringify(cueSnapshot(cue.spatial_preset.layers)) ? 'stored' : 'changed';
   }
 
   function geometry(speakers, size = 640) {
@@ -101,7 +105,9 @@ const StageMap = (() => {
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
   /* opts: speakers, notes[] (per speaker), path[], selected, anglePoint {x,y},
-     gainPoint {x,y}, stereo (width ° or 0), interactive, size. Returns SVG markup with an empty .live-layer group. */
+     gainPoint {x,y}, stereo (width ° or 0), interactive, size, labels {front, actor},
+     color (selected layer), others [{id, x, y, color, label, path}] = the cue's other
+     layers (clickable via data-layer). Returns SVG markup with an empty .live-layer group. */
   function svg(opts) {
     const {speakers, size = 640} = opts;
     const g = geometry(speakers, size), {px, py, extent} = g, parts = [];
@@ -116,8 +122,13 @@ const StageMap = (() => {
     }
     const order = speakers.map((s, i) => [s, speakerXY(s), i]).sort((a, b) => a[0].angle_deg - b[0].angle_deg);
     parts.push(`<polygon points="${order.map(([, p]) => `${px(p.x)},${py(p.y)}`).join(' ')}" class="sm-edge"/>`);
-    parts.push(`<text x="${px(0)}" y="16" class="sm-label" text-anchor="middle">0° · FRONT / +Y</text>`,
-      `<circle cx="${px(0)}" cy="${py(0)}" r="13" class="sm-actor"/><text x="${px(0)}" y="${py(0) + 3}" class="sm-small" text-anchor="middle">ACTOR</text>`);
+    const labels = {front: '0° · FRONT / +Y', actor: 'ACTOR', ...(opts.labels || {})};
+    parts.push(`<text x="${px(0)}" y="16" class="sm-label" text-anchor="middle">${esc(labels.front)}</text>`,
+      `<circle cx="${px(0)}" cy="${py(0)}" r="13" class="sm-actor"/><text x="${px(0)}" y="${py(0) + 3}" class="sm-small" text-anchor="middle">${esc(labels.actor)}</text>`);
+    for (const o of opts.others || []) {
+      if (o.path?.length > 1) parts.push(`<polyline points="${o.path.map(q => `${px(q.x_m)},${py(q.y_m)}`).join(' ')}" class="sm-other-path" style="stroke:${o.color}"/>`);
+      parts.push(`<g class="sm-other" data-layer="${esc(o.id)}"><circle cx="${px(o.x)}" cy="${py(o.y)}" r="9" style="fill:${o.color}"/><text x="${px(o.x) + 12}" y="${py(o.y) + 4}" class="sm-other-label">${esc(o.label)}</text></g>`);
+    }
     if (opts.gainPoint) {
       const gains = sourceGains(opts.gainPoint, speakers, opts.stereo, !!opts.anglePoint);
       speakers.forEach(s => {
@@ -138,24 +149,27 @@ const StageMap = (() => {
         parts.push(`<circle cx="${px(q.x)}" cy="${py(q.y)}" r="7" class="sm-stereo"/><text x="${px(q.x)}" y="${py(q.y) + 3.5}" text-anchor="middle" class="sm-stereo-label">${label}</text>`);
       });
     }
+    const tint = opts.color ? ` style="--layer:${opts.color}"` : '';
+    const first = opts.anglePoint || (opts.path?.[0] && {x: opts.path[0].x_m, y: opts.path[0].y_m});
+    if (opts.label && first) parts.push(`<text x="${px(first.x) - 12}" y="${py(first.y) + 24}" text-anchor="end" class="sm-selected-label">${esc(opts.label)}</text>`);
     if (opts.anglePoint) {
-      parts.push(`<line x1="${px(0)}" y1="${py(0)}" x2="${px(opts.anglePoint.x)}" y2="${py(opts.anglePoint.y)}" class="sm-anglemode"/>`,
-        `<circle cx="${px(opts.anglePoint.x)}" cy="${py(opts.anglePoint.y)}" r="9" class="sm-point angle"/>`);
+      parts.push(`<line x1="${px(0)}" y1="${py(0)}" x2="${px(opts.anglePoint.x)}" y2="${py(opts.anglePoint.y)}" class="sm-anglemode"${tint}/>`,
+        `<circle cx="${px(opts.anglePoint.x)}" cy="${py(opts.anglePoint.y)}" r="9" class="sm-point angle"${tint}/>`);
     }
     const path = opts.path || [];
     if (path.length > 1) {
-      parts.push(`<polyline points="${path.map(p => `${px(p.x_m)},${py(p.y_m)}`).join(' ')}" class="sm-path" marker-mid="url(#smArrow)" marker-end="url(#smArrow)"/>`);
+      parts.push(`<polyline points="${path.map(p => `${px(p.x_m)},${py(p.y_m)}`).join(' ')}" class="sm-path" marker-mid="url(#smArrow)" marker-end="url(#smArrow)"${tint}/>`);
     }
     path.forEach((p, i) => {
       const sel = i === opts.selected;
-      parts.push(`<circle data-ppoint="${i}" cx="${px(p.x_m)}" cy="${py(p.y_m)}" r="${sel ? 11 : 8}" class="sm-point${sel ? ' selected' : ''}${i === 0 ? ' start' : ''}"/>`,
-        `<text x="${px(p.x_m) + 13}" y="${py(p.y_m) - 9}" class="sm-small">${i === 0 ? 'START ' : ''}${Number(p.time_s).toFixed(1)} s</text>`);
+      parts.push(`<circle data-ppoint="${i}" cx="${px(p.x_m)}" cy="${py(p.y_m)}" r="${sel ? 11 : 8}" class="sm-point${sel ? ' selected' : ''}${i === 0 ? ' start' : ''}"${tint}/>`,
+        `<text x="${px(p.x_m) + 13}" y="${py(p.y_m) - 9}" class="sm-small">${i === 0 ? '▶ ' : ''}${Number(p.time_s).toFixed(1)} s</text>`);
     });
     return `<svg viewBox="0 0 ${size} ${size}" class="stage-map${opts.interactive ? ' interactive' : ''}" role="img" aria-label="Stage map: loudspeakers, actor centre and cue position">
       <defs><marker id="smArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sm-arrow"/></marker></defs>
       ${parts.join('')}<g class="live-layer"></g></svg>`;
   }
 
-  return {speakerXY, pairPan, pointGains, stereoPoints, sourceGains, bearingPoint, pathAt, rotate, spatialSnapshot, presetState, geometry, svg};
+  return {speakerXY, pairPan, pointGains, stereoPoints, sourceGains, bearingPoint, pathAt, rotate, spatialSnapshot, cueSnapshot, presetState, geometry, svg};
 })();
 if (typeof module !== 'undefined') module.exports = StageMap;

@@ -1,9 +1,10 @@
 """Repository show folder → one project, so a fresh clone opens with its cues.
 
 show/audio/* is copied into a project marked `bundle_id` the first time (with the
-speaker layout from show/stage.json, if present); later
-launches append files that were never imported before. Cues deleted in the app
-stay deleted, and operator edits (order, positions, presets) are never touched.
+speaker layout from show/stage.json and the cue setup from show/project-template.json,
+if present). Every file becomes a library sound; on that first import each file
+also gets a one-layer cue. Later launches only add never-imported files to the
+audio library, so cues the operator deleted or rebuilt are never touched.
 """
 from __future__ import annotations
 
@@ -11,7 +12,7 @@ import json
 import os
 from pathlib import Path
 
-from .audio import filename_key, media_cue
+from .audio import filename_key, media_item, single_layer_cue
 from .models import Project
 from .storage import AUDIO_EXT, ProjectStore
 
@@ -51,26 +52,40 @@ def sync_bundled_show(store: ProjectStore, root: Path | None = None) -> Project 
         if path.name in known:
             continue
         relative, display = store.add_file(project.id, path, path.name)
-        cue = media_cue(store.media_path(project.id, relative), relative, display)
+        item = media_item(store.media_path(project.id, relative), relative, display)
         if path.name in manifest:
-            cue.title = manifest[path.name]["title"]
-        added.append(cue)
+            item.name = manifest[path.name]["title"]
+        added.append(item)
         project.bundle_files.append(path.name)
-    if added or created:
-        project.cues.extend(sorted(added, key=filename_key))
-        template_file = root / 'project-template.json'
-        if created and template_file.is_file():
-            # First import only: existing local projects never receive the template.
-            template = json.loads(template_file.read_text(encoding='utf-8'))
-            media = {c.filename: c.media_relpath for c in project.cues}
-            restored = []
+    if not (added or created):
+        return project
+    added.sort(key=filename_key)
+    template_file = root / 'project-template.json'
+    if created and template_file.is_file():
+        # First import only: existing local projects never receive the template.
+        template = json.loads(template_file.read_text(encoding='utf-8'))
+        relpaths = {m.filename: m.media_relpath for m in added}
+        if "media" in template:  # v4 template: library + layered cues
+            for item in template["media"]:
+                if item["filename"] not in relpaths:
+                    raise ValueError(f"Show template media missing: {item['filename']}")
+                item["media_relpath"] = relpaths[item["filename"]]
+        else:  # v3 template: one file per cue, migrated by Project
             for cue in template.get('cues', []):
-                if cue['filename'] not in media:
+                if cue['filename'] not in relpaths:
                     raise ValueError(f"Show template media missing: {cue['filename']}")
-                restored.append({**cue, 'media_relpath': media[cue['filename']]})
-            template.update(id=project.id, bundle_id=BUNDLE_ID,
-                            bundle_files=project.bundle_files, cues=restored,
-                            active_calibration_id=None, calibration_enabled=False)
-            project = Project.model_validate(template)
-        store.save(project)
+                cue['media_relpath'] = relpaths[cue['filename']]
+        template.update(id=project.id, bundle_id=BUNDLE_ID, bundle_files=project.bundle_files,
+                        active_calibration_id=None, calibration_enabled=False)
+        project = Project.model_validate(template)
+        names = {m.filename: m.name for m in added}
+        used = {m.media_relpath for m in project.media}
+        for item in project.media:
+            item.name = names.get(item.filename, item.name)
+        project.media.extend(m for m in added if m.media_relpath not in used)
+    else:
+        project.media.extend(added)
+        if created:
+            project.cues.extend(single_layer_cue(m) for m in added)
+    store.save(project)
     return project

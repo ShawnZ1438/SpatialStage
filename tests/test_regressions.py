@@ -9,13 +9,14 @@ from fastapi.testclient import TestClient
 
 from stagespatialcue.audio import StageController
 from stagespatialcue.mixer import Mixer
-from stagespatialcue.models import Cue, Project
+from stagespatialcue.models import PlaybackSpec, Project
+from legacy import cue_files, with_cues
 from stagespatialcue.server import create_app
 from stagespatialcue.storage import ProjectStore
 
 
 def plain(**kw):
-    return Cue(gain_db=0, fade_in_s=0, fade_out_s=0, **kw)
+    return PlaybackSpec(gain_db=0, fade_in_s=0, fade_out_s=0, **kw)
 
 
 def running_mixer():
@@ -63,12 +64,13 @@ def make_chain(tmp_path, modes=('auto_continue', 'manual'), waits=(0, 0)):
     p = store.create('Auto chain')
     media = store.directory(p.id) / 'media'
     media.mkdir()
+    cues = []
     for i, (mode, wait) in enumerate(zip(modes, waits)):
         name = f'{i}.wav'
         sf.write(media / name, np.full(4800, .4, dtype=np.float32), 48000, subtype='FLOAT')
-        p.cues.append(plain(position_deg=[315, 45, 135][i], filename=name,
-                           media_relpath='media/' + name, continue_mode=mode, post_wait_s=wait))
-    store.save(p)
+        cues.append(dict(gain_db=0, fade_in_s=0, fade_out_s=0, position_deg=[315, 45, 135][i], filename=name,
+                         media_relpath='media/' + name, continue_mode=mode, post_wait_s=wait))
+    p = store.save(with_cues(p, cues))
     stage = StageController(store)
     stage.arm(p.id)
     stage.stream = SimpleNamespace(active=True)
@@ -118,9 +120,10 @@ def test_import_sorts_only_new_rows_keeps_existing_cue_ids_and_order(tmp_path):
         ('files', ('003_c.wav', wav, 'audio/wav')),
     ])
     assert res.status_code == 200, res.text
-    cues = res.json()['project']['cues']
-    assert [c['filename'] for c in cues] == ['002_b.wav', '001_a.wav', '003_c.wav', '004_d.wav']
-    assert [c['id'] for c in cues[:2]] == old_ids
+    project = res.json()['project']
+    assert cue_files(project) == ['002_b.wav', '001_a.wav', '003_c.wav', '004_d.wav']
+    assert [c['id'] for c in project['cues'][:2]] == old_ids
+    assert [m['filename'] for m in project['media']] == ['001_a.wav', '002_b.wav', '003_c.wav', '004_d.wav']
 
 
 @pytest.mark.parametrize('block', [1, 4, 512])
