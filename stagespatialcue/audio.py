@@ -573,6 +573,47 @@ class StageController:
             self.log("operator_audition", cue_id=cue_id)
             return self.status()
 
+    def _playable(self, project_id: str) -> Project:
+        if self.measurement_active or not self._output_active() or self.audio_error:
+            raise ValueError(self.audio_error or "Connect an output first; measurement must be stopped")
+        if self.project_id != project_id or self.mixer is None:
+            raise ValueError("Arm this project first")
+        if self.mixer.master_mute:
+            raise ValueError("MAIN MUTE is on. Unmute deliberately before GO")
+        return self.store.get(project_id)
+
+    def play_cue(self, project_id: str, cue_id: str) -> dict:
+        """▶ on one cue: start it now on top of everything else; NEXT is unchanged.
+
+        If the cue is already sounding it restarts from the top (its old voices
+        fade out in 50 ms). Pre-wait is skipped; each layer keeps its delay.
+        """
+        with self.lock:
+            project = self._playable(project_id)
+            cue = next((c for c in project.cues if c.id == cue_id), None)
+            if cue is None:
+                raise ValueError("Cue missing")
+            sources = self._sources(project, cue, allow_decode=False)
+            self.mixer.update_project(project)
+            with self.mixer.lock:
+                self.mixer.stop_group(cue.id, 0.05)
+                self.mixer.queue_group(PlaybackSpec(start_mode="layer", pre_wait_s=0), sources)
+            self.log("operator_play_cue", cue_id=cue_id)
+            return self.status()
+
+    def stop_cue(self, project_id: str, cue_id: str) -> dict:
+        """■ on one cue: fade only that cue out over its stop_fade_s."""
+        with self.lock:
+            if self.project_id != project_id or self.mixer is None:
+                raise ValueError("Arm this project first")
+            project = self.store.get(project_id)
+            cue = next((c for c in project.cues if c.id == cue_id), None)
+            if cue is None:
+                raise ValueError("Cue missing")
+            self.mixer.stop_group(cue.id, cue.stop_fade_s)
+            self.log("operator_stop_cue", cue_id=cue_id, fade_s=cue.stop_fade_s)
+            return self.status()
+
     def audition_media(self, project_id: str, media_id: str) -> dict:
         """Preview one library sound with its design, front centre; NEXT is untouched.
 

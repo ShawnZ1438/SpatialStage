@@ -43,6 +43,11 @@
         <div id="meters" class="meter-area"><div><b>1</b><div class="meter"><i></i></div></div><div><b>2</b><div class="meter"><i></i></div></div><div><b>3</b><div class="meter"><i></i></div></div><div><b>4</b><div class="meter"><i></i></div></div></div>
         <p class="micro" id="audioInfo" data-i18n="audioInfoDefault">默认静音。不要用演出音量测试通道。</p>
       </section>
+      <section class="side-section play-rules">
+        <div class="section-heading" data-i18n="playRules">播放规则</div>
+        <label class="check"><input type="checkbox" id="autoReplace" /> <span data-i18n="autoReplace">允许 Cue 自动淡出其他声音</span></label>
+        <p class="micro" data-i18n="autoReplaceHelp"></p>
+      </section>
       <section class="side-section stage-compact">
         <div class="section-heading" data-i18n="spatialMaster">空间总控</div>
         <label class="small-label" for="globalRotation" data-i18n="globalRotation">整体旋转 · 实时 (°)</label>
@@ -66,7 +71,7 @@
       <section class="transport">
         <div class="now-next"><span class="section-heading" data-i18n="nextToFire">下一个 NEXT</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted"></div></div>
         <div class="transport-buttons"><button id="goButton" class="go" data-i18n-title="goTip">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" data-i18n-title="cutGoTip">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt / ⌥ + ↓">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Esc">PANIC</button></div>
-        <div class="cue-direct"><button id="cueFirst" data-i18n="cueFirst">⏮ 回到第一条</button><button id="cueStart" data-i18n="cueStart">从选中 Cue 开始</button><button id="cueAudition" data-i18n="cueAudition">▷ 试听选中 Cue</button><button id="cueUp" data-i18n="cueUp">↑ 上移</button><button id="cueDown" data-i18n="cueDown">↓ 下移</button><small data-i18n="cueDirectHelp">「回到第一条」「从选中开始」只设定 NEXT，不出声 · 试听会立刻替换正在播放的声音，并把 NEXT 设为这一条</small></div>
+        <div class="cue-direct"><button id="cueFirst" data-i18n="cueFirst">⏮ 回到第一条</button><button id="cueStart" data-i18n="cueStart">从选中 Cue 开始</button><button id="cuePlay" data-i18n="cuePlay">▶ 播放选中</button><button id="cueStopSel" data-i18n="cueStopSel">■ 停止选中</button><button id="cueUp" data-i18n="cueUp">↑ 上移</button><button id="cueDown" data-i18n="cueDown">↓ 下移</button><small data-i18n="cueDirectHelp">「回到第一条」「从选中开始」只设定 NEXT，不出声 · 试听会立刻替换正在播放的声音，并把 NEXT 设为这一条</small></div>
       </section>
 
       <details class="simulation-panel">

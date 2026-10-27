@@ -1,7 +1,7 @@
 'use strict';
 // No alternate cue mixer: preview consumes the Python mixer's captured output.
 // Monitor changes never modify production routing or the captured PCM.
-$('simConnect').onclick = () => action('/simulation/connect');
+$('simConnect').onclick = async () => { if (await action('/simulation/connect')) rememberOutput({kind:'simulation'}); };
 $('simRecord').onclick = () => action('/simulation/capture', {recording:true});
 $('simStopRecord').onclick = () => action('/simulation/capture', {recording:false});
 $('simListen').onclick = async () => {
@@ -16,12 +16,13 @@ $('simListen').onclick = async () => {
     document.querySelectorAll('.simMute,.simSolo').forEach(e=>e.checked=false);
     const mode=$('simMode').value;
     if(await action('/simulation/monitor',{device_index:Number(select.value),mode})){
+      rememberOutput({kind:'monitor',name:select.selectedOptions[0]?.textContent,mode});
       sendPose();
       notify(t(mode==='virtual'?'simVirtualConnected':'simSumConnected'));
     }
   } catch(e) { report(e); }
 };
-$('simStopListen').onclick=()=>action('/audio/disconnect');
+$('simStopListen').onclick=async()=>{ if(await action('/audio/disconnect')) rememberOutput(null); };
 function simPose() {
   return {x:Math.max(-6,Math.min(6,num($('simX').value))), y:Math.max(-6,Math.min(6,num($('simY').value))), a:num($('simHead').value)*Math.PI/180};
 }

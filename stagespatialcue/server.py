@@ -124,7 +124,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         return {"version": __version__, "mode": "local", "sample_rate": 48000,
                 "runtime": identity,
                 "features": ["simulation", "performance", "bundled-show", "stereo-width", "virtual-monitor",
-                             "cue-layers"]}
+                             "cue-layers", "cue-play-stop"]}
 
     @app.get("/api/projects")
     def projects():
@@ -391,6 +391,18 @@ def create_app(data_root: Path | None = None) -> FastAPI:
         if not payload.cue_id:
             raise ValueError("Select a cue first")
         return stage.audition(payload.project_id, payload.cue_id)
+
+    @app.post("/api/audio/play-cue")
+    def play_cue(payload: ArmPayload):
+        if not payload.cue_id:
+            raise ValueError("Select a cue first")
+        return stage.play_cue(payload.project_id, payload.cue_id)
+
+    @app.post("/api/audio/stop-cue")
+    def stop_cue(payload: ArmPayload):
+        if not payload.cue_id:
+            raise ValueError("Select a cue first")
+        return stage.stop_cue(payload.project_id, payload.cue_id)
 
     @app.post("/api/audio/audition-media")
     def audition_media(payload: MediaAuditionPayload):

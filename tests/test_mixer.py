@@ -22,7 +22,7 @@ def test_four_channel_render_and_mute():
 
 
 def test_replace_transitions_old_voice_to_new():
-    mx=Mixer(Project(),sample_rate=1000)
+    mx=Mixer(Project(auto_replace=True),sample_rate=1000)
     mx.master_mute=False;mx.master_db=-18
     v1=mx.queue(cue(position_deg=315,start_mode='layer'),np.ones(1000,dtype=np.float32))
     mx.render(100)

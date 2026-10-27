@@ -20,7 +20,7 @@ def plain(**kw):
 
 
 def running_mixer():
-    mx = Mixer(Project(), sample_rate=1000)
+    mx = Mixer(Project(auto_replace=True), sample_rate=1000)  # classic replace semantics under test
     mx.master_db = 0
     mx.master_mute = False
     mx.render(30)  # allow a deliberate unmute ramp to settle before measurements

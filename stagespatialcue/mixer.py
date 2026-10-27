@@ -163,10 +163,14 @@ class Mixer:
         replace/layer/queue and the configured transition. CUT GO kills existing
         voices with a 5 ms de-click (not a digital hard cut). An empty cue still
         applies its start behaviour (a replace cue with no layers fades others out).
+        Unless the project allows auto_replace, nothing here stops other sounds:
+        replace plays as layer and CUT GO only skips waits.
         """
         with self.lock:
             now = max(self.frame, anchored_frame if anchored_frame is not None else self.frame)
             mode = 'replace' if force_cut else cue.start_mode
+            if mode == 'replace' and not self.project.auto_replace:
+                mode = 'layer'
             if mode == 'queue':
                 now = max([now] + [v.end_frame for v in self.voices])
             start = now if force_cut else now + int(round(cue.pre_wait_s * self.sample_rate))
@@ -192,7 +196,7 @@ class Mixer:
             voices = []
             for spec, samples, delay_frames in layers:
                 fade = fade_override
-                if fade is not None and not (force_cut or cue.replace_style == 'cut'):
+                if fade is not None and mode == 'replace' and not (force_cut or cue.replace_style == 'cut'):
                     fade = min(fade, max(1, len(samples) // 2))  # long transitions would hide short FX
                 voice = Voice(cue=spec.model_copy(deep=True), samples=samples, loop=spec.loop,
                               start_frame=start + max(0, int(delay_frames)),
@@ -214,6 +218,16 @@ class Mixer:
             voice = Voice(cue=cue, samples=data, start_frame=self.frame, test_channel=channel)
             self.voices.append(voice)
             return voice
+
+    def stop_group(self, group_id: str, fade_s: float) -> int:
+        """Fade out (and cancel pending layers of) one cue; other sounds continue."""
+        with self.lock:
+            fade_frames = max(1, round(max(DECLICK_S, fade_s) * self.sample_rate))
+            hits = [v for v in self.voices if v.test_channel is None and v.cue.group_id == group_id
+                    and v.end_frame > self.frame]
+            for voice in hits:
+                voice.request_stop(self.frame, fade_frames)
+            return len(hits)
 
     def stop_all(self, fade_s: float = 0.04) -> None:
         with self.lock:
@@ -352,6 +366,7 @@ class Mixer:
                     'voices':[{'cue_id':v.cue.group_id,'layer_id':v.cue.layer_id,
                                'media_id':v.cue.media_id,'title':v.cue.title,'loop':v.loop,
                                'state':'queued' if v.start_frame>self.frame else 'playing',
+                               'stopping':v.stop_frame is not None,
                                'elapsed_s':round(max(0,self.frame-v.start_frame)/self.sample_rate,2),
                                'duration_s':round(len(v.samples)/self.sample_rate,2),
                                'end_s':None if v.end_frame>=LOOP_FOREVER else round(v.end_frame/self.sample_rate,2),

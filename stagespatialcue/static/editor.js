@@ -4,7 +4,7 @@
 'use strict';
 const ed = {tool:'position', selectedPoint:0, dragging:-1, previewT:null, follow:true, lastNext:undefined,
   sig:{}, statusAt:0, search:''};
-const MODE_KEY = 'spatialstage.mode', SIM_KEY = 'spatialstage.simPanel';
+const SIM_KEY = 'spatialstage.simPanel';
 const LAYER_COLORS = ['#52dccd', '#f0bd6c', '#b9a3fa', '#71baf6', '#f28fad', '#9be37a', '#e6d36a', '#7fd6f5'];
 const DEFAULT_ADSR = {attack_s:.3, peak_offset_deg:90, decay_s:.5, sustain_offset_deg:90, release_s:.3, release_offset_deg:0};
 const MEDIA_TYPE = 'application/x-spatialstage-media', CUE_TYPE = 'application/x-spatialstage-cue';
@@ -144,9 +144,20 @@ function renderMediaDesigner(force) {
 
 /* ---------- cue list ---------- */
 function cueTags(c, voices, next) {
-  const playing = voices.some(v => v.cue_id === c.id && v.state === 'playing');
-  const queued = voices.some(v => v.cue_id === c.id && v.state === 'queued');
-  return [playing ? 'LIVE' : queued ? 'WAIT' : '', c.id === next ? 'NEXT' : '', c.id === state.selectedCueId ? 'SEL' : ''].filter(Boolean);
+  const mine = voices.filter(v => v.cue_id === c.id);
+  const playing = mine.some(v => v.state === 'playing' && !v.stopping);
+  const fading = !playing && mine.some(v => v.stopping);
+  const queued = !playing && mine.some(v => v.state === 'queued' && !v.stopping);
+  return [playing ? 'LIVE' : fading ? 'FADE' : queued ? 'WAIT' : '', c.id === next ? 'NEXT' : '', c.id === state.selectedCueId ? 'SEL' : ''].filter(Boolean);
+}
+// Elapsed / length and the row's progress bar while the cue is sounding.
+function cueProgress(row, c, voices) {
+  const live = voices.filter(v => v.cue_id === c.id && v.state === 'playing');
+  const total = cueDuration(c), dur = row.querySelector('.dur');
+  if (!live.length) { row.style.setProperty('--progress', '0%'); if (dur) dur.textContent = fmtDuration(total); return; }
+  const elapsed = Math.max(...live.map(v => v.elapsed_s));
+  row.style.setProperty('--progress', total === Infinity ? '100%' : `${Math.min(100, elapsed / Math.max(total, .01) * 100).toFixed(1)}%`);
+  if (dur) dur.textContent = total === Infinity ? `${fmt(elapsed, 1)} s ⟲` : `${fmt(elapsed, 1)} / ${fmt(total, 1)} s`;
 }
 function renderCueList(force) {
   const host = $('performCues'), next = state.status?.next_cue_id, voices = state.status?.mixer?.voices || [];
@@ -157,13 +168,15 @@ function renderCueList(force) {
     row.classList.toggle('selected', c.id === state.selectedCueId);
     row.classList.toggle('next', c.id === next);
     row.classList.toggle('playing', tags.includes('LIVE'));
+    row.classList.toggle('fading', tags.includes('FADE'));
     const tag = row.querySelector('.tag');
     if (tag) tag.textContent = tags.join(' · ');
+    cueProgress(row, c, voices);
   });
   const stored = state.project.cues.filter(c => c.spatial_preset).length;
   // NEXT / LIVE / SEL are patched in place above; rebuilding on them would swallow
   // a click in progress whenever GO moves NEXT.
-  const sig = JSON.stringify([I18N.lang, runMode(), state.project.cues.map(c => [c.id, c.title, c.spatial_preset,
+  const sig = JSON.stringify([I18N.lang, runMode(), state.project.cues.map(c => [c.id, c.title, c.spatial_preset, c.stop_fade_s,
     c.layers.map(l => [l.id, l.media_id, l.muted, l.delay_s, l.direction_mode, l.path, l.position_deg]), StageMap.presetState(c)]),
     state.project.media.map(m => [m.id, m.duration_s, m.trim_start_s, m.trim_end_s, m.loop])]);
   if (!force && (host.dataset.signature === sig || pointerHeld)) return;
@@ -178,12 +191,14 @@ function renderCueList(force) {
       const tags = cueTags(c, voices, next), preset = StageMap.presetState(c);
       const cls = [c.id === next ? 'next' : '', c.id === state.selectedCueId ? 'selected' : '', tags.includes('LIVE') ? 'playing' : ''].join(' ');
       const dots = c.layers.map((l, j) => `<i style="background:${LAYER_COLORS[j % LAYER_COLORS.length]}"${l.muted ? ' class="muted"' : ''}></i>`).join('');
-      return `<button class="perf-cue ${cls}" data-cue-id="${h(c.id)}" draggable="${runMode() ? 'false' : 'true'}"><span class="num" title="${h(t('playOrder'))}">#${i + 1}</span>
+      return `<div class="perf-cue ${cls}" role="button" tabindex="0" data-cue-id="${h(c.id)}" draggable="${runMode() ? 'false' : 'true'}"><span class="num" title="${h(t('playOrder'))}">#${i + 1}</span>
         <span class="title">${h(c.title)}</span><span class="tag">${tags.join(' · ')}</span>
         <span class="kind"><span class="layer-dots">${dots}</span>${h(c.layers.length ? t('layersShort', {n:c.layers.length}) : t('emptyCue'))}</span>
         <span class="dur">${fmtDuration(cueDuration(c))}</span>
-        <span class="preset ${preset}" title="${h(t({none:'presetNone', stored:'presetStored', changed:'presetChanged'}[preset]))}">${{none:'—', stored:'✓', changed:'●'}[preset]}</span></button>`;
+        <span class="preset ${preset}" title="${h(t({none:'presetNone', stored:'presetStored', changed:'presetChanged'}[preset]))}">${{none:'—', stored:'✓', changed:'●'}[preset]}</span>
+        <span class="ctrl"><button class="cue-play" data-play title="${h(t('playTip'))}" aria-label="${h(t('playCue'))}">▶</button><button class="cue-stop" data-stop title="${h(t('stopTip', {s:fmt(c.stop_fade_s ?? 2, 1)}))}" aria-label="${h(t('stopCue'))}">■</button></span></div>`;
     }).join('')}${runMode() ? '' : `<div class="cue-dropzone" data-cl="drop-new">${h(t('dropNewCue'))}</div>`}</div>`;
+  host.querySelectorAll('.perf-cue').forEach(row => cueProgress(row, state.project.cues.find(x => x.id === row.dataset.cueId), voices));
   if (focusedId) host.querySelector(`[data-cue-id="${focusedId}"]`)?.focus({preventScroll:true});
 }
 
@@ -235,7 +250,7 @@ function renderLayerEditor(cue, layer, lock) {
 }
 function renderInspector(force) {
   const host = $('performTarget'), cue = currentCue(), layer = currentLayer();
-  const sig = JSON.stringify([I18N.lang, runMode(), cue, state.selectedLayerId, ed.selectedPoint, ed.tool, ed.follow, ed.previewT,
+  const sig = JSON.stringify([I18N.lang, runMode(), state.project.auto_replace, cue, state.selectedLayerId, ed.selectedPoint, ed.tool, ed.follow, ed.previewT,
     cueIndex(cue?.id), cue && cue.layers.map(l => mediaById(l.media_id)?.name)]);
   const editing = host.contains(document.activeElement) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
   if (!force && (ed.sig.inspector === sig || editing)) return;
@@ -254,9 +269,10 @@ function renderInspector(force) {
       <span>${ed.follow ? '' : `<button data-cue-action="follow" class="secondary">↺ ${h(t('followNext'))}</button>`}</span></div>
     ${lock ? `<h2>#${cueIndex(cue.id) + 1} · ${h(cue.title)}</h2>` : `<label class="full-label">${h(t('cueTitle'))}<input data-cue-field="title" type="text" value="${h(cue.title)}"></label>`}
     <div class="cue-actions">
+      <button data-cue-action="play" class="primary" title="${h(t('playTip'))}">${h(t('playCue'))}</button>
+      <button data-cue-action="stop" class="secondary" title="${h(t('stopTip', {s:fmt(cue.stop_fade_s ?? 2, 1)}))}">${h(t('stopCue'))}</button>
       <button data-cue-action="arm" class="secondary">${h(t('setAsNext'))}</button>
-      ${lock ? '' : `<button data-cue-action="audition" class="secondary">▷ ${h(t('auditionCue'))}</button>
-      <button data-cue-action="duplicate" class="quiet">${h(t('duplicateCue'))}</button>
+      ${lock ? '' : `<button data-cue-action="duplicate" class="quiet">${h(t('duplicateCue'))}</button>
       <button data-cue-action="delete" class="danger">${h(t('deleteCue'))}</button>`}
     </div>
     <div class="section-label">${h(t('layersTitle', {n:cue.layers.length}))}</div>
@@ -270,10 +286,11 @@ function renderInspector(force) {
       ${field(t('postWait'), `data-cue-field="post_wait_s" type="number" min="0" step="0.1" ${lock}`, fmt(cue.post_wait_s))}
     </div>
     <div class="field-row">
-      ${choice(t('startAction'), `data-cue-field="start_mode" ${lock}`, cue.start_mode, [['replace', t('startReplace')], ['layer', t('startLayer')], ['queue', t('startQueue')]])}
+      ${choice(t('startAction'), `data-cue-field="start_mode" ${lock}`, cue.start_mode, [['replace', t(state.project.auto_replace ? 'startReplace' : 'startReplaceOff')], ['layer', t('startLayer')], ['queue', t('startQueue')]])}
       ${choice(t('autoNext'), `data-cue-field="continue_mode" ${lock}`, cue.continue_mode, [['manual', t('autoManual')], ['auto_continue', t('autoContinue')], ['auto_follow', t('autoFollow')]])}
     </div>
-    <div class="field-row">
+    <div class="field-row three">
+      ${field(t('stopFade'), `data-cue-field="stop_fade_s" type="number" min="0" max="60" step="0.1" ${lock}`, fmt(cue.stop_fade_s ?? 2))}
       ${choice(t('replaceStyle'), `data-cue-field="replace_style" ${lock}`, cue.replace_style, [['crossfade', t('crossfade')], ['cut', t('declickCut')]])}
       ${field(t('transitionS'), `data-cue-field="transition_s" type="number" min="0" max="60" step="0.1" ${lock}`, fmt(cue.transition_s))}
     </div>
@@ -522,12 +539,18 @@ $('performCues').addEventListener('click', e => {
   }
   const row = e.target.closest('[data-cue-id]');
   if (!row) return;
+  if (e.target.closest('[data-play]')) { playCue(row.dataset.cueId); return; }
+  if (e.target.closest('[data-stop]')) { stopCue(row.dataset.cueId); return; }
   selectCue(row.dataset.cueId);
   render(true);
 });
+$('performCues').addEventListener('keydown', e => {
+  const row = e.target.closest('.perf-cue');
+  if (row && e.target === row && e.key === 'Enter') { e.preventDefault(); selectCue(row.dataset.cueId); render(true); }
+});
 $('performCues').addEventListener('dblclick', e => {
   const row = e.target.closest('[data-cue-id]');
-  if (row && !runMode()) { e.preventDefault(); auditionCue(row.dataset.cueId); }
+  if (row && !runMode() && !e.target.closest('.ctrl')) { e.preventDefault(); playCue(row.dataset.cueId); }
 });
 $('performCues').addEventListener('dragstart', e => {
   const row = e.target.closest('.perf-cue');
@@ -575,7 +598,8 @@ $('performTarget').addEventListener('click', e => {
     const what = a.dataset.cueAction;
     if (what === 'follow') { ed.follow = true; ed.lastNext = undefined; render(true); }
     else if (what === 'arm') prepareCue(cue.id);
-    else if (what === 'audition') auditionCue(cue.id);
+    else if (what === 'play') playCue(cue.id);
+    else if (what === 'stop') stopCue(cue.id);
     else if (what === 'recall') { if (recallPreset(cue)) { ed.selectedPoint = 0; ed.previewT = null; changed(t('recalled', {cue:cue.title})); } }
     else if (!guardEdit()) return;
     else if (what === 'store') { storePreset(cue); changed(t('stored', {cue:cue.title})); }
@@ -631,7 +655,7 @@ $('performTarget').addEventListener('change', e => {
     const key = el.dataset.cueField;
     if (key === 'title') cue.title = el.value.trim() || t('newCueTitle');
     else if (el.tagName === 'SELECT') cue[key] = el.value;
-    else { cue[key] = key === 'gain_db' ? Math.max(-90, Math.min(12, v)) : key === 'transition_s' ? Math.max(0, Math.min(60, v)) : Math.max(0, v); reflect(el, cue[key], key === 'gain_db' ? 1 : 2); }
+    else { cue[key] = key === 'gain_db' ? Math.max(-90, Math.min(12, v)) : ['transition_s', 'stop_fade_s'].includes(key) ? Math.max(0, Math.min(60, v)) : Math.max(0, v); reflect(el, cue[key], key === 'gain_db' ? 1 : 2); }
     changed(); return;
   }
   if (el.dataset.lf) {
@@ -739,12 +763,11 @@ $('performMap').addEventListener('drop', e => {
 });
 
 /* ---------- modes ---------- */
-// Design = full editing; Run = everything locked except GO/STOP/PANIC, NEXT and Recall.
+// Design = full editing; Show = everything locked except GO/STOP/PANIC, ▶/■, NEXT and Recall.
 function setMode(run) {
   document.body.classList.toggle('performing', run);
   $('modeEdit').setAttribute('aria-pressed', String(!run));
   $('modePerform').setAttribute('aria-pressed', String(run));
-  edStorage(MODE_KEY, run ? 'perform' : 'edit');
   if (run) { ed.follow = true; ed.lastNext = undefined; state.selectedMediaId = null; }
   render(true);
 }
@@ -757,9 +780,9 @@ if (simPanel) {
   simPanel.addEventListener('toggle', () => edStorage(SIM_KEY, simPanel.open ? 'open' : 'closed'));
 }
 I18N.onChange(() => render(true));
-// ?mode=perform|edit picks the mode once; the remembered choice applies afterwards.
+// Every launch opens in Show mode; ?mode=edit opens Design instead.
 const urlMode = new URLSearchParams(location.search).get('mode');
-document.body.classList.toggle('performing', (urlMode || edStorage(MODE_KEY)) === 'perform');
+document.body.classList.toggle('performing', urlMode !== 'edit');
 $('modeEdit').setAttribute('aria-pressed', String(!runMode()));
 $('modePerform').setAttribute('aria-pressed', String(runMode()));
 if (urlMode) history.replaceState(null, '', location.pathname);

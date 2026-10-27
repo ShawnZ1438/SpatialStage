@@ -105,6 +105,8 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         print('Scripts loaded', flush=True)
         page.wait_for_selector('#projectSelect option', state='attached')
         expect(page.locator('#goButton')).to_be_disabled()
+        expect(page.locator('#modePerform')).to_have_attribute('aria-pressed', 'true')  # every launch opens in Show mode
+        page.locator('#modeEdit').click()
         wav = silent_wave()
         def drag(source, target, fx=.5, fy=.5):
             page.evaluate(DRAG, [source, target, fx, fy])
@@ -184,6 +186,7 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         load_page()
         expect(page.locator('#performCues .perf-cue')).to_have_count(3)
         expect(page.locator('#globalRotation')).to_have_value('222.22')
+        page.locator('#modeEdit').click()
         page.locator('#autocalOpen').click()
         expect(page.locator('#autocalDialog')).to_be_visible()
         expect(page.locator('#acCancel')).to_be_disabled()
@@ -202,6 +205,30 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         page.locator('#simX').fill('1.2')
         page.locator('#simHead').fill('270')
         print('PASS silent simulation, muted connection, bounded capture download, actor markers')
+
+        # ▶ / ■ per cue: layered playback, restart, fade-out of one cue only. Loop the
+        # (0.1 s) test sounds so they are still sounding when checked.
+        page.evaluate('state.project.media.forEach(m=>m.loop=true); saveNow()')
+        page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
+        assert page.request.get(base_url + f'/api/projects/{pid}/preflight').json()['files'] == 3
+        page.request.post(base_url + '/api/audio/master', data={'mute': False, 'db': -60})
+        page.wait_for_function('state.status && !state.status.mixer.master_mute')
+        rows = page.locator('#performCues .perf-cue')
+        ids = page.evaluate('state.project.cues.map(c=>c.id)')
+        next_before = page.evaluate('state.status.next_cue_id')
+        rows.nth(0).locator('[data-play]').click()
+        rows.nth(1).locator('[data-play]').click()
+        page.wait_for_function(f"new Set(state.status.mixer.voices.map(v=>v.cue_id)).size === 2")
+        assert page.evaluate('state.status.next_cue_id') == next_before  # ▶ never moves NEXT
+        expect(rows.nth(0).locator('.tag')).to_contain_text('LIVE')
+        rows.nth(0).locator('[data-stop]').click()
+        page.wait_for_function(f"state.status.mixer.voices.some(v=>v.cue_id==='{ids[0]}' && v.stopping)")
+        assert page.evaluate(f"state.status.mixer.voices.some(v=>v.cue_id==='{ids[1]}' && !v.stopping)")
+        expect(rows.nth(0).locator('.tag')).to_contain_text('FADE')
+        page.locator('#panicButton').click()
+        page.evaluate('state.project.media.forEach(m=>m.loop=false); saveNow()')
+        page.wait_for_function('!saveQueue.dirty && !saveQueue.running')
+        print('PASS per-cue play (layered, NEXT unchanged) and stop (only that cue fades)')
 
         # Stage map: two layers in one cue, path drawing, Store / Reset / Recall, Show-mode lock.
         def cue_by_id(cid):
@@ -247,16 +274,19 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         assert cue_by_id(cid)['layers'][0]['path'] == first['path']  # Show mode: map is locked
         load_page()
         expect(page.locator('#modePerform')).to_have_attribute('aria-pressed', 'true')
+        # The remembered output (silent simulation) reconnects on launch and is preflighted, still muted.
+        page.wait_for_function("state.status?.output_mode === 'simulation' && state.status.connected")
+        assert page.evaluate('state.status.mixer.master_mute')
         page.locator('#modeEdit').click()
         expect(page.locator('#libraryPanel')).to_be_visible()
-        if not inline_transport:  # the remembered mode wins after ?mode= is used once
-            page.goto(base_url + '/?mode=perform', wait_until='domcontentloaded')
-            expect(page.locator('#libraryPanel')).to_be_hidden()
+        if not inline_transport:  # ?mode=edit opens Design; a plain reload opens Show again
+            page.goto(base_url + '/?mode=edit', wait_until='domcontentloaded')
+            expect(page.locator('#libraryPanel')).to_be_visible()
             assert '?' not in page.url
-            page.locator('#modeEdit').click()
             page.reload(wait_until='domcontentloaded')
-            expect(page.locator('#modeEdit')).to_have_attribute('aria-pressed', 'true')
-        print('PASS stage map: drop layer, add path point, store/reset/recall all layers, Show-mode lock, mode memory')
+            expect(page.locator('#modePerform')).to_have_attribute('aria-pressed', 'true')
+            page.locator('#modeEdit').click()
+        print('PASS stage map: drop layer, add path point, store/reset/recall all layers, Show-mode lock, opens in Show, auto-reconnect')
 
         page.wait_for_selector('#libraryList .lib-item')
         page.locator('#langToggle').click()

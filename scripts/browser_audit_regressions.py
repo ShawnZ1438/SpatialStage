@@ -20,7 +20,7 @@ def exercise(page, base):
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.add_init_script("try{localStorage.setItem('spatialstage.lang','en')}catch(e){}")  # assertions use English
-    page.goto(base, wait_until='domcontentloaded')
+    page.goto(base + '/?mode=edit', wait_until='domcontentloaded')
     page.wait_for_selector('#projectSelect option', state='attached')
     pid = page.locator('#projectSelect').input_value()
     url = base+'/api/projects/'+pid
@@ -65,7 +65,7 @@ def exercise(page, base):
         saved()
         expect(page.locator(title)).to_have_value('edited while media pending')
         edit('[data-cue-field="gain_db"]',-12);saved()  # later PUT must not persist the old title
-        page.reload(wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
+        page.goto(base + '/?mode=edit', wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
         page.locator('#performCues .perf-cue').first.click()
         expect(page.locator(title)).to_have_value('edited while media pending')
         project=page.request.get(url).json()
@@ -76,7 +76,7 @@ def exercise(page, base):
     edit(bearing,360);saved()
     expect(page.locator(bearing)).to_have_value('0.00')
     assert page.request.get(url).json()['cues'][0]['layers'][0]['position_deg']==0
-    page.reload(wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
+    page.goto(base + '/?mode=edit', wait_until='domcontentloaded');page.wait_for_selector('#performCues .perf-cue')
     page.locator('#performCues .perf-cue').first.click()
     expect(page.locator(bearing)).to_have_value('0.00')
     assert page.locator('#performMap .sm-point.angle').is_visible()

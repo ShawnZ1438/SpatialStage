@@ -137,7 +137,7 @@ body.dragging-media .perform-map,body.dragging-media #performCues .perf-cue,body
 .perf-cues-head .count{font-size:10px;color:#69849a;margin-left:6px;letter-spacing:0}
 .perf-cues-head button{font-size:10px;padding:4px 7px}
 .perf-cue-list{display:flex;flex-direction:column;gap:3px;margin-top:9px;max-height:30vh;overflow:auto}
-.perf-cue{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"num title tag" "num kind dur";column-gap:8px;row-gap:2px;align-items:center;text-align:left;background:#121e2e;border:1px solid transparent;font-weight:500;font-size:12px;padding:6px 8px;color:#9cadc1;white-space:normal;position:relative}
+.perf-cue{display:grid;grid-template-columns:34px 1fr auto 72px;grid-template-areas:"num title tag ctrl" "num kind dur ctrl";cursor:pointer;overflow:hidden;border-radius:8px;flex-shrink:0;column-gap:8px;row-gap:2px;align-items:center;text-align:left;background:#121e2e;border:1px solid transparent;font-weight:500;font-size:12px;padding:6px 8px;color:#9cadc1;white-space:normal;position:relative}
 .perf-cue .num{grid-area:num;color:#7591a7;font-weight:700}
 .perf-cue .title{grid-area:title;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2ecf8}
 .perf-cue .tag{grid-area:tag;font-size:9px;font-weight:800;color:#63aee8;text-align:right}
@@ -147,6 +147,17 @@ body.dragging-media .perform-map,body.dragging-media #performCues .perf-cue,body
 .perf-cue .preset.stored{color:#57d3ae}.perf-cue .preset.changed{color:#f2ba61}.perf-cue .preset.none{color:#4f6479}
 .perf-cue .dur::after{content:''}
 .perf-cue.selected{background:#1e333d;border-color:#2f6b66}
+.perf-cue::before{content:'';position:absolute;left:0;bottom:0;height:3px;width:var(--progress,0%);background:#57d3ae;transition:width .4s linear}
+.perf-cue.fading::before{background:#f2ba61}
+.perf-cue.fading .tag{color:#f2ba61}
+.perf-cue .ctrl{grid-area:ctrl;display:flex;gap:5px;justify-content:flex-end}
+.perf-cue .ctrl button{width:32px;height:32px;padding:0;font-size:13px;border-radius:8px}
+.cue-play{background:#1b6f63;color:#d6fff8;border:1px solid #2f9f90}
+.cue-stop{background:#1c2a3d;color:#9fb0c7;border:1px solid #33435b}
+.perf-cue.playing .cue-stop{background:#5a3f1d;color:#ffe3b1;border-color:#b38751}
+.perf-cue.playing .cue-play{background:#123b37;color:#7fd6c9}
+body.performing .perf-cue .ctrl button{width:40px;height:40px;font-size:15px}
+body.performing .perf-cue{grid-template-columns:38px 1fr auto 90px}
 .perf-cue.next{box-shadow:inset 3px 0 #63aee8}
 .perf-cue.playing .tag{color:#57d3ae}
 .layer-dots{display:inline-flex;gap:2px}
@@ -234,7 +245,7 @@ body.dragging-media .perform-map,body.dragging-media #performCues .perf-cue,body
 /* Show (Run) mode: library and engineering controls out of the way */
 body.performing .library-panel,body.performing #exportProject,body.performing #speakerTests,
 body.performing #autocalOpen,body.performing #settingsToggle,body.performing #renameProject,
-body.performing .stage-compact,body.performing .cue-direct small,body.performing #cueUp,body.performing #cueDown,
+body.performing .stage-compact,body.performing .play-rules,body.performing .cue-direct small,body.performing #cueUp,body.performing #cueDown,
 body.performing .simulation-panel:not([open]){display:none!important}
 body.performing .studio{grid-template-columns:minmax(380px,1fr) 420px}
 body.performing .perf-cue-list{max-height:50vh}

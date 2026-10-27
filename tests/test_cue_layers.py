@@ -100,6 +100,7 @@ def test_loop_layer_stops_an_after_end_chain(tmp_path):
 def test_empty_replace_cue_fades_out_what_is_playing(tmp_path):
     stage, project = layered_stage(tmp_path, [dict(position_deg=315)], media_fields={'loop': True})
     project.cues.append(Cue(title='fade out', transition_s=.1))
+    project.auto_replace = True
     stage.store.save(project)
     stage.sync(project)
     stage.go(project.id)
@@ -198,3 +199,81 @@ def test_playback_spec_group_is_its_cue():
     assert start == 0 and [v.start_frame for v in voices] == [0, 5]
     path = PlaybackSpec(direction_mode='path', path=[PathPoint(time_s=0, x_m=0, y_m=1)])
     assert path.path[0].y_m == 1
+
+
+def test_by_default_nothing_but_stop_ends_another_sound(tmp_path):
+    """auto_replace off: replace cues and CUT GO play on top; only STOP / ■ end sounds."""
+    stage, project = layered_stage(tmp_path, [dict(position_deg=315)], media_fields={'loop': True})
+    project.cues.append(Cue(title='replace cue', start_mode='replace', transition_s=.1,
+                            layers=[CueLayer(media_id=project.media[0].id, position_deg=45)]))
+    project.cues.append(Cue(title='cut cue', layers=[CueLayer(media_id=project.media[0].id, position_deg=135)]))
+    stage.store.save(project)
+    stage.sync(project)
+    assert not project.auto_replace
+    stage.go(project.id)
+    stage.mixer.render(2400)
+    stage.go(project.id)
+    stage.mixer.render(9600)
+    stage.go(project.id, cut=True)
+    out = stage.mixer.render(9600)
+    assert len(stage.mixer.voices) == 3 and not any(v.stop_frame for v in stage.mixer.voices)
+    assert out[-1, 0] > .3 and out[-1, 1] > .3 and out[-1, 2] > .3
+
+
+def test_play_button_layers_restarts_itself_and_stop_button_fades_only_that_cue(tmp_path):
+    stage, project = layered_stage(tmp_path, [dict(position_deg=315)], media_fields={'loop': True})
+    project.cues.append(Cue(title='second', pre_wait_s=5, stop_fade_s=.5,
+                            layers=[CueLayer(media_id=project.media[0].id, position_deg=135)]))
+    stage.store.save(project)
+    stage.sync(project)
+    first, second = project.cues
+    stage.play_cue(project.id, first.id)
+    stage.mixer.render(4800)
+    status = stage.play_cue(project.id, second.id)
+    assert status['next_index'] == 0  # ▶ never moves NEXT
+    assert [v.start_frame for v in stage.mixer.voices] == [0, 4800]  # pre-wait skipped
+    stage.mixer.render(4800)
+    stage.play_cue(project.id, first.id)  # restart: old voice fades in 50 ms, new one from the top
+    old, _, new = stage.mixer.voices
+    assert old.stop_frame == 9600 and old.end_frame == 9600 + 2400 and new.start_frame == 9600
+    stage.mixer.render(4800)
+    assert len(stage.mixer.voices) == 2
+    stage.stop_cue(project.id, second.id)
+    fading = next(v for v in stage.mixer.voices if v.cue.cue_id == second.id)
+    assert fading.end_frame == stage.mixer.frame + 24000  # its own 0.5 s stop fade
+    assert next(v for v in stage.status()['mixer']['voices'] if v['cue_id'] == second.id)['stopping']
+    stage.mixer.render(48000)
+    assert [v.cue.cue_id for v in stage.mixer.voices] == [first.id]
+    stage.mixer.master_mute = True
+    with pytest.raises(ValueError, match='MAIN MUTE'):
+        stage.play_cue(project.id, first.id)
+
+
+def test_play_and_stop_cue_api(tmp_path):
+    app = create_app(tmp_path)
+    with TestClient(app, base_url='http://127.0.0.1:8765') as c:
+        import io
+        p = c.post('/api/projects', json={'name': 'buttons'}).json()
+        buf = io.BytesIO()
+        sf.write(buf, np.full(48000, .2, dtype=np.float32), 48000, format='WAV')
+        p = c.post(f"/api/projects/{p['id']}/upload", files=[('files', ('a.wav', buf.getvalue(), 'audio/wav'))]).json()['project']
+        cue = p['cues'][0]
+        body = {'project_id': p['id'], 'cue_id': cue['id']}
+        c.post('/api/audio/arm', json={'project_id': p['id']})
+        assert c.post('/api/audio/play-cue', json=body).status_code == 400  # not connected
+        c.post('/api/simulation/connect')
+        assert c.get(f"/api/projects/{p['id']}/preflight").json()['ok']
+        c.post('/api/audio/master', json={'mute': False, 'db': -30})
+        voices = c.post('/api/audio/play-cue', json=body).json()['mixer']['voices']
+        assert len(voices) == 1 and voices[0]['cue_id'] == cue['id'] and not voices[0]['stopping']
+        import time
+        for _ in range(100):  # let the simulated engine start the voice (a not-yet-started one is cancelled outright)
+            if c.get('/api/audio/status').json()['mixer']['voices'][0]['state'] == 'playing':
+                break
+            time.sleep(.02)
+        time.sleep(.05)
+        stopped = c.post('/api/audio/stop-cue', json=body).json()
+        assert stopped['mixer']['voices'][0]['stopping']
+        assert c.post('/api/audio/stop-cue', json={**body, 'cue_id': 'nope'}).status_code == 400
+        assert 'cue-play-stop' in c.get('/api/health').json()['features']
+        c.post('/api/audio/panic')

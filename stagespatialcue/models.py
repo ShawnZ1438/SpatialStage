@@ -198,6 +198,7 @@ class Cue(BaseModel):
     post_wait_s: float = Field(default=0, ge=0, le=3600)
     start_mode: Literal["replace", "layer", "queue"] = "replace"
     continue_mode: Literal["manual", "auto_continue", "auto_follow"] = "manual"
+    stop_fade_s: float = Field(default=2, ge=0, le=60)  # this cue's ■ button
 
     @model_validator(mode="after")
     def valid_layers(self) -> "Cue":
@@ -322,6 +323,9 @@ class Project(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     speakers: list[Speaker] = Field(default_factory=lambda: [s.model_copy() for s in DEFAULT_SPEAKERS])
     distance_compensation: bool = False  # opt-in, approximate only
+    # Off: a sound only ends by itself or by STOP / ■ (replace cues and CUT GO
+    # never fade other sounds out). On: the classic replace / CUT GO behaviour.
+    auto_replace: bool = False
     global_rotation_deg: float = Field(default=0, ge=-3600, le=3600)
     global_envelope_enabled: bool = False
     global_modulation: list[ModPoint] = Field(default_factory=lambda: [ModPoint(time_s=0, offset_deg=0)])

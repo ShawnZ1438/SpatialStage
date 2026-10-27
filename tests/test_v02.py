@@ -87,7 +87,7 @@ def test_editing_live_cue_retargets_existing_voice_without_restarting_samples():
 
 
 def test_cut_go_bypasses_queue_and_prewait_with_short_declick():
-    mx=Mixer(Project(),sample_rate=1000)
+    mx=Mixer(Project(auto_replace=True),sample_rate=1000)
     v1=mx.queue(plain_cue(start_mode='layer'),tone(1000))
     mx.render(100)
     c2=plain_cue(start_mode='queue',pre_wait_s=7,transition_s=3)

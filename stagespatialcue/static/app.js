@@ -83,6 +83,7 @@ async function switchProject(projectId) {
   $('showName').textContent=state.project.name;
   $('globalRotation').value=fmt(state.project.global_rotation_deg);
   $('distanceComp').checked=!!state.project.distance_compensation;
+  $('autoReplace').checked=!!state.project.auto_replace;
   renderGlobalEnvelope();
   renderEverything();
 }
@@ -218,7 +219,7 @@ async function action(path,payload={},message=''){
   if(safetyCommand)state.transportEpoch++;
   const epoch=state.transportEpoch;
   try {
-    if(['/audio/go','/audio/arm','/audio/skip','/audio/audition','/audio/audition-media'].includes(path)){
+    if(['/audio/go','/audio/arm','/audio/skip','/audio/play-cue','/audio/audition-media'].includes(path)){
       await saveNow();
       if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
     }
@@ -277,10 +278,11 @@ $('outputSelect').addEventListener('change',e=>state.outputChoice=e.target.value
 
 $('connectAudio').addEventListener('click',async()=>{
   try {
-    if(state.status?.connected){state.status=await post('/audio/disconnect');notify(t('audioDisconnected'));}
+    if(state.status?.connected){state.status=await post('/audio/disconnect');rememberOutput(null);notify(t('audioDisconnected'));}
     else {
       if(!state.outputChoice) throw new Error(t('chooseFourOutputs'));
       state.status=await post('/audio/connect',{device_index:Number(state.outputChoice)});
+      rememberOutput({kind:'hardware',name:state.devices.outputs.find(d=>String(d.index)===state.outputChoice)?.name});
       notify(t('audioConnected'));
     }
     renderEverything();
@@ -325,6 +327,7 @@ $('globalEnvelopeFields').addEventListener('click',e=>{
   renderGlobalEnvelope();scheduleSave();
 });
 $('distanceComp').addEventListener('change',e=>{if(!state.project)return;state.project.distance_compensation=e.target.checked;scheduleSave();});
+$('autoReplace').addEventListener('change',e=>{if(!state.project)return;state.project.auto_replace=e.target.checked;scheduleSave();renderEverything();});
 $('goButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:false},t('fadeGoDone'));});
 $('cutGoButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:true},t('cutGoDone'));});
 $('stopButton').addEventListener('click',()=>action('/audio/stop',{},t('stopDone')));
@@ -405,9 +408,40 @@ $('saveSettings').addEventListener('click',async()=>{
 });
 let dataRoot='';
 function renderDataLocation() { $('dataLocation').textContent=t('dataLocation',{path:dataRoot||t('localFolder')}); }
+// The last successful output (device name, simulation or headphone monitor) is
+// reconnected on the next launch; an explicit disconnect forgets it.
+const OUTPUT_KEY='spatialstage.output';
+function rememberOutput(value) {
+  try { if(value) localStorage.setItem(OUTPUT_KEY,JSON.stringify(value)); else localStorage.removeItem(OUTPUT_KEY); } catch { /* storage blocked */ }
+}
+function rememberedOutput() {
+  try { return JSON.parse(localStorage.getItem(OUTPUT_KEY)||'null'); } catch { return null; }
+}
+// Launch: reconnect the remembered output, then preflight. MAIN MUTE always stays on.
+async function autoStart() {
+  const want=rememberedOutput();
+  if(!state.status?.connected && want){
+    try {
+      if(want.kind==='simulation') state.status=await post('/simulation/connect');
+      else {
+        const device=state.devices.outputs.find(d=>d.name===want.name && d.channels>=(want.kind==='hardware'?4:2));
+        if(!device){notify(t('autoConnectMissing',{name:want.name||'?'}),true);return;}
+        state.status=want.kind==='hardware' ? await post('/audio/connect',{device_index:device.index})
+          : await post('/simulation/monitor',{device_index:device.index,mode:want.mode||'virtual'});
+        if(want.kind==='hardware'){state.outputChoice=String(device.index);$('outputSelect').value=state.outputChoice;}
+      }
+      renderEverything();
+    } catch(e){report(e);return;}
+  }
+  if(!state.status?.connected){notify(t('readyMessage'));return;}
+  try {
+    const r=await api('/projects/'+state.project.id+'/preflight');
+    notify(r.ok?t('autoReady',{cues:r.count,mib:r.decoded_mib}):t('preflightIssues',{issues:r.issues.map(I18N.error).join(' | ')}),!r.ok);
+  } catch(e){report(e);}
+}
 async function boot(){
   try {const health=await api('/health'); dataRoot=health.runtime?.data_root||''; renderDataLocation();
-    await loadProjectList();await switchProject(state.projects[0].id);await loadDevices();setInterval(poll,450);notify(t('readyMessage'));}
+    await loadProjectList();await switchProject(state.projects[0].id);await loadDevices();setInterval(poll,450);await autoStart();}
   catch(e){report(e);}
 }
 
@@ -592,7 +626,7 @@ I18N.onChange(()=>{
 boot();
 
 /* Direct cue controls (top bar), shared with the cue list. */
-let auditionBusy=false, lastAuditionAt=0;
+let auditionBusy=false;
 async function prepareCue(id) {
   if(!id)return;
   state.selectedCueId=id;
@@ -603,11 +637,17 @@ function auditionReady() {
   if(state.status?.mixer?.master_mute){notify(t('auditionMuted'),true);return false;}
   return true;
 }
-async function auditionCue(id) {
-  if(!id || auditionBusy || Date.now()-lastAuditionAt<600 || !auditionReady())return;
-  auditionBusy=true;state.selectedCueId=id;
-  try {if(await action('/audio/audition',{project_id:state.project.id,cue_id:id},t('auditionDone')))lastAuditionAt=Date.now();}
-  finally {auditionBusy=false;renderEverything();}
+// ▶: this cue from the top, on top of everything else (restarts itself); NEXT unchanged.
+async function playCue(id) {
+  const cue=state.project?.cues.find(c=>c.id===id);
+  if(!cue || !auditionReady())return;
+  await action('/audio/play-cue',{project_id:state.project.id,cue_id:id},t('playDone',{title:cue.title}));
+}
+// ■: fade only this cue out over its own stop fade.
+async function stopCue(id) {
+  const cue=state.project?.cues.find(c=>c.id===id);
+  if(!cue)return;
+  await action('/audio/stop-cue',{project_id:state.project.id,cue_id:id},t('stopCueDone',{title:cue.title,s:fmt(cue.stop_fade_s??2,1)}));
 }
 async function auditionMedia(id) {
   if(!id || auditionBusy || !auditionReady())return;
@@ -632,6 +672,7 @@ async function moveCue(id,to) {
 }
 $('cueFirst').onclick=()=>prepareCue(state.project?.cues[0]?.id);
 $('cueStart').onclick=()=>prepareCue(state.selectedCueId);
-$('cueAudition').onclick=()=>auditionCue(state.selectedCueId);
+$('cuePlay').onclick=()=>playCue(state.selectedCueId);
+$('cueStopSel').onclick=()=>stopCue(state.selectedCueId);
 $('cueUp').onclick=()=>moveCue(state.selectedCueId,state.project.cues.findIndex(c=>c.id===state.selectedCueId)-1);
 $('cueDown').onclick=()=>moveCue(state.selectedCueId,state.project.cues.findIndex(c=>c.id===state.selectedCueId)+1);
