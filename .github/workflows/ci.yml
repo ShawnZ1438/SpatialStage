@@ -18,9 +18,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Use upstream Ubuntu package mirror
+        run: |
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' "$source"
+            fi
+          done
       - name: Audio library prerequisites
         timeout-minutes: 5
-        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y libportaudio2 libsndfile1 pulseaudio
+        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y libportaudio2 libsndfile1 pulseaudio
       - name: Headless audio service for PortAudio initialization
         run: pulseaudio --start --exit-idle-time=-1
       - name: Install
@@ -47,9 +54,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Use upstream Ubuntu package mirror
+        run: |
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' "$source"
+            fi
+          done
       - name: Audio library prerequisites
         timeout-minutes: 5
-        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y libportaudio2 libsndfile1 pulseaudio
+        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y libportaudio2 libsndfile1 pulseaudio
       - name: Headless audio service for PortAudio initialization
         run: pulseaudio --start --exit-idle-time=-1
       - run: python -m pip install -e '.[dev]'
