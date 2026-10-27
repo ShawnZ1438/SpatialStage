@@ -28,7 +28,7 @@ def stop_engine(repo, port=8765):
         raise RuntimeError('Service identity/data directory mismatch. No process stopped.')
     # Old source hashes are allowed deliberately: stopping a stale engine is how
     # updates recover. Check its checkout, process command and listening PID.
-    command = subprocess.check_output(['ps', '-p', str(pid), '-o', 'command='], text=True).strip()
+    command = subprocess.check_output(['ps', '-ww', '-p', str(pid), '-o', 'command='], text=True).strip()
     expected = str(repo / '.venv/bin/spatialstage')
     if not command.endswith(' ' + expected):
         raise RuntimeError('Process command does not match this checkout. No process stopped.')
@@ -45,7 +45,7 @@ def stop_engine(repo, port=8765):
     if get('health').get('runtime') != identity:
         raise RuntimeError('Service changed during verification. No process stopped.')
     # Recheck process identity immediately before signalling.
-    if subprocess.check_output(['ps', '-p', str(pid), '-o', 'command='], text=True).strip() != command:
+    if subprocess.check_output(['ps', '-ww', '-p', str(pid), '-o', 'command='], text=True).strip() != command:
         raise RuntimeError('Process changed during verification. No process stopped.')
     os.kill(pid, signal.SIGTERM)
     for _ in range(50):

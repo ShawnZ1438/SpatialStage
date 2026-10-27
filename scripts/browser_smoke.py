@@ -221,7 +221,7 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         expect(page.locator('#perfLock')).to_be_checked()
         page.locator('#perfLock').uncheck()
         page.locator('#performCues [data-cue-id]').filter(has_text='Car').click()
-        page.locator('[data-perf="edit"]').click()  # same cue opens in the Edit inspector
+        page.locator('#modeEdit').click()  # same cue opens in the Edit inspector
         expect(page.locator('.cue-panel')).to_be_visible()
         expect(page.locator('#inspectTitle')).to_have_text(page.evaluate('currentCue().title'))
         page.locator(f"#cueRows tr[data-id='{cue['id']}']").click()
