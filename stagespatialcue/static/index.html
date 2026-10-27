@@ -45,7 +45,7 @@
         <button id="globalAddPoint" class="quiet" style="margin-top:8px;width:100%">＋ Global keyframe</button>
         <p class="micro">Global keyframe time starts at the first GO. Values are angular offsets in degrees. Both global controls affect live sounds.</p>
       </section>
-      <div class="side-bottom"><b>LOCAL-FIRST</b><p>Show data: ~/.spatialstage/projects · no telemetry or participant logging.</p></div>
+      <div class="side-bottom"><b>LOCAL-FIRST</b><p id="dataLocation">Show data: loading local folder…</p></div>
     </aside>
 
     <main class="main">
@@ -53,7 +53,7 @@
 
       <section class="transport">
         <div class="now-next"><span class="section-heading">NEXT TO FIRE</span><div id="nextCue" class="next-name">—</div><div id="playbackHint" class="small-muted">Arm and connect a 4-output interface</div></div>
-        <div class="transport-buttons"><button id="goButton" class="go" title="Space / normal transition">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" title="C / bypass waits and transition">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
+        <div class="cue-direct"><button id="cueFirst">回到第一条 · 仅准备</button><button id="cueStart">从选中 cue 开始 · 仅准备</button><button id="cueAudition">试听选中 · 单条替换</button><button id="cueUp">选中 ↑ 上移</button><button id="cueDown">选中 ↓ 下移</button><small>单击选择 · 双击试听（立即替换、不自动接续；需已连接、预检且解除静音） · 顺序 # 与素材编号独立</small></div><div class="transport-buttons"><button id="goButton" class="go" title="Space / normal transition">▶ <b>FADE GO</b></button><button id="cutGoButton" class="cut" title="C / bypass waits and transition">↯ CUT GO</button><button id="stopButton" class="transport-secondary" title="S">■ STOP</button><button id="skipButton" class="transport-secondary" title="Alt + Arrow Down">↷ SKIP</button><button id="panicButton" class="danger" title="Shift + Escape">PANIC</button></div>
       </section>
 
       <details class="simulation-panel" open>

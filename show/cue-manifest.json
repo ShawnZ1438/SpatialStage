@@ -1,0 +1,150 @@
+{
+  "02_第一幕_花园鸟声.flac": {
+    "number": 2,
+    "stem": "02_第一幕_花园鸟声",
+    "title": "02 · 花园鸟声",
+    "original_stem": "ESM_WNL_fx_birds_loop_song_musical_breeze_lively_forest_01",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "03_第一幕_远处走廊脚步.flac": {
+    "number": 3,
+    "stem": "03_第一幕_远处走廊脚步",
+    "title": "03 · 远处走廊脚步",
+    "original_stem": "082_SEWT_-_Bonus_-_Berlin_Haunted_Hallway_Steps_Atmos",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "05_第一幕_远处合唱声候选.wav": {
+    "number": 5,
+    "stem": "05_第一幕_远处合唱声候选",
+    "title": "05 · 远处合唱声候选",
+    "original_stem": "唱诗班",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "06_第一幕_竖琴背景伴奏候选.wav": {
+    "number": 6,
+    "stem": "06_第一幕_竖琴背景伴奏候选",
+    "title": "06 · 竖琴背景伴奏候选",
+    "original_stem": "Harp",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "09_第二幕_洗衣机注水起洗.flac": {
+    "number": 9,
+    "stem": "09_第二幕_洗衣机注水起洗",
+    "title": "09 · 洗衣机注水起洗",
+    "original_stem": "ESM_Washing_Machine_Water_Start_and_Stop_Laundry_Household_Foley_Clean_Clothes_Appliance",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "11_第二幕_烘干机.flac": {
+    "number": 11,
+    "stem": "11_第二幕_烘干机",
+    "title": "11 · 烘干机",
+    "original_stem": "FF_ESFXT_foley_dryer_cycle",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "12_第二幕_远车流.flac": {
+    "number": 12,
+    "stem": "12_第二幕_远车流",
+    "title": "12 · 远车流",
+    "original_stem": "CityTraffic_BW.1742",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "13_第二幕_公交经过.flac": {
+    "number": 13,
+    "stem": "13_第二幕_公交经过",
+    "title": "13 · 公交经过",
+    "original_stem": "FF_CL_ambience_london_bus_gold",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "14_第二幕_电子铃_门铃替代.flac": {
+    "number": 14,
+    "stem": "14_第二幕_电子铃_门铃替代",
+    "title": "14 · 电子铃 · 门铃替代",
+    "original_stem": "FF_CA_foley_shop_bell_entrance_low",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "15_第二幕_门外广场人群候选.flac": {
+    "number": 15,
+    "stem": "15_第二幕_门外广场人群候选",
+    "title": "15 · 门外广场人群候选",
+    "original_stem": "BRS_Crowd_StreetFest_Corner_1",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "16_第二幕_门外小群交谈候选_聚会笑声替代.flac": {
+    "number": 16,
+    "stem": "16_第二幕_门外小群交谈候选_聚会笑声替代",
+    "title": "16 · 门外小群交谈候选 · 聚会笑声替代",
+    "original_stem": "BRS_Crowd_Teens_Girls_Party_Laugh_Giggles_1",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "18_第三幕_剧场室内底声.flac": {
+    "number": 18,
+    "stem": "18_第三幕_剧场室内底声",
+    "title": "18 · 剧场室内底声",
+    "original_stem": "BRS_Roomtone_TACF_Auditorium_Light_Hum",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "19_第三幕_室内空调底声.flac": {
+    "number": 19,
+    "stem": "19_第三幕_室内空调底声",
+    "title": "19 · 室内空调底声",
+    "original_stem": "BRS_Roomtone_TACF_Auditorium_Vents_Light_Hum",
+    "source": "User-provided local file; original filename retained here. Author/license unverified; PDF reference credits do not transfer.",
+    "mapping": "Scene-role alternative inferred from explicit filename; not a claim of identical PDF source."
+  },
+  "01_第一幕_微风.flac": {
+    "title": "01 · 微风",
+    "number": 1,
+    "original_stem": "ESM_WNL_fx_waterside_loop_waves_ocean_distant_voices_breeze_01",
+    "source": "User-provided local alternative; author/license unverified. Scene role explicitly confirmed by user.",
+    "stem": "01_第一幕_微风",
+    "mapping": "Explicit user-confirmed scene role, 2026-10-27. PDF reference authors/licences are not assigned to this local replacement."
+  },
+  "07_第一幕_树叶间轻风.flac": {
+    "title": "07 · 树叶间轻风",
+    "number": 7,
+    "original_stem": "ESM_Gentle_Breeze_Loop_Roomtone_Layer_Soundscape_Ambience_Atmosphere",
+    "source": "User-provided local alternative; author/license unverified. Scene role explicitly confirmed by user.",
+    "stem": "07_第一幕_树叶间轻风",
+    "mapping": "Explicit user-confirmed scene role, 2026-10-27. PDF reference authors/licences are not assigned to this local replacement."
+  },
+  "10_第二幕_洗衣机脱水.flac": {
+    "title": "10 · 洗衣机脱水",
+    "number": 10,
+    "original_stem": "WasherMachine_S08HS.1103",
+    "source": "User-provided local alternative; author/license unverified. Scene role explicitly confirmed by user.",
+    "stem": "10_第二幕_洗衣机脱水",
+    "mapping": "Explicit user-confirmed scene role, 2026-10-27. PDF reference authors/licences are not assigned to this local replacement."
+  },
+  "17_第二幕_洗衣店运转底声.flac": {
+    "title": "17 · 洗衣店运转底声",
+    "number": 17,
+    "original_stem": "WashingMachineRun_BW.61602",
+    "source": "User-provided local alternative; author/license unverified. Scene role explicitly confirmed by user.",
+    "stem": "17_第二幕_洗衣店运转底声",
+    "mapping": "Explicit user-confirmed scene role, 2026-10-27. PDF reference authors/licences are not assigned to this local replacement."
+  },
+  "04_第一幕_远钟.wav": {
+    "title": "04 · 远钟",
+    "source": "User-numbered local audio; author/license unverified. Assigned to PDF scene by explicit filename number."
+  },
+  "08_第二幕_风扇.wav": {
+    "title": "08 · 风扇",
+    "source": "User-numbered local audio; author/license unverified. Assigned to PDF scene by explicit filename number."
+  },
+  "20_第三幕_远处空间活动与车流.wav": {
+    "title": "20 · 远处空间活动与车流",
+    "source": "User-numbered local audio; author/license unverified. Assigned to PDF scene by explicit filename number."
+  }
+}

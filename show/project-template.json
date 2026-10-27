@@ -1,0 +1,846 @@
+{
+  "schema_version": 3,
+  "id": "portable-show",
+  "name": "Show audio (repository)",
+  "created_at": "2026-10-27T00:03:15.598331+00:00",
+  "updated_at": "2026-10-27T01:45:30.752373+00:00",
+  "speakers": [
+    {
+      "name": "L · IBO PS15 front left",
+      "angle_deg": 315.0,
+      "distance_m": 4.2426,
+      "output_channel": 1,
+      "trim_db": 0.0
+    },
+    {
+      "name": "R · IBO PS15 front right",
+      "angle_deg": 45.0,
+      "distance_m": 4.2426,
+      "output_channel": 2,
+      "trim_db": 0.0
+    },
+    {
+      "name": "RR · IBO PS15 rear right",
+      "angle_deg": 135.0,
+      "distance_m": 4.2426,
+      "output_channel": 3,
+      "trim_db": 0.0
+    },
+    {
+      "name": "RL · IBO PS15 rear left",
+      "angle_deg": 225.0,
+      "distance_m": 4.2426,
+      "output_channel": 4,
+      "trim_db": 0.0
+    }
+  ],
+  "distance_compensation": false,
+  "global_rotation_deg": 0.0,
+  "global_envelope_enabled": false,
+  "global_modulation": [
+    {
+      "time_s": 0.0,
+      "offset_deg": 0.0
+    }
+  ],
+  "preferred_input_device": null,
+  "bundle_id": "repository-show",
+  "bundle_files": [
+    "02_第一幕_花园鸟声.flac",
+    "03_第一幕_远处走廊脚步.flac",
+    "05_第一幕_远处合唱声候选.wav",
+    "06_第一幕_竖琴背景伴奏候选.wav",
+    "09_第二幕_洗衣机注水起洗.flac",
+    "11_第二幕_烘干机.flac",
+    "12_第二幕_远车流.flac",
+    "13_第二幕_公交经过.flac",
+    "14_第二幕_电子铃_门铃替代.flac",
+    "15_第二幕_门外广场人群候选.flac",
+    "16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+    "18_第三幕_剧场室内底声.flac",
+    "19_第三幕_室内空调底声.flac",
+    "07_第一幕_树叶间轻风.flac",
+    "01_第一幕_微风.flac",
+    "10_第二幕_洗衣机脱水.flac",
+    "17_第二幕_洗衣店运转底声.flac",
+    "04_第一幕_远钟.wav",
+    "08_第二幕_风扇.wav",
+    "20_第三幕_远处空间活动与车流.wav"
+  ],
+  "active_calibration_id": null,
+  "calibration_enabled": false,
+  "cues": [
+    {
+      "id": "678b4f1ea9dc",
+      "title": "01 · 微风",
+      "filename": "01_第一幕_微风.flac",
+      "media_relpath": "media/01_第一幕_微风.flac",
+      "duration_s": 66.801,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "path",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [
+        {
+          "time_s": 0.0,
+          "x_m": 0.0,
+          "y_m": 3.0
+        }
+      ],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "61e865e0216e",
+      "title": "02 · 花园鸟声",
+      "filename": "02_第一幕_花园鸟声.flac",
+      "media_relpath": "media/02_第一幕_花园鸟声.flac",
+      "duration_s": 105.349,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "39d5eb72785c",
+      "title": "03 · 远处走廊脚步",
+      "filename": "03_第一幕_远处走廊脚步.flac",
+      "media_relpath": "media/03_第一幕_远处走廊脚步.flac",
+      "duration_s": 20.952,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "2ea5e6993ffc",
+      "title": "04 · 远钟",
+      "filename": "04_第一幕_远钟.wav",
+      "media_relpath": "media/04_第一幕_远钟.wav",
+      "duration_s": 4.985,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "a81a14470d00",
+      "title": "05 · 远处合唱声候选",
+      "filename": "05_第一幕_远处合唱声候选.wav",
+      "media_relpath": "media/05_第一幕_远处合唱声候选.wav",
+      "duration_s": 108.008,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "6d45cbb7f55c",
+      "title": "06 · 竖琴背景伴奏候选",
+      "filename": "06_第一幕_竖琴背景伴奏候选.wav",
+      "media_relpath": "media/06_第一幕_竖琴背景伴奏候选.wav",
+      "duration_s": 271.533,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "86c5d82422b7",
+      "title": "07 · 树叶间轻风",
+      "filename": "07_第一幕_树叶间轻风.flac",
+      "media_relpath": "media/07_第一幕_树叶间轻风.flac",
+      "duration_s": 60.0,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "a049ec7c18b4",
+      "title": "08 · 风扇",
+      "filename": "08_第二幕_风扇.wav",
+      "media_relpath": "media/08_第二幕_风扇.wav",
+      "duration_s": 124.469,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "b6a3ac05fd3c",
+      "title": "09 · 洗衣机注水起洗",
+      "filename": "09_第二幕_洗衣机注水起洗.flac",
+      "media_relpath": "media/09_第二幕_洗衣机注水起洗.flac",
+      "duration_s": 21.893,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "1f58f76a3a68",
+      "title": "10 · 洗衣机脱水",
+      "filename": "10_第二幕_洗衣机脱水.flac",
+      "media_relpath": "media/10_第二幕_洗衣机脱水.flac",
+      "duration_s": 56.219,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "d7881598458f",
+      "title": "11 · 烘干机",
+      "filename": "11_第二幕_烘干机.flac",
+      "media_relpath": "media/11_第二幕_烘干机.flac",
+      "duration_s": 112.977,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "path",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [
+        {
+          "time_s": 0.0,
+          "x_m": -0.06,
+          "y_m": 2.91
+        }
+      ],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "a4d186275896",
+      "title": "12 · 远车流",
+      "filename": "12_第二幕_远车流.flac",
+      "media_relpath": "media/12_第二幕_远车流.flac",
+      "duration_s": 119.989,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "31fcfa4ceb26",
+      "title": "13 · 公交经过",
+      "filename": "13_第二幕_公交经过.flac",
+      "media_relpath": "media/13_第二幕_公交经过.flac",
+      "duration_s": 35.999,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "01b6f2db9594",
+      "title": "14 · 电子铃 · 门铃替代",
+      "filename": "14_第二幕_电子铃_门铃替代.flac",
+      "media_relpath": "media/14_第二幕_电子铃_门铃替代.flac",
+      "duration_s": 2.151,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "b95e7345260e",
+      "title": "15 · 门外广场人群候选",
+      "filename": "15_第二幕_门外广场人群候选.flac",
+      "media_relpath": "media/15_第二幕_门外广场人群候选.flac",
+      "duration_s": 150.663,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "0fe8078e6506",
+      "title": "16 · 门外小群交谈候选 · 聚会笑声替代",
+      "filename": "16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+      "media_relpath": "media/16_第二幕_门外小群交谈候选_聚会笑声替代.flac",
+      "duration_s": 22.013,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "a746288a180a",
+      "title": "17 · 洗衣店运转底声",
+      "filename": "17_第二幕_洗衣店运转底声.flac",
+      "media_relpath": "media/17_第二幕_洗衣店运转底声.flac",
+      "duration_s": 141.733,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "5e559961442d",
+      "title": "18 · 剧场室内底声",
+      "filename": "18_第三幕_剧场室内底声.flac",
+      "media_relpath": "media/18_第三幕_剧场室内底声.flac",
+      "duration_s": 66.247,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "c4d1afaab56a",
+      "title": "19 · 室内空调底声",
+      "filename": "19_第三幕_室内空调底声.flac",
+      "media_relpath": "media/19_第三幕_室内空调底声.flac",
+      "duration_s": 92.09,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    },
+    {
+      "id": "9fb6d0ade300",
+      "title": "20 · 远处空间活动与车流",
+      "filename": "20_第三幕_远处空间活动与车流.wav",
+      "media_relpath": "media/20_第三幕_远处空间活动与车流.wav",
+      "duration_s": 120.139,
+      "color": "cyan",
+      "position_deg": 0.0,
+      "direction_mode": "keyframes",
+      "modulation": [
+        {
+          "time_s": 0.0,
+          "offset_deg": 0.0
+        }
+      ],
+      "direction_adsr": {
+        "attack_s": 0.3,
+        "peak_offset_deg": 90.0,
+        "decay_s": 0.5,
+        "sustain_offset_deg": 90.0,
+        "release_s": 0.3,
+        "release_offset_deg": 0.0
+      },
+      "path": [],
+      "spatial_preset": null,
+      "source_channels": 2,
+      "stereo_mode": "width",
+      "stereo_width_deg": 90.0,
+      "gain_db": -6.0,
+      "fade_in_s": 0.05,
+      "fade_out_s": 0.1,
+      "transition_s": 2.5,
+      "replace_style": "crossfade",
+      "pre_wait_s": 0.0,
+      "post_wait_s": 0.0,
+      "start_mode": "replace",
+      "continue_mode": "manual"
+    }
+  ]
+}

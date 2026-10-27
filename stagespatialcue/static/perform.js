@@ -16,18 +16,19 @@ function perfStorage(key, value) {
 }
 const performing = () => document.body.classList.contains('performing');
 const perfCueIndex = id => state.project?.cues.findIndex(c => c.id === id) ?? -1;
-const perfCueNumber = id => String(perfCueIndex(id) + 1).padStart(3, '0');
+const perfCueNumber = id => {const i=perfCueIndex(id); return i<0 ? '—' : cueDisplayNumber(state.project.cues[i],i);};
 
-// Both modes share the project, transport, sidebar and simulation panel; only
-// the work area changes (cue table + inspector vs stage map + target panel).
+// Both modes share state and transport. Performance hides engineering controls.
 function setPerformMode(on) {
   document.body.classList.toggle('performing', on);
   $('modeEdit').setAttribute('aria-pressed', String(!on));
   $('modePerform').setAttribute('aria-pressed', String(on));
   perfStorage(PERF_MODE_KEY, on ? 'perform' : 'edit');
   perf.targetSig = '';
-  if (on) { perf.follow = true; perf.lastNext = undefined; renderPerform(); }
+  if (on) { renderPerform(); }
   else if (state.project) { renderRows(); renderInspector(); }
+  // Never leave focus on a hidden editor or a transport button after switching.
+  $(on ? 'modePerform' : 'modeEdit').focus({preventScroll:true});
 }
 
 function followNext() {
@@ -163,7 +164,7 @@ function renderPerformTarget(force = false) {
   const host = $('performTarget'), cue = perfTarget();
   const sig = JSON.stringify([cue?.id, cue && StageMap.spatialSnapshot(cue), cue?.spatial_preset, cue?.title,
     cue?.duration_s, perfCueIndex(cue?.id), perf.selected, perf.tool, perf.locked, perf.follow, perf.previewT,
-    cue?.stereo_mode, cue?.stereo_width_deg, cue?.source_channels]);
+    cue?.stereo_mode, cue?.stereo_width_deg, cue?.source_channels, cue?.gain_db]);
   const editing = host.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
   if (!force && (sig === perf.targetSig || editing)) return;
   perf.targetSig = sig;
@@ -180,7 +181,8 @@ function renderPerformTarget(force = false) {
     <div class="perf-target-head"><span class="eyebrow">${perf.follow ? 'TARGET · FOLLOWING NEXT' : 'TARGET · MANUAL SELECTION'}</span>
       <span>${perf.follow ? '' : '<button data-perf="follow" class="secondary">↺ Follow NEXT</button>'}
       <button data-perf="edit" class="secondary" title="Open this cue in the Edit inspector (fades, start mode, waits, media)">✎ Edit cue</button></span></div>
-    <h2>${perfCueNumber(cue.id)} · ${h(cue.title)}</h2>
+    <h2>${h(cue.title)}</h2>
+    <div class="perf-level"><label for="perfCueGain">Cue volume (dB)</label><input id="perfCueGain" type="number" min="-90" max="12" step="0.5" value="${cue.gain_db}" aria-label="Cue volume dB"><button data-perf="arm" class="secondary">ARM SELECTED</button></div>
     <div class="small-muted">${cue.duration_s ? fmt(cue.duration_s, 1) + ' s' : 'duration unknown'} · ${h(cue.start_mode.toUpperCase())} · ${isPath ? `stage-map ${cue.path.length > 1 ? `path, ${cue.path.length} points` : 'position'}` : `angle mode ${fmt(cue.position_deg, 1)}°`}</div>
     <div class="perf-tools" role="group" aria-label="Map tool">
       <button data-perf="tool" data-tool="position" class="${perf.tool === 'position' ? 'active' : ''}" ${lock}>◎ Move point</button>
@@ -224,6 +226,16 @@ function renderPerformOutputs() {
 function renderPerformCues() {
   const host = $('performCues'), next = state.status?.next_cue_id, voices = state.status?.mixer?.voices || [];
   const stored = state.project.cues.filter(c => c.spatial_preset).length;
+  host.querySelectorAll('.perf-cue').forEach(row=>{
+    row.classList.toggle('selected',row.dataset.cueId===state.selectedCueId);
+    const tag=row.querySelector('.tag');
+    if(tag)tag.textContent=[voices.some(v=>v.cue_id===row.dataset.cueId&&v.state==='playing')?'LIVE':'',row.dataset.cueId===next?'NEXT':'',row.dataset.cueId===state.selectedCueId?'SEL':''].filter(Boolean).join(' · ');
+  });
+  const signature=JSON.stringify([next,perf.locked,state.project.cues.map(c=>[c.id,c.title,c.direction_mode,c.path,c.position_deg,c.spatial_preset]),voices.map(v=>[v.cue_id,v.state])]);
+  if(host.dataset.signature===signature)return;
+  host.dataset.signature=signature;
+  const focusedId=host.contains(document.activeElement)?document.activeElement.dataset.cueId:null;
+
   host.innerHTML = `<div class="section-heading perf-cues-head">CUES <span>${stored}/${state.project.cues.length} stored</span>
       <span><button data-perf="store-all" class="quiet" ${perf.locked ? 'disabled' : ''}>Store all</button>
       <button data-perf="recall-all" class="quiet" ${stored && !perf.locked ? '' : 'disabled'}>Recall all</button></span></div>` +
@@ -231,11 +243,12 @@ function renderPerformCues() {
       const playing = voices.some(v => v.cue_id === c.id && v.state === 'playing');
       const preset = StageMap.presetState(c);
       const cls = [c.id === next ? 'next' : '', c.id === state.selectedCueId ? 'selected' : '', playing ? 'playing' : ''].join(' ');
-      return `<button class="perf-cue ${cls}" data-cue-id="${h(c.id)}"><span class="num">${String(i + 1).padStart(3, '0')}</span>
-        <span class="title">${h(c.title)}</span><span class="tag">${c.id === next ? 'NEXT' : playing ? 'LIVE' : ''}</span>
+      return `<button class="perf-cue ${cls}" data-cue-id="${h(c.id)}"><span class="num" title="播放顺序">#${i+1}</span>
+        <span class="title">${h(c.title)}</span><span class="tag">${[playing ? 'LIVE' : '', c.id === next ? 'NEXT' : '', c.id === state.selectedCueId ? 'SEL' : ''].filter(Boolean).join(' · ')}</span>
         <span class="kind">${c.direction_mode === 'path' ? (c.path.length > 1 ? `PATH ${c.path.length}` : 'XY') : fmt(c.position_deg, 0) + '°'}</span>
         <span class="preset ${preset}" title="${{none: 'No stored preset', stored: 'Matches stored preset', changed: 'Changed since stored'}[preset]}">${{none: '—', stored: '✓', changed: '●'}[preset]}</span></button>`;
     }).join('')}</div>`;
+  if(focusedId)host.querySelector(`[data-cue-id="${focusedId}"]`)?.focus({preventScroll:true});
 }
 
 function renderPerform() {
@@ -262,6 +275,7 @@ $('performTarget').addEventListener('click', e => {
   const b = e.target.closest('[data-perf]'), cue = perfTarget();
   if (!b || !cue) return;
   const what = b.dataset.perf;
+  if (what === 'arm') { action('/audio/arm',{project_id:state.project.id,cue_id:cue.id},'Selected cue armed.'); return; }
   if (what === 'follow') { perf.follow = true; perf.lastNext = undefined; perf.targetSig = ''; renderPerform(); return; }
   if (what === 'edit') { setPerformMode(false); return; }  // same selected cue opens in the inspector
   if (what === 'recall') {
@@ -289,6 +303,7 @@ $('performTarget').addEventListener('click', e => {
 $('performTarget').addEventListener('change', e => {
   const cue = perfTarget();
   if (!cue) return;
+  if (e.target.id === 'perfCueGain') { cue.gain_db=Math.max(-90,Math.min(12,num(e.target.value))); perfChanged('Cue level saved.'); return; }
   if ((e.target.id === 'perfStereoMode' || e.target.id === 'perfStereoWidth') && !perf.locked) {
     if (e.target.id === 'perfStereoMode') cue.stereo_mode = e.target.value;
     else cue.stereo_width_deg = Math.max(0, Math.min(180, num(e.target.value)));

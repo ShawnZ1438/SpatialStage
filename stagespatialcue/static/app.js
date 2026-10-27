@@ -1,3 +1,4 @@
+function cueDisplayNumber(c, index) { return /^待定/.test(c.title) ? '—' : (c.title.match(/^(\d{2})\s*·/)?.[1] || String(index+1).padStart(3,'0')); }
 /* SpatialStage v0.3.1 — localhost control; multichannel output rendered in Python. */
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -146,7 +147,7 @@ function renderTransport() {
   const idx=state.status?.next_index ?? 0;
   const next=p.cues[idx];
   $('showName').textContent=p.name;
-  $('nextCue').textContent=state.status?.needs_rearm ? 'NEXT REMOVED — SELECT AND ARM' : next ? `${String(idx+1).padStart(3,'0')}  ·  ${next.title}` : '— END OF SHOW —';
+  $('nextCue').textContent=state.status?.needs_rearm ? 'NEXT REMOVED — SELECT AND ARM' : next ? `${next.title.match(/^\d{2}\s*·/) ? next.title : cueDisplayNumber(next,idx)+' · '+next.title}` : '— END OF SHOW —';
   const connected=!!state.status?.connected;
   const mute=state.status?.mixer?.master_mute ?? true;
   $('playbackHint').textContent= !connected ? 'Connect a 4-output CoreAudio device' : mute ? 'OUTPUT MUTED · unmute deliberately before GO' : next ? `${next.start_mode.toUpperCase()} · ${fmt(next.pre_wait_s)} s pre-wait` : 'Select a row and ARM to play it again';
@@ -181,7 +182,7 @@ function renderRows() {
     rows.delete(c.id);
     const signature=JSON.stringify([i,c.title,c.filename,c.start_mode,c.position_deg,c.direction_mode,c.path?.length,c.stereo_mode,c.source_channels,c.gain_db,c.duration_s,cues.length]);
     if(row.dataset.signature!==signature){
-      row.innerHTML=`<td><span class="cue-state"><i></i><b></b></span></td><td class="number">${String(i+1).padStart(3,'0')}</td>
+      row.innerHTML=`<td><span class="cue-state"><i></i><b></b></span></td><td class="number" title="播放顺序">#${i+1}</td>
         <td><span class="cue-title" title="${h(c.title)}">${h(c.title)}</span><span class="cue-subtitle" title="${h(c.filename)}">${h(c.filename)}</span></td>
         <td>${{replace:'REPLACE',layer:'LAYER',queue:'WAIT'}[c.start_mode]||'—'}</td><td class="deg">${c.direction_mode==='path'?(c.path.length>1?`PATH ${c.path.length}`:'XY'):`${fmt(c.position_deg)}°`}${c.source_channels===2&&c.stereo_mode==='width'?' · ST':''}</td><td>${fmt(c.gain_db,1)} dB</td><td>${c.duration_s?`${fmt(c.duration_s,1)} s`:'—'}</td>
         <td><div class="row-btns"><button data-move="-1" title="Move up" ${i===0?'disabled':''}>↑</button><button data-move="1" title="Move down" ${i===cues.length-1?'disabled':''}>↓</button></div></td>`;
@@ -370,7 +371,7 @@ async function action(path,payload={},message=''){
   if(safetyCommand)state.transportEpoch++;
   const epoch=state.transportEpoch;
   try {
-    if(['/audio/go','/audio/arm','/audio/skip'].includes(path)){
+    if(['/audio/go','/audio/arm','/audio/skip','/audio/audition'].includes(path)){
       await saveNow();
       if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
     }
@@ -499,8 +500,7 @@ $('cueRows').addEventListener('click',e=>{
   const move=e.target.closest('button[data-move]');
   if(move){
     const j=i+Number(move.dataset.move);if(j<0||j>=state.project.cues.length)return;
-    [state.project.cues[i],state.project.cues[j]]=[state.project.cues[j],state.project.cues[i]];
-    scheduleSave();renderRows();notify(`Cue moved to position ${j+1}.`);return;
+    moveCue(tr.dataset.id,j);return;
   }
   state.selectedCueId=tr.dataset.id;state.selectedPoint=0;renderRows();renderInspector();
 });
@@ -596,7 +596,7 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey && e.key==='Escape'){e.preventDefault();$('panicButton').click();return;}
   if(e.repeat || e.metaKey || e.ctrlKey || e.altKey && e.code!=='ArrowDown')return;
   const tag=e.target.tagName;
-  if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
+  if((e.code==='Space' && ['BUTTON','A'].includes(tag)) || ['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target.isContentEditable||$('stageDialog').open||$('autocalDialog').open)return;
   if(e.code==='Space'){e.preventDefault();$('goButton').click();}
   else if(e.key.toLowerCase()==='c' && !e.shiftKey){e.preventDefault();$('cutGoButton').click();}
   else if(e.key.toLowerCase()==='s' && !e.shiftKey){e.preventDefault();$('stopButton').click();}
@@ -652,7 +652,7 @@ $('saveSettings').addEventListener('click',async()=>{
   catch(e){state.project.speakers=old;report(e);}
 });
 async function boot(){
-  try {await loadProjectList();await switchProject(state.projects[0].id);await loadDevices();setInterval(poll,450);notify('Ready for design. Connect the output interface when prepared.');}
+  try {const health=await api('/health'); $('dataLocation').textContent='Show data: '+(health.runtime?.data_root || 'local project folder')+' · no telemetry or participant logging.'; await loadProjectList();await switchProject(state.projects[0].id);await loadDevices();setInterval(poll,450);notify('Ready for design. Connect the output interface when prepared.');}
   catch(e){report(e);}
 }
 
@@ -829,3 +829,46 @@ $('acDisable').addEventListener('click',async()=>{
 });
 
 boot();
+
+// Direct cue controls shared by Edit and Performance.
+let auditionBusy=false, lastAuditionAt=0;
+async function prepareCue(id) {
+  if(!id)return;
+  state.selectedCueId=id;
+  if(await action('/audio/arm',{project_id:state.project.id,cue_id:id},'已准备选中 cue；按 GO 开始。'))renderEverything();
+}
+async function auditionCue(id) {
+  if(!id || auditionBusy || Date.now()-lastAuditionAt<600)return;
+  if(!state.status?.connected){notify('未连接输出：请到 Edit 连接 silent simulation 或所需设备。',true);return;}
+  if(state.status?.mixer?.master_mute){notify('MAIN MUTE 已开启；请明确解除静音后再试听。',true);return;}
+  auditionBusy=true;state.selectedCueId=id;
+  try {if(await action('/audio/audition',{project_id:state.project.id,cue_id:id},'单条试听：立即替换、不自动接续；NEXT 保留此条。'))lastAuditionAt=Date.now();}
+  finally {auditionBusy=false;renderEverything();}
+}
+async function moveCue(id,to) {
+  const from=state.project.cues.findIndex(c=>c.id===id);
+  if(from<0 || to<0 || to>=state.project.cues.length || from===to)return;
+  try {
+    const status=await api('/audio/status');
+    if(status.mixer?.voices?.length){notify('先 STOP 所有活动/等待 cue，再调整顺序。',true);return;}
+    await saveNow();
+    const old=[...state.project.cues];
+    state.project.cues.splice(to,0,state.project.cues.splice(from,1)[0]);
+    state.selectedCueId=id;
+    try {scheduleSave();await saveNow();notify(`播放顺序已保存：第 ${to+1} 条（素材编号不变）。`);}
+    catch(e){state.project.cues=old;throw e;}
+    renderEverything();
+  } catch(e){report(e);}
+}
+$('cueFirst').onclick=()=>prepareCue(state.project?.cues[0]?.id);
+$('cueStart').onclick=()=>prepareCue(state.selectedCueId);
+$('cueAudition').onclick=()=>auditionCue(state.selectedCueId);
+$('cueUp').onclick=()=>moveCue(state.selectedCueId,state.project.cues.findIndex(c=>c.id===state.selectedCueId)-1);
+$('cueDown').onclick=()=>moveCue(state.selectedCueId,state.project.cues.findIndex(c=>c.id===state.selectedCueId)+1);
+for(const host of [$('cueRows'),$('performCues')]){
+  host.addEventListener('dblclick',e=>{
+    if(e.target.closest('[data-move],[data-perf]'))return;
+    const row=e.target.closest('[data-cue-id],tr[data-id]');
+    if(row){e.preventDefault();auditionCue(row.dataset.cueId||row.dataset.id);}
+  });
+}

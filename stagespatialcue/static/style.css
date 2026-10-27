@@ -150,3 +150,35 @@ body.performing .work-area{display:none}
 .main{overflow-y:auto}
 .transport{position:sticky;top:-27px;z-index:6;flex-shrink:0;background:linear-gradient(120deg,#172a35,#111d2c)}
 @media(max-width:1250px){.transport{top:-20px}}
+
+/* Operator view: preserve shared controls/state, hide engineering configuration. */
+body.performing .sidebar{width:210px}
+body.performing .sidebar .side-section:nth-child(2),
+body.performing .sidebar .stage-compact,
+body.performing .sidebar .side-bottom,
+body.performing .sidebar .project-picker,
+body.performing .sidebar .side-section:first-child .section-heading,
+body.performing #exportProject, body.performing #speakerTests,
+body.performing #autocalOpen, body.performing #audioInfo,
+body.performing #settingsToggle, body.performing #renameProject,
+body.performing #preflight, body.performing .simulation-panel,
+body.performing .eventline, body.performing #performOutputs,
+body.performing [data-perf="edit"], body.performing .perf-preset-state,
+body.performing .perform-map-head .micro {display:none!important}
+body.performing .perform-view{min-height:500px}
+body.performing .perform-side{width:400px}
+body.performing .perf-cue-list{max-height:40vh}
+body.performing .perf-cue{grid-template-columns:32px 1fr 95px 45px 15px}
+.perf-level{display:grid;grid-template-columns:1fr 80px auto;gap:8px;align-items:center;margin:12px 0}
+.perf-level label{font-size:12px;color:#a5bdce}
+body.performing .transport{top:0}
+@media(max-width:1000px){body.performing .sidebar{width:160px}body.performing .perform-side{width:330px}}
+body.performing .perform-view{height:calc(100vh - 270px);min-height:340px;flex:0 0 auto}
+body.performing .perform-cues{order:-1;min-height:110px;flex-shrink:0}
+body.performing .perf-cue-list{max-height:24vh}
+body.performing #performTarget>.micro,body.performing #performTarget>.direction-mode-help{display:none}
+body.performing .perform-stage{overflow:hidden}
+body.performing .perform-map svg{height:100%;max-height:100%;max-width:100%}
+body.performing .workspace-header{margin-bottom:12px}
+
+.cue-direct{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.cue-direct small{flex-basis:100%;color:var(--muted)}

@@ -11,7 +11,8 @@ from .mixer import SAMPLE_RATE
 from .spatial import SPEED_OF_SOUND_M_S, xy_from_polar
 
 HEAD_RADIUS_M = 0.0875
-VIRTUAL_MONITOR_GAIN = 0.05  # about -26 dB: conservative headphone level
+VIRTUAL_MONITOR_GAIN = 0.1  # -20 dB: +6 dB monitor-only, never changes CH1-4
+MONO_MONITOR_GAIN = 0.05  # -26 dB per channel
 
 
 class VirtualRoom:
@@ -167,6 +168,7 @@ class StereoMonitorStream(SimulationStream):
         import sounddevice as sd
         self.gains = np.ones(4, dtype=np.float32)
         self.previous_gains = np.zeros(4, dtype=np.float32)
+        self.monitor_peak_over_count = 0
         self.device = sd.OutputStream(device=device, samplerate=SAMPLE_RATE, channels=2,
                                       dtype="float32", blocksize=512, callback=self.callback,
                                       finished_callback=self.finished)
@@ -180,12 +182,17 @@ class StereoMonitorStream(SimulationStream):
             target = self.gains.copy()
             weights = np.linspace(self.previous_gains, target, frames, dtype=np.float32)
             self.previous_gains = target
-            mono = np.sum(block * weights, axis=1) * 0.025  # <= 0.1 full-scale sum
-            outdata[:] = mono[:, None]
+            mono = np.sum(block * weights, axis=1) * MONO_MONITOR_GAIN
+            outdata[:] = self.limit_monitor(mono[:, None])
         except Exception as exc:
             outdata[:] = 0
             self.stage.audio_error = f"Stereo monitor error: {exc}; reconnect required"
             self.stage.mixer.panic()
+
+    def limit_monitor(self, signal):
+        if np.max(np.abs(signal), initial=0) > 0.98:
+            self.monitor_peak_over_count = getattr(self, 'monitor_peak_over_count', 0) + 1
+        return np.clip(signal, -0.98, 0.98)
 
     def finished(self):
         self.active = False
@@ -204,7 +211,7 @@ class StereoMonitorStream(SimulationStream):
     def status(self):
         result = super().status()
         result.update(hardware_output=True, stereo_monitor=True, monitor_gains=self.gains.tolist(),
-                      monitor_mode="sum")
+                      monitor_mode="sum", monitor_peak_over_count=getattr(self, "monitor_peak_over_count", 0))
         return result
 
 
@@ -228,7 +235,7 @@ class VirtualMonitorStream(StereoMonitorStream):
             target = self.gains.copy()
             weights = np.linspace(self.previous_gains, target, frames, dtype=np.float32)
             self.previous_gains = target
-            outdata[:] = self.room.process(block * weights) * VIRTUAL_MONITOR_GAIN
+            outdata[:] = self.limit_monitor(self.room.process(block * weights) * VIRTUAL_MONITOR_GAIN)
         except Exception as exc:
             outdata[:] = 0
             self.stage.audio_error = f"Virtual monitor error: {exc}; reconnect required"

@@ -43,15 +43,34 @@ def sync_bundled_show(store: ProjectStore, root: Path | None = None) -> Project 
             project = Project.model_validate({**project.model_dump(),
                                               **json.loads(stage_file.read_text(encoding="utf-8"))})
         store.save(project)
+    manifest_file = root / "cue-manifest.json"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8")) if manifest_file.is_file() else {}
     known = set(project.bundle_files)
     added = []
     for path in files:
         if path.name in known:
             continue
         relative, display = store.add_file(project.id, path, path.name)
-        added.append(media_cue(store.media_path(project.id, relative), relative, display))
+        cue = media_cue(store.media_path(project.id, relative), relative, display)
+        if path.name in manifest:
+            cue.title = manifest[path.name]["title"]
+        added.append(cue)
         project.bundle_files.append(path.name)
     if added or created:
         project.cues.extend(sorted(added, key=filename_key))
+        template_file = root / 'project-template.json'
+        if created and template_file.is_file():
+            # First import only: existing local projects never receive the template.
+            template = json.loads(template_file.read_text(encoding='utf-8'))
+            media = {c.filename: c.media_relpath for c in project.cues}
+            restored = []
+            for cue in template.get('cues', []):
+                if cue['filename'] not in media:
+                    raise ValueError(f"Show template media missing: {cue['filename']}")
+                restored.append({**cue, 'media_relpath': media[cue['filename']]})
+            template.update(id=project.id, bundle_id=BUNDLE_ID,
+                            bundle_files=project.bundle_files, cues=restored,
+                            active_calibration_id=None, calibration_enabled=False)
+            project = Project.model_validate(template)
         store.save(project)
     return project

@@ -2,26 +2,16 @@
 set -eu
 cd "$(dirname "$0")"
 URL="${SPATIALSTAGE_URL:-http://127.0.0.1:8765/}"
-# A second double-click must not start a second engine on the operator port;
-# an engine from an older checkout/version is offered for shutdown instead.
-HEALTH="$(curl -fsS http://127.0.0.1:8765/api/health 2>/dev/null || true)"
-if [ -n "$HEALTH" ]; then
-  if [[ "$HEALTH" == *virtual-monitor* ]]; then
-    echo "SpatialStage is already running. Opening $URL"
-    open "$URL"
-    exit 0
-  fi
-  OWNER="$(lsof -nP -iTCP:8765 -sTCP:LISTEN -t 2>/dev/null | head -1)"
-  echo "An OLDER SpatialStage engine is using port 8765 (PID ${OWNER:-unknown}):"
-  [ -n "$OWNER" ] && ps -o command= -p "$OWNER"
-  echo '旧版本 SpatialStage 正在占用 8765 端口。'
-  read -r "ANSWER?Stop it and start this version? 停止旧版本并启动当前版本？ [y/N] "
-  if [[ "$ANSWER" != [yY]* || -z "$OWNER" ]]; then
-    exit 1
-  fi
-  kill "$OWNER"
-  sleep 1
-fi
+INSTALL_ONLY=0
+NO_OPEN=0
+for arg in "$@"; do
+  case "$arg" in
+    --simulation) export STAGE_SPATIAL_DATA="$PWD/SpatialStage-test-data" ;;
+    --install-only) INSTALL_ONLY=1 ;;
+    --no-open) NO_OPEN=1 ;;
+    *) echo "Usage: $0 [--simulation] [--install-only] [--no-open]"; exit 2 ;;
+  esac
+done
 if [ ! -d .venv ]; then
   PYTHON="${SPATIALSTAGE_PYTHON:-}"
   if [ -z "$PYTHON" ]; then
@@ -50,19 +40,46 @@ if [ ! -f .venv/.spatialstage-install ] || [ "$(cat .venv/.spatialstage-install)
   python -m pip install -e .
   printf '%s\n' "$STAMP" > .venv/.spatialstage-install
 fi
-echo 'SpatialStage running at http://127.0.0.1:8765'
-echo 'Keep this window open during the show; closing it stops the audio engine.'
-echo '演出期间请保持此窗口打开；关闭窗口会停止音频引擎。'
-(
-  for attempt in $(seq 1 40); do
-    if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
-      open "$URL" >/dev/null 2>&1 || true
-      break
-    fi
-    sleep 0.25
-  done
-) &
-# caffeinate keeps the Mac and display awake only while the engine runs.
+if [ "$INSTALL_ONLY" = 1 ]; then
+  echo 'Installation complete: use Start SpatialStage.command or Start Simulation (Mac).command'
+  exit 0
+fi
+# Compare startup snapshots, including edited source and the selected data root.
+if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
+  if python - <<'PY'
+import json, os, urllib.request
+from stagespatialcue.runtime import runtime_identity
+with urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=3) as response:
+    actual = json.load(response).get('runtime', {})
+expected = runtime_identity(os.environ.get('STAGE_SPATIAL_DATA', '~/.spatialstage/projects'))
+raise SystemExit(0 if all(actual.get(k) == expected[k] for k in ('source_root', 'source_sha256', 'data_root')) else 1)
+PY
+  then
+    echo "Matching SpatialStage already running: $URL"
+    [ "$NO_OPEN" = 1 ] || open "$URL"
+    exit 0
+  fi
+  echo 'Port 8765 belongs to a different/stale engine or data mode. Save work, stop capture/measurement, PANIC, run Stop SpatialStage.command, then retry. No process was stopped.'
+  exit 1
+fi
+if lsof -nP -iTCP:8765 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo 'Port 8765 is occupied by another service. No process was stopped.'
+  exit 1
+fi
+echo "SpatialStage: $URL"
+echo "Data: ${STAGE_SPATIAL_DATA:-$HOME/.spatialstage/projects}"
+echo 'Keep this Terminal open. Ctrl+C stops the engine. Output starts disconnected/muted.'
+if [ "$NO_OPEN" != 1 ]; then
+  (
+    for attempt in $(seq 1 80); do
+      if curl -fsS http://127.0.0.1:8765/api/health >/dev/null 2>&1; then
+        open "$URL" >/dev/null 2>&1 || true
+        break
+      fi
+      sleep 0.25
+    done
+  ) &
+fi
 if command -v caffeinate >/dev/null 2>&1; then
   exec caffeinate -dims spatialstage
 fi

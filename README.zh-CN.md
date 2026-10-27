@@ -1,3 +1,5 @@
+> Current Mac package: **20 cues + saved show configuration**. See [current deployment and controls](docs/DEPLOY_CURRENT.zh-CN.md) and [audio rights record](show/RIGHTS.md). Older platform notes below may describe prior versions.
+
 # SpatialStage · 四声道舞台声音 Cue 系统
 
 [English](README.md) · **[使用、测试与演出部署手册](docs/SHOW_GUIDE.zh-CN.md)** · [架构](docs/ARCHITECTURE.md) · [校准步骤](docs/CALIBRATION.md) · [AutoCal](docs/AUTOCAL.md) · [修复与验收](docs/RELIABILITY.md) · [待定决策](docs/OPEN_QUESTIONS.md)

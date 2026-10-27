@@ -42,7 +42,7 @@ function drawSimulation() {
   const project=state.project; if(!project)return;
   const sim=state.status?.simulation;
   $('simChannels').querySelectorAll('input').forEach(e=>e.disabled=!sim?.stereo_monitor);
-  $('simStatus').textContent=sim ? `${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'VIRTUAL 4-SPEAKER HEADPHONES (about -26 dB)':'MONO SUM MONITOR (-32 dB per channel)'):"SILENT ENGINE"} • ${sim.recording?'RECORDING':'capture stopped'} • ${sim.captured_seconds.toFixed(2)} / 60 s • ${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'approximate binaural preview; NOT four-output verification':'stereo fold-down; NOT four-output verification'):"no soundcard opened"}` : 'Simulation disconnected; hardware mode remains available.';
+  $('simStatus').textContent=sim ? `${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'VIRTUAL 4-SPEAKER HEADPHONES (about -20 dB)':'MONO SUM MONITOR (-26 dB per channel)'):"SILENT ENGINE"} • monitor overload blocks: ${sim.monitor_peak_over_count||0} • ${sim.recording?'RECORDING':'capture stopped'} • ${sim.captured_seconds.toFixed(2)} / 60 s • ${sim.stereo_monitor?(sim.monitor_mode==='virtual'?'approximate binaural preview; NOT four-output verification':'stereo fold-down; NOT four-output verification'):"no soundcard opened"}` : 'Simulation disconnected; hardware mode remains available.';
   const c=$('simCanvas'), g=c.getContext('2d'), p=simPose();
   const extent=Math.max(4,...project.speakers.map(s=>s.distance_m+0.8)), scale=150/extent;
   const xy=(x,y)=>[210+x*scale,180-y*scale];

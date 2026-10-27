@@ -87,6 +87,8 @@ class AutoCalApplyPayload(BaseModel):
 def create_app(data_root: Path | None = None) -> FastAPI:
     root = Path(data_root or os.environ.get("STAGE_SPATIAL_DATA", "~/.spatialstage/projects"))
     store = ProjectStore(root)
+    from .runtime import runtime_identity
+    identity = runtime_identity(store.root)
     stage = StageController(store)
     autocal = AutoCalManager(store, stage)
     @asynccontextmanager
@@ -116,6 +118,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
     def health():
         # Launchers use `features` to tell a current engine from a stale one on the port.
         return {"version": __version__, "mode": "local", "sample_rate": 48000,
+                "runtime": identity,
                 "features": ["simulation", "performance", "bundled-show", "stereo-width", "virtual-monitor"]}
 
     @app.get("/api/projects")
@@ -366,6 +369,12 @@ def create_app(data_root: Path | None = None) -> FastAPI:
             stage.mixer.master_db = payload.db
         stage.log("master_changed", mute=payload.mute, db=payload.db)
         return stage.status()
+
+    @app.post("/api/audio/audition")
+    def audition(payload: ArmPayload):
+        if not payload.cue_id:
+            raise ValueError("Select a cue first")
+        return stage.audition(payload.project_id, payload.cue_id)
 
     @app.post("/api/audio/go")
     def go(payload: GoPayload):

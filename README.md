@@ -1,3 +1,5 @@
+> Current Mac package: **20 cues + saved show configuration**. See [current deployment and controls](docs/DEPLOY_CURRENT.zh-CN.md) and [audio rights record](show/RIGHTS.md). Older platform notes below may describe prior versions.
+
 # SpatialStage
 
 **Local Windows simulation console:** double-click `Start Simulation (Windows).cmd` — see [setup, scope and verified tests](docs/LOCAL_SIMULATION.md).

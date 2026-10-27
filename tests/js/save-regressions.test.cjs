@@ -8,6 +8,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../..');
 function harness() {
   const elements = new Map();
+  const documentListeners={};
   const get = id => {
     if (!elements.has(id)) elements.set(id, {textContent:'', value:'', innerHTML:'', listeners:{},
       addEventListener(type, fn) {this.listeners[type] = fn;},
@@ -15,7 +16,7 @@ function harness() {
     return elements.get(id);
   };
   const context = vm.createContext({console:{error(){}}, setInterval(){}, setTimeout(){return 1;}, clearTimeout(){},
-    structuredClone, FormData, Blob, document:{getElementById:get,addEventListener(){},querySelector(){return null;}},
+    structuredClone, FormData, Blob, document:{getElementById:get,addEventListener(type,fn){documentListeners[type]=fn;},querySelector(){return null;}},
     window:{addEventListener(){}}, requests:[], responses:[], rejectNext:false});
   const queuePath = path.join(root, 'stagespatialcue/static/save-queue.js');
   if (fs.existsSync(queuePath)) vm.runInContext(fs.readFileSync(queuePath,'utf8'), context);
@@ -28,7 +29,7 @@ function harness() {
       return await new Promise((resolve,reject)=>responses.push({resolve,reject}));
     };
   `, context);
-  return {context,get,run:code=>vm.runInContext(code,context)};
+  return {context,get,documentListeners,run:code=>vm.runInContext(code,context)};
 }
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 
@@ -158,4 +159,19 @@ test('360 bearing input is zero while angular envelope offsets remain unwrapped'
   assert.equal(h.run('state.project.cues[0].position_deg'),0);
   await change({target:{dataset:{cue:'point_offset'},value:'360'}});
   assert.equal(h.run('state.project.cues[0].modulation[0].offset_deg'),360);
+});
+
+
+test('Space on buttons or input never falls through to global GO; body Space still works',()=>{
+ const h=harness();let goes=0,panics=0;
+ h.get('goButton').click=()=>goes++;h.get('panicButton').click=()=>panics++;
+ const key=(tag,extra={})=>({target:{tagName:tag},code:'Space',key:' ',preventDefault(){},...extra});
+ for(const tag of ['BUTTON','INPUT','SELECT','TEXTAREA','A'])h.documentListeners.keydown(key(tag));
+ assert.equal(goes,0);
+ h.documentListeners.keydown(key('BODY'));assert.equal(goes,1);
+ h.documentListeners.keydown(key('INPUT',{key:'Escape',code:'Escape',shiftKey:true}));assert.equal(panics,1);
+});
+test('PDF cue numbering preserves gaps and leaves unresolved material unnumbered',()=>{
+ const h=harness();assert.equal(h.run("cueDisplayNumber({title:'05 · 合唱'},0)"),'05');
+ assert.equal(h.run("cueDisplayNumber({title:'待定 · 洗衣机'},9)"),'—');
 });

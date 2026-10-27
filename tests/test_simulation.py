@@ -87,7 +87,7 @@ def test_monitor_solo_gain_and_capture_do_not_change_stems(monkeypatch):
     stream.capture(True)
     out = np.empty((512,2), dtype=np.float32)
     stream.callback(out,512,None,False)
-    np.testing.assert_allclose(out, .3*.5*.025)
+    np.testing.assert_allclose(out, .3*.5*.05)
     np.testing.assert_array_equal(stream.blocks[0], block)
     stream.gains = np.zeros(4, dtype=np.float32)
     stream.callback(out,512,None,False)
@@ -117,3 +117,13 @@ def test_capture_channel_identity_and_clipping(channel):
     assert mix.peak_over_count > 0
     assert not np.any(np.delete(block,channel-1,axis=1))
     assert np.isfinite(block).all()
+
+
+def test_monitor_peak_guard_reports_overload():
+    stream = StereoMonitorStream.__new__(StereoMonitorStream)
+    stream.monitor_peak_over_count = 0
+    source = np.array([[2., -2.], [.1, -.1]], dtype=np.float32)
+    out = stream.limit_monitor(source)
+    assert np.max(np.abs(out)) <= .980001
+    assert stream.monitor_peak_over_count == 1
+    np.testing.assert_allclose(source, [[2., -2.], [.1, -.1]])

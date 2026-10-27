@@ -509,9 +509,34 @@ class StageController:
                                 for c, _ in chain])
             return self.status()
 
+    def audition(self, project_id: str, cue_id: str) -> dict:
+        """One selected cue, immediate replacement, no automatic chain; NEXT stays here."""
+        with self.lock:
+            if self.measurement_active or not self._output_active() or self.audio_error:
+                raise ValueError("Connect an output in Edit first; measurement must be stopped")
+            if self.project_id != project_id or self.mixer is None:
+                raise ValueError("Arm this project first")
+            if self.mixer.master_mute:
+                raise ValueError("MAIN MUTE is ON. Unmute deliberately before audition")
+            project = self.store.get(project_id)
+            cue = next((c for c in project.cues if c.id == cue_id), None)
+            if cue is None:
+                raise ValueError("Cue missing")
+            clip = self._clip(project, cue, allow_decode=False)
+            self.mixer.update_project(project)
+            self.mixer.queue(cue, clip, force_cut=True)
+            self.next_index = project.cues.index(cue)
+            self.log("operator_audition", cue_id=cue_id)
+            return self.status()
+
     def can_update(self, project: Project) -> None:
         """Reject hot speaker channel remapping while an output is unmuted."""
         with self.lock:
+            if self.mixer and self.project_id == project.id:
+                old_ids = [c.id for c in self.mixer.project.cues]
+                new_ids = [c.id for c in project.cues]
+                if set(old_ids) == set(new_ids) and old_ids != new_ids and self.mixer.voices:
+                    raise ValueError("STOP active/queued cues before changing playback order")
             if self.mixer and self.project_id == project.id and self.stream is not None:
                 old = self.mixer.project
                 if ((old.speakers != project.speakers or
