@@ -505,7 +505,19 @@ class StageController:
         return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1),
                 "count": len(project.cues), "files": len(decoded)}
 
-    def go(self, project_id: str, *, cut: bool = False) -> dict:
+    def prepare_go(self, project_id: str, cue_id: str) -> dict:
+        """Decode an explicitly selected chain off the audio callback; do not move NEXT."""
+        project = self.store.get(project_id)
+        index = next((i for i, c in enumerate(project.cues) if c.id == cue_id), None)
+        if index is None:
+            raise ValueError("Cue missing")
+        for cue in project.cues[index:]:
+            sources = self._sources(project, cue)
+            if cue.continue_mode == "manual" or (cue.continue_mode == "auto_follow" and any(s.loop for s, _, _ in sources)):
+                break
+        return {"ok": True}
+
+    def go(self, project_id: str, *, cut: bool = False, cue_id: str | None = None) -> dict:
         with self.lock:
             if self.measurement_active:
                 raise ValueError("AutoCal measurement active")
@@ -517,11 +529,14 @@ class StageController:
                 raise ValueError("Arm this project first")
             project = self.store.get(project_id)
             self.mixer.update_project(project)
-            if self.needs_rearm:
+            if self.needs_rearm and cue_id is None:
                 raise ValueError("NEXT cue was removed. Select and ARM a cue explicitly")
-            if self.next_index >= len(project.cues):
+            selected_index = next((i for i, c in enumerate(project.cues) if c.id == cue_id), None)
+            if cue_id is not None and selected_index is None:
+                raise ValueError("Cue missing")
+            if cue_id is None and self.next_index >= len(project.cues):
                 raise ValueError("End of cue list. ARM a cue to replay")
-            idx = self.next_index
+            idx = selected_index if cue_id is not None else self.next_index
             # Collect all automatically linked files BEFORE adding any voices.
             chain = []
             while idx < len(project.cues):
@@ -534,6 +549,13 @@ class StageController:
                 if cut or cue.continue_mode == "manual" or (cue.continue_mode == "auto_follow" and endless):
                     break
             with self.mixer.lock:
+                if cue_id is not None:
+                    # Jumping the main sequence cancels only unstarted main-chain
+                    # groups. Independent row-play voices have no chain_id.
+                    started = {(v.chain_id, v.cue.group_id) for v in self.mixer.voices
+                               if v.start_frame < self.mixer.frame}
+                    self.mixer.voices[:] = [v for v in self.mixer.voices
+                        if v.chain_id is None or (v.chain_id, v.cue.group_id) in started]
                 anchor = None
                 chain_id = uuid4().hex
                 for n, (cue, sources) in enumerate(chain):

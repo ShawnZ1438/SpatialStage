@@ -5,6 +5,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -17,8 +18,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Use upstream Ubuntu package mirror
+        run: |
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' "$source"
+            fi
+          done
       - name: Audio library prerequisites
-        run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1
+        timeout-minutes: 5
+        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y libportaudio2 libsndfile1 pulseaudio
+      - name: Headless audio service for PortAudio initialization
+        run: pulseaudio --start --exit-idle-time=-1
       - name: Install
         run: python -m pip install -e '.[dev]'
       - name: Python correctness lint
@@ -33,15 +44,28 @@ jobs:
           node --check stagespatialcue/static/stage-map.js
           node --check stagespatialcue/static/editor.js
           node --check stagespatialcue/static/i18n.js
+          node --check stagespatialcue/static/theme.js
           node --test tests/js/*.test.cjs
   browser:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y libportaudio2 libsndfile1
+      - name: Use upstream Ubuntu package mirror
+        run: |
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' "$source"
+            fi
+          done
+      - name: Audio library prerequisites
+        timeout-minutes: 5
+        run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install --no-install-recommends -y libportaudio2 libsndfile1 pulseaudio
+      - name: Headless audio service for PortAudio initialization
+        run: pulseaudio --start --exit-idle-time=-1
       - run: python -m pip install -e '.[dev]'
       - run: python -m playwright install --with-deps chromium
       - name: Local server and browser interactions (no audio device)
@@ -49,6 +73,10 @@ jobs:
       - run: python -m playwright install --with-deps webkit
       - name: Same browser flow in WebKit (Safari engine, for the Mac show machine)
         run: python scripts/browser_smoke.py --spawn --engine webkit --screenshot test-output/browser-webkit.png
+      - name: Cue scroll and selected GO regressions (isolated silent adapter)
+        run: |
+          python scripts/browser_cue_controls_regressions.py
+          python scripts/browser_cue_controls_regressions.py --engine webkit
       - name: Audit boundary and media-race browser regressions (guarded audio)
         run: python scripts/browser_audit_regressions.py
       - uses: actions/upload-artifact@v4

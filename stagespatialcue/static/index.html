@@ -6,6 +6,8 @@
   <title>SpatialStage</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/themes.css" />
+  <script src="/static/theme.js" defer></script>
 </head>
 <body>
 <div class="app">
@@ -13,17 +15,19 @@
     <div class="brand"><div class="brand-icon">◎</div><div><strong>Spatial<span>Stage</span></strong><small data-i18n="brandSub">四声道空间声 Cue 系统</small></div></div>
     <div class="top-right">
       <span id="systemState" class="status"><i></i> <span data-i18n="engineOffline">引擎未连接</span></span>
+      <button id="sidebarToggle" class="secondary" aria-controls="settingsSidebar" aria-expanded="true" hidden>◀ 收起侧栏</button>
       <div class="mode-switch" role="group" data-i18n-aria="modeGroup" aria-label="界面模式">
         <button id="modeEdit" aria-pressed="true" data-i18n="modeDesign" data-i18n-title="modeDesignTip">✎ 编排</button>
         <button id="modePerform" aria-pressed="false" data-i18n="modeRun" data-i18n-title="modeRunTip">▶ 演出</button>
       </div>
       <button id="settingsToggle" class="quiet" data-i18n="stageSetup" data-i18n-title="stageSetupTip">⚙ 舞台设置</button>
+      <label class="theme-picker"><span data-i18n="themeLabel">配色</span><select id="themeSelect" data-i18n-aria="themeLabel" aria-label="配色"><option value="dark" data-i18n="themeDark">深海</option><option value="graphite" data-i18n="themeGraphite">石墨</option><option value="warm" data-i18n="themeWarm">暖灰</option><option value="light" data-i18n="themeLight">浅色</option></select></label>
       <button id="langToggle" class="lang-toggle" data-i18n-title="langTip" title="切换语言 / Switch language"><b data-lang="zh">中</b><span>/</span><b data-lang="en">EN</b></button>
     </div>
   </header>
 
   <div class="shell">
-    <aside class="sidebar">
+    <aside id="settingsSidebar" class="sidebar">
       <section class="side-section">
         <div class="section-heading" data-i18n="showProject">演出项目</div>
         <div class="project-picker"><select id="projectSelect" data-i18n-aria="projectSelect" aria-label="选择演出项目"></select><button id="newProject" class="square" data-i18n-title="newProject" title="新建项目">＋</button></div>

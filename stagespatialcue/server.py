@@ -42,6 +42,7 @@ class ProjectPayload(BaseModel):
 
 class GoPayload(ProjectPayload):
     cut: bool = False
+    cue_id: str | None = None
 
 
 class MediaAuditionPayload(ProjectPayload):
@@ -408,9 +409,15 @@ def create_app(data_root: Path | None = None) -> FastAPI:
     def audition_media(payload: MediaAuditionPayload):
         return stage.audition_media(payload.project_id, payload.media_id)
 
+    @app.post("/api/audio/prepare-go")
+    def prepare_go(payload: ArmPayload):
+        if not payload.cue_id:
+            raise ValueError("Select a cue first")
+        return stage.prepare_go(payload.project_id, payload.cue_id)
+
     @app.post("/api/audio/go")
     def go(payload: GoPayload):
-        return stage.go(payload.project_id, cut=payload.cut)
+        return stage.go(payload.project_id, cut=payload.cut, cue_id=payload.cue_id)
 
     @app.post("/api/audio/skip")
     def skip():

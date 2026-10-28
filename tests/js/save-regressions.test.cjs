@@ -200,3 +200,16 @@ test('PDF cue numbering preserves gaps and leaves unresolved material unnumbered
  const h=harness();assert.equal(h.run("cueDisplayNumber({title:'05 · 合唱'},0)"),'05');
  assert.equal(h.run("cueDisplayNumber({title:'待定 · 洗衣机'},9)"),'—');
 });
+
+test('STOP cancels selected GO while its audio preparation is pending', async()=>{
+  const h=harness();
+  h.run(`renderTransport=()=>{};renderMaster=()=>{};saveNow=async()=>{};
+    sent=[];post=async(path)=>{sent.push(path);
+      if(path==='/audio/prepare-go')return new Promise(resolve=>{prepareAck=resolve;});
+      return {};};`);
+  const go=h.run("action('/audio/go',{project_id:state.project.id,cue_id:'selected'})");
+  await tick();
+  await h.run("action('/audio/stop')");
+  h.run('prepareAck({ok:true})');await go;
+  assert.deepEqual(Array.from(h.run('sent')),['/audio/prepare-go','/audio/stop']);
+});

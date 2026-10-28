@@ -1,3 +1,5 @@
+> 最新已编排快照：30 cue / 36 层 / 20 媒体，四套配色与跨电脑恢复见 [SHOW_SNAPSHOT](SHOW_SNAPSHOT.zh-CN.md)。已有项目不会被模板覆盖。
+
 # SpatialStage 完整部署手册（从 GitHub 到演出）
 
 版本：**v0.4.1** · 分支 **`main`**（默认分支，普通 `git clone` 即可） · 仓库 <https://github.com/ShawnZ1438/SpatialStage>

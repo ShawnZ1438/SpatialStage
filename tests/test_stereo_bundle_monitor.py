@@ -181,3 +181,28 @@ def test_repository_stage_layout_is_valid():
     if path.is_file():
         import json
         assert len(Project.model_validate(json.loads(path.read_text(encoding='utf-8'))).speakers) == 4
+
+
+def test_layered_template_preserves_operator_programming_and_media_names(tmp_path):
+    import json
+    show = tmp_path / 'show'
+    (show / 'audio').mkdir(parents=True)
+    write_wav(show / 'audio' / '001_Wind.wav', 2)
+    original_store = ProjectStore(tmp_path / 'original')
+    original = sync_bundled_show(original_store, show)
+    original.media[0].name = 'Operator sound design'
+    original.media[0].gain_db = -7
+    original.cues[0].title = 'Programmed opening'
+    original.cues[0].layers[0].delay_s = 2.5
+    original.cues[0].layers[0].gain_db = -3
+    original_store.save(original)
+    (show / 'project-template.json').write_text(original.model_dump_json())
+    (show / 'cue-manifest.json').write_text(json.dumps({'001_Wind.wav': {'title': 'Old manifest name'}}))
+    store = ProjectStore(tmp_path / 'fresh')
+    restored = sync_bundled_show(store, show)
+    assert restored.id != original.id
+    assert restored.media == original.media
+    assert restored.cues == original.cues
+    restored.cues[0].title = 'New local revision'
+    store.save(restored)
+    assert sync_bundled_show(store, show).cues == restored.cues

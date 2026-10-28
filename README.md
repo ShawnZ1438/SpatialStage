@@ -1,4 +1,6 @@
-> **Full deployment manual (GitHub → show night, Chinese): [docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.1 on `main`: 20-cue show package, opens in Show mode, ▶ / ■ per cue, audio library + layered cues, 中 / EN. [Audio rights record](show/RIGHTS.md).
+> **Programmed show snapshot + four UI themes:** [restore instructions](docs/SHOW_SNAPSHOT.zh-CN.md).
+
+> **Full deployment manual (GitHub → show night, Chinese): [docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.1 on `main`: 30-cue / 36-layer programmed show package, opens in Show mode, ▶ / ■ per cue, audio library + layered cues, 中 / EN. [Audio rights record](show/RIGHTS.md).
 
 # SpatialStage
 

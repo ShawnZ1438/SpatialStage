@@ -1,6 +1,8 @@
 #!/bin/zsh
 set -eu
 cd "$(dirname "$0")"
+# Resolve this checkout even when a moved/copied venv has a stale editable path.
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 URL="${SPATIALSTAGE_URL:-http://127.0.0.1:8765/}"
 INSTALL_ONLY=0
 NO_OPEN=0

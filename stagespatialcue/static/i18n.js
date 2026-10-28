@@ -4,6 +4,7 @@
 'use strict';
 const I18N = (() => {
   const zh = {
+    themeLabel:'配色', themeDark:'深海', themeGraphite:'石墨', themeWarm:'暖灰', themeLight:'浅色', sidebarHide:'◀ 收起侧栏', sidebarShow:'▶ 展开侧栏',
     brandSub:'四声道空间声 Cue 系统', engineOffline:'引擎未连接', engineReady:'引擎就绪', connectedMuted:'已连接 / 静音',
     modeGroup:'界面模式', modeDesign:'✎ 编排', modeDesignTip:'音频库、Cue 列表、舞台图与全部设置', modeRun:'▶ 演出',
     modeRunTip:'锁定编辑，只保留 GO / STOP / PANIC、设定 NEXT 和恢复预设', stageSetup:'⚙ 舞台设置', stageSetupTip:'音箱位置与路由',
@@ -19,7 +20,7 @@ const I18N = (() => {
     globalKeyTime:'全局关键帧 {n} 时间（秒）', globalKeyOffset:'全局关键帧 {n} 角度偏移', remove:'删除',
     localFirst:'本地运行', dataLocation:'演出数据：{path} · 不收集任何遥测或参与者数据。', localFolder:'本机项目文件夹',
     liveOperator:'演出控制', renameShow:'✎ 重命名', shortcuts:'空格 = FADE GO · C = CUT GO · S = STOP · ⌥/Alt+↓ = SKIP · Shift+Esc = PANIC',
-    preflight:'✓ 预检 Preflight', nextToFire:'下一个 NEXT', goTip:'空格 / 按 Cue 规则播放', cutGoTip:'C / 跳过等待和过渡，立刻替换',
+    selectedGoHint:'FADE GO 将从「{title}」开始并接续；单条 ▶ 不改主顺序', preflight:'✓ 预检 Preflight', nextToFire:'下一个 NEXT', goTip:'空格 / 从选中 Cue 开始并继续主顺序；单条 ▶ 叠加不改顺序', cutGoTip:'C / 跳过等待和过渡，立刻替换',
     cueFirst:'⏮ 回到第一条', cueStart:'从选中 Cue 开始', cuePlay:'▶ 播放选中', cueStopSel:'■ 停止选中', cueUp:'↑ 上移', cueDown:'↓ 下移',
     cueDirectHelp:'「回到第一条」「从选中开始」只设定 NEXT，不出声 · ▶ 从头播放这条 Cue，叠加在其他声音上，不改变 NEXT · ■ 只把这条淡出',
     playCue:'▶ 播放', stopCue:'■ 停止', playTip:'从头播放这条 Cue，叠加在其他声音上（正在播放时从头重来），不改变 NEXT',
@@ -120,6 +121,7 @@ const I18N = (() => {
     acStarted:'AutoCal 已开始，正在逐路低电平测量四只音箱。', acApplied:'AutoCal 补偿已启用。下次连接时主输出仍然静音。', acDisabled:'AutoCal 补偿已停用，测量记录保留。',
   };
   const en = {
+    themeLabel:'Theme', themeDark:'Deep Sea', themeGraphite:'Graphite', themeWarm:'Warm Grey', themeLight:'Light', sidebarHide:'◀ Hide sidebar', sidebarShow:'▶ Show sidebar',
     brandSub:'Four-channel spatial cue system', engineOffline:'Engine offline', engineReady:'Engine ready', connectedMuted:'Connected / muted',
     modeGroup:'Interface mode', modeDesign:'✎ Design', modeDesignTip:'Audio library, cue list, stage map and all settings', modeRun:'▶ Show',
     modeRunTip:'Editing locked: GO / STOP / PANIC, set NEXT and Recall only', stageSetup:'⚙ Stage setup', stageSetupTip:'Speaker positions and routing',
@@ -135,7 +137,7 @@ const I18N = (() => {
     globalKeyTime:'Global keyframe {n} time (s)', globalKeyOffset:'Global keyframe {n} angle offset', remove:'Remove',
     localFirst:'Local-first', dataLocation:'Show data: {path} · no telemetry or participant logging.', localFolder:'local project folder',
     liveOperator:'Show control', renameShow:'✎ Rename', shortcuts:'Space = FADE GO · C = CUT GO · S = STOP · ⌥/Alt+↓ = SKIP · Shift+Esc = PANIC',
-    preflight:'✓ Preflight check', nextToFire:'NEXT to fire', goTip:'Space / cue rules', cutGoTip:'C / bypass waits and transition',
+    selectedGoHint:'FADE GO starts “{title}” and continues; row ▶ leaves the sequence alone', preflight:'✓ Preflight check', nextToFire:'NEXT to fire', goTip:'Space / start selected cue and continue sequence; row ▶ overlaps without moving NEXT', cutGoTip:'C / bypass waits and transition',
     cueFirst:'⏮ Back to first', cueStart:'Start from selected', cuePlay:'▶ Play selected', cueStopSel:'■ Stop selected', cueUp:'↑ Move up', cueDown:'↓ Move down',
     cueDirectHelp:'"Back to first" and "Start from selected" only set NEXT, silently · ▶ plays the cue from the top on top of other sounds, NEXT unchanged · ■ fades only that cue',
     playCue:'▶ Play', stopCue:'■ Stop', playTip:'Play this cue from the top on top of other sounds (restarts if it is playing); NEXT unchanged',

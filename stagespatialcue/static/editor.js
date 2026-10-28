@@ -33,6 +33,7 @@ function currentLayer() {
 function selectCue(id, {follow} = {}) {
   if (state.selectedCueId !== id) { state.selectedLayerId = null; ed.selectedPoint = 0; ed.previewT = null; }
   state.selectedCueId = id;
+  if (follow !== true) { state.goCueId = id; renderTransport(); }
   ed.follow = follow ?? (id === state.status?.next_cue_id);
 }
 // A focused field is not re-rendered, so show the clamped/normalised number right away.
@@ -179,7 +180,10 @@ function renderCueList(force) {
   const sig = JSON.stringify([I18N.lang, runMode(), state.project.cues.map(c => [c.id, c.title, c.spatial_preset, c.stop_fade_s,
     c.layers.map(l => [l.id, l.media_id, l.muted, l.delay_s, l.direction_mode, l.path, l.position_deg]), StageMap.presetState(c)]),
     state.project.media.map(m => [m.id, m.duration_s, m.trim_start_s, m.trim_end_s, m.loop])]);
-  if (!force && (host.dataset.signature === sig || pointerHeld)) return;
+  // Selection/inspector force renders must not replace the scroll container.
+  if (host.dataset.signature === sig || (!force && pointerHeld)) return;
+  const scrollTop = $('cueListBody')?.scrollTop ?? 0;
+  const scrollLeft = $('cueListBody')?.scrollLeft ?? 0;
   host.dataset.signature = sig;
   const focusedId = host.contains(document.activeElement) ? document.activeElement.dataset.cueId : null;
   const lock = runMode() ? 'disabled' : '';
@@ -200,6 +204,10 @@ function renderCueList(force) {
     }).join('')}${runMode() ? '' : `<div class="cue-dropzone" data-cl="drop-new">${h(t('dropNewCue'))}</div>`}</div>`;
   host.querySelectorAll('.perf-cue').forEach(row => cueProgress(row, state.project.cues.find(x => x.id === row.dataset.cueId), voices));
   if (focusedId) host.querySelector(`[data-cue-id="${focusedId}"]`)?.focus({preventScroll:true});
+  // Layer/path edits and mode changes legitimately rebuild rows; retain the
+  // operator's viewport (the browser clamps it if the list became shorter).
+  $('cueListBody').scrollTop = scrollTop;
+  $('cueListBody').scrollLeft = scrollLeft;
 }
 
 /* ---------- inspector: cue settings, layers, selected layer ---------- */
@@ -276,7 +284,7 @@ function renderInspector(force) {
       <button data-cue-action="delete" class="danger">${h(t('deleteCue'))}</button>`}
     </div>
     <div class="section-label">${h(t('layersTitle', {n:cue.layers.length}))}</div>
-    ${cue.layers.length ? `<table class="layer-table"><thead><tr><th></th><th>${h(t('audio'))}</th><th>${h(t('layerGainShort'))}</th><th>${h(t('layerDelayShort'))}</th><th>${h(t('layerMuteShort'))}</th><th></th></tr></thead><tbody>${layers}</tbody></table>` : ''}
+    ${cue.layers.length ? `<div class="layer-table-scroll" tabindex="0" role="region" aria-label="${h(t('layersTitle', {n:cue.layers.length}))}"><table class="layer-table"><thead><tr><th></th><th>${h(t('audio'))}</th><th>${h(t('layerGainShort'))}</th><th>${h(t('layerDelayShort'))}</th><th>${h(t('layerMuteShort'))}</th><th></th></tr></thead><tbody>${layers}</tbody></table></div>` : ''}
     <p class="micro">${h(t('layersHelp'))}</p>
     ${renderLayerEditor(cue, layer, lock)}
     <div class="section-label">${h(t('playback'))}</div>
@@ -764,11 +772,32 @@ $('performMap').addEventListener('drop', e => {
 
 /* ---------- modes ---------- */
 // Design = full editing; Show = everything locked except GO/STOP/PANIC, ▶/■, NEXT and Recall.
+const SIDEBAR_KEY = 'spatialstage.performSidebarCollapsed';
+let sidebarCollapsed = edStorage(SIDEBAR_KEY) === 'true';
+function renderSidebar() {
+  const collapsed = runMode() && sidebarCollapsed;
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  $('settingsSidebar').hidden = collapsed;
+  $('sidebarToggle').hidden = !runMode();
+  $('sidebarToggle').setAttribute('aria-expanded', String(!collapsed));
+  $('sidebarToggle').textContent = t(collapsed ? 'sidebarShow' : 'sidebarHide');
+}
+$('sidebarToggle').addEventListener('click', () => {
+  if (!runMode()) return;
+  sidebarCollapsed = !sidebarCollapsed;
+  edStorage(SIDEBAR_KEY, String(sidebarCollapsed));
+  renderSidebar();
+});
+// Space activates this layout button, never the document's GO shortcut.
+$('sidebarToggle').addEventListener('keydown', event => {
+  if (event.code === 'Space') event.stopPropagation();
+});
 function setMode(run) {
   document.body.classList.toggle('performing', run);
   $('modeEdit').setAttribute('aria-pressed', String(!run));
   $('modePerform').setAttribute('aria-pressed', String(run));
-  if (run) { ed.follow = true; ed.lastNext = undefined; state.selectedMediaId = null; }
+  if (run) state.selectedMediaId = null; // preserve the selected cue and follow/manual choice
+  renderSidebar();
   render(true);
 }
 $('modeEdit').addEventListener('click', () => setMode(false));
@@ -779,12 +808,13 @@ if (simPanel) {
   if (saved) simPanel.open = saved === 'open';
   simPanel.addEventListener('toggle', () => edStorage(SIM_KEY, simPanel.open ? 'open' : 'closed'));
 }
-I18N.onChange(() => render(true));
+I18N.onChange(() => { renderSidebar(); render(true); });
 // Every launch opens in Show mode; ?mode=edit opens Design instead.
 const urlMode = new URLSearchParams(location.search).get('mode');
 document.body.classList.toggle('performing', urlMode !== 'edit');
 $('modeEdit').setAttribute('aria-pressed', String(!runMode()));
 $('modePerform').setAttribute('aria-pressed', String(runMode()));
 if (urlMode) history.replaceState(null, '', location.pathname);
+renderSidebar();
 requestAnimationFrame(animate);
 globalThis.SpatialEditor = {render, setMode};

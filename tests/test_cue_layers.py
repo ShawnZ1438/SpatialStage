@@ -183,10 +183,13 @@ def test_repository_show_imports_as_library_plus_cues(tmp_path):
     project = sync_bundled_show(ProjectStore(tmp_path), REPO / 'show')
     files = sorted(p.name for p in (REPO / 'show' / 'audio').iterdir() if p.suffix.lower() in {'.wav', '.flac'})
     assert sorted(m.filename for m in project.media) == files
-    assert len(project.cues) == len(json.loads((REPO / 'show' / 'project-template.json').read_text(encoding='utf-8'))['cues'])
-    assert all(len(c.layers) == 1 for c in project.cues)
-    names = {m.id: m.name for m in project.media}
-    assert names[project.cues[0].layers[0].media_id].startswith('01')  # manifest title on the sound
+    template = Project.model_validate_json((REPO / 'show' / 'project-template.json').read_text(encoding='utf-8'))
+    # An operator-programmed show may reuse media and contain several layers.
+    assert project.cues == template.cues
+    assert project.media == template.media
+    assert project.speakers == template.speakers
+    assert project.global_modulation == template.global_modulation
+    assert sync_bundled_show(ProjectStore(tmp_path), REPO / 'show').cues == template.cues
 
 
 def test_playback_spec_group_is_its_cue():

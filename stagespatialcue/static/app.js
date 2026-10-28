@@ -71,6 +71,7 @@ async function switchProject(projectId) {
     }
   }
   state.project=incoming;
+  state.goCueId=null;
   $('projectSelect').value=state.project.id;
   if(currentStatus.project_id===state.project.id && currentStatus.mixer){
     state.status=currentStatus;  // do not replay/re-arm from zero on a browser refresh
@@ -175,6 +176,7 @@ function renderTransport() {
   if (!p) return;
   const idx=state.status?.next_index ?? 0;
   const next=p.cues[idx];
+  const selectedStart=p.cues.find(c=>c.id===state.goCueId);
   $('showName').textContent=p.name;
   $('nextCue').textContent=state.status?.needs_rearm ? t('nextRemoved') : next ? `#${idx+1} · ${next.title}` : t('endOfShow');
   const connected=!!state.status?.connected;
@@ -187,7 +189,8 @@ function renderTransport() {
   $('playbackHint').textContent=hint;
   $('systemState').innerHTML=`<i></i> ${h(connected ? (mute ? t('connectedMuted'):t('engineReady')) : t('engineOffline'))}`;
   $('systemState').className='status'+(connected && !mute?' ready':'');
-  $('goButton').disabled=!next || !connected || mute || state.status?.ready===false || !!state.status?.error;
+  $('goButton').disabled=!(selectedStart || next) || !connected || mute || (!selectedStart && state.status?.ready===false) || !!state.status?.error;
+  if(selectedStart && connected && !mute)$('playbackHint').textContent=t('selectedGoHint',{title:selectedStart.title});
   $('cutGoButton').disabled=!next || !connected || mute || !!state.status?.error;
   $('connectAudio').textContent=state.status?.connected ? t('disconnectAudio') : t('connectAudio');
 }
@@ -221,6 +224,10 @@ async function action(path,payload={},message=''){
   try {
     if(['/audio/go','/audio/arm','/audio/skip','/audio/play-cue','/audio/audition-media'].includes(path)){
       await saveNow();
+      if(path==='/audio/go' && payload.cue_id){
+        if(epoch!==state.transportEpoch)return;
+        await post('/audio/prepare-go',{project_id:payload.project_id,cue_id:payload.cue_id});
+      }
       if(epoch!==state.transportEpoch)return; // STOP/PANIC cancels a waiting GO
     }
     state.status=await post(path,payload);renderTransport();renderMaster();globalThis.SpatialEditor?.render();if(message)notify(message);
@@ -328,7 +335,18 @@ $('globalEnvelopeFields').addEventListener('click',e=>{
 });
 $('distanceComp').addEventListener('change',e=>{if(!state.project)return;state.project.distance_compensation=e.target.checked;scheduleSave();});
 $('autoReplace').addEventListener('change',e=>{if(!state.project)return;state.project.auto_replace=e.target.checked;scheduleSave();renderEverything();});
-$('goButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:false},t('fadeGoDone'));});
+let fadeGoPending=false;
+$('goButton').addEventListener('click',async()=>{
+  if(!state.project || fadeGoPending)return;
+  const cueId=state.goCueId;
+  fadeGoPending=true;
+  try {
+    if(await action('/audio/go',{project_id:state.project.id,cut:false,cue_id:cueId || null},t('fadeGoDone'))){
+      if(state.goCueId===cueId)state.goCueId=null;
+      renderTransport();
+    }
+  } finally {fadeGoPending=false;}
+});
 $('cutGoButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:true},t('cutGoDone'));});
 $('stopButton').addEventListener('click',()=>action('/audio/stop',{},t('stopDone')));
 $('skipButton').addEventListener('click',()=>action('/audio/skip',{},t('skipDone')));
@@ -630,6 +648,7 @@ let auditionBusy=false;
 async function prepareCue(id) {
   if(!id)return;
   state.selectedCueId=id;
+  state.goCueId=null;
   if(await action('/audio/arm',{project_id:state.project.id,cue_id:id},t('cuePrepared')))renderEverything();
 }
 function auditionReady() {
