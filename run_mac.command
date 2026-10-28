@@ -35,10 +35,23 @@ if ! .venv/bin/python -c 'import sys; assert (3,11) <= sys.version_info[:2] < (3
   exit 1
 fi
 source .venv/bin/activate
+# Find the code in this folder directly. The editable-install link inside .venv
+# breaks if the folder was moved/renamed, and Python 3.13 on macOS skips it when
+# the file carries the hidden flag (Desktop / iCloud folders) -> ModuleNotFoundError.
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 STAMP="$(shasum -a 256 pyproject.toml | cut -d ' ' -f 1)"
 if [ ! -f .venv/.spatialstage-install ] || [ "$(cat .venv/.spatialstage-install)" != "$STAMP" ]; then
   python -m pip install -e .
   printf '%s\n' "$STAMP" > .venv/.spatialstage-install
+fi
+if ! python -c 'import stagespatialcue.server' 2>/dev/null; then
+  echo 'Dependencies are missing or broken; reinstalling...'
+  python -m pip install -e . && printf '%s
+' "$STAMP" > .venv/.spatialstage-install
+  if ! python -c 'import stagespatialcue.server'; then
+    echo 'Still cannot load SpatialStage. Delete the .venv folder in this directory and double-click again.'
+    exit 1
+  fi
 fi
 if [ "$INSTALL_ONLY" = 1 ]; then
   echo 'Installation complete: use Start SpatialStage.command or Start Simulation (Mac).command'
