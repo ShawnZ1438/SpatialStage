@@ -46,6 +46,19 @@ def main():
                 req.fulfill(status=r.status_code,body=r.content,headers={k:v for k,v in r.headers.items() if k.lower() not in ['content-length','transfer-encoding','content-encoding']})
             page.route('http://127.0.0.1:8765/**',route)
             page.goto('http://127.0.0.1:8765');expect(page.locator('.perf-cue')).to_have_count(30)
+            for theme in ['dark','graphite','warm','light']:
+                page.select_option('#themeSelect',theme)
+                for lang,names,label in [('en',['Deep Sea','Graphite','Warm Grey','Light'],'Theme'),('zh',['深海','石墨','暖灰','浅色'],'配色')]:
+                    if page.get_attribute('html','lang')!=lang:page.locator('#langToggle').click()
+                    assert page.locator('#themeSelect option').all_text_contents()==names
+                    assert page.locator('#themeSelect').get_attribute('aria-label')==label
+                    page.locator('#modeEdit').click();page.locator('#modePerform').click()
+                    page.locator('#sidebarToggle').click()
+                    page.reload();expect(page.locator('.perf-cue')).to_have_count(30)
+                    assert page.locator('#themeSelect').input_value()==theme
+                    assert page.get_attribute('html','data-theme')==theme
+                    assert page.locator('#themeSelect option').all_text_contents()==names
+            print('PASS 4 themes x 2 languages, label/aria, mode/sidebar switching and reload persistence')
             before=page.evaluate('JSON.stringify({...state.project,updated_at:null})')
             for width in [1570,1024]:
                 page.set_viewport_size({'width':width,'height':950})

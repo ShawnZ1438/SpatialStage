@@ -4,7 +4,7 @@
 'use strict';
 const I18N = (() => {
   const zh = {
-    themeLabel:'配色', sidebarHide:'◀ 收起侧栏', sidebarShow:'▶ 展开侧栏',
+    themeLabel:'配色', themeDark:'深海', themeGraphite:'石墨', themeWarm:'暖灰', themeLight:'浅色', sidebarHide:'◀ 收起侧栏', sidebarShow:'▶ 展开侧栏',
     brandSub:'四声道空间声 Cue 系统', engineOffline:'引擎未连接', engineReady:'引擎就绪', connectedMuted:'已连接 / 静音',
     modeGroup:'界面模式', modeDesign:'✎ 编排', modeDesignTip:'音频库、Cue 列表、舞台图与全部设置', modeRun:'▶ 演出',
     modeRunTip:'锁定编辑，只保留 GO / STOP / PANIC、设定 NEXT 和恢复预设', stageSetup:'⚙ 舞台设置', stageSetupTip:'音箱位置与路由',
@@ -121,7 +121,7 @@ const I18N = (() => {
     acStarted:'AutoCal 已开始，正在逐路低电平测量四只音箱。', acApplied:'AutoCal 补偿已启用。下次连接时主输出仍然静音。', acDisabled:'AutoCal 补偿已停用，测量记录保留。',
   };
   const en = {
-    themeLabel:'Theme', sidebarHide:'◀ Hide sidebar', sidebarShow:'▶ Show sidebar',
+    themeLabel:'Theme', themeDark:'Deep Sea', themeGraphite:'Graphite', themeWarm:'Warm Grey', themeLight:'Light', sidebarHide:'◀ Hide sidebar', sidebarShow:'▶ Show sidebar',
     brandSub:'Four-channel spatial cue system', engineOffline:'Engine offline', engineReady:'Engine ready', connectedMuted:'Connected / muted',
     modeGroup:'Interface mode', modeDesign:'✎ Design', modeDesignTip:'Audio library, cue list, stage map and all settings', modeRun:'▶ Show',
     modeRunTip:'Editing locked: GO / STOP / PANIC, set NEXT and Recall only', stageSetup:'⚙ Stage setup', stageSetupTip:'Speaker positions and routing',
