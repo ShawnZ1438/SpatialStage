@@ -33,6 +33,7 @@ function currentLayer() {
 function selectCue(id, {follow} = {}) {
   if (state.selectedCueId !== id) { state.selectedLayerId = null; ed.selectedPoint = 0; ed.previewT = null; }
   state.selectedCueId = id;
+  if (follow !== true) { state.goCueId = id; renderTransport(); }
   ed.follow = follow ?? (id === state.status?.next_cue_id);
 }
 // A focused field is not re-rendered, so show the clamped/normalised number right away.
@@ -179,7 +180,10 @@ function renderCueList(force) {
   const sig = JSON.stringify([I18N.lang, runMode(), state.project.cues.map(c => [c.id, c.title, c.spatial_preset, c.stop_fade_s,
     c.layers.map(l => [l.id, l.media_id, l.muted, l.delay_s, l.direction_mode, l.path, l.position_deg]), StageMap.presetState(c)]),
     state.project.media.map(m => [m.id, m.duration_s, m.trim_start_s, m.trim_end_s, m.loop])]);
-  if (!force && (host.dataset.signature === sig || pointerHeld)) return;
+  // Selection/inspector force renders must not replace the scroll container.
+  if (host.dataset.signature === sig || (!force && pointerHeld)) return;
+  const scrollTop = $('cueListBody')?.scrollTop ?? 0;
+  const scrollLeft = $('cueListBody')?.scrollLeft ?? 0;
   host.dataset.signature = sig;
   const focusedId = host.contains(document.activeElement) ? document.activeElement.dataset.cueId : null;
   const lock = runMode() ? 'disabled' : '';
@@ -200,6 +204,10 @@ function renderCueList(force) {
     }).join('')}${runMode() ? '' : `<div class="cue-dropzone" data-cl="drop-new">${h(t('dropNewCue'))}</div>`}</div>`;
   host.querySelectorAll('.perf-cue').forEach(row => cueProgress(row, state.project.cues.find(x => x.id === row.dataset.cueId), voices));
   if (focusedId) host.querySelector(`[data-cue-id="${focusedId}"]`)?.focus({preventScroll:true});
+  // Layer/path edits and mode changes legitimately rebuild rows; retain the
+  // operator's viewport (the browser clamps it if the list became shorter).
+  $('cueListBody').scrollTop = scrollTop;
+  $('cueListBody').scrollLeft = scrollLeft;
 }
 
 /* ---------- inspector: cue settings, layers, selected layer ---------- */

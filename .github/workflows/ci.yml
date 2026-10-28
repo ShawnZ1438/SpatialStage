@@ -73,6 +73,10 @@ jobs:
       - run: python -m playwright install --with-deps webkit
       - name: Same browser flow in WebKit (Safari engine, for the Mac show machine)
         run: python scripts/browser_smoke.py --spawn --engine webkit --screenshot test-output/browser-webkit.png
+      - name: Cue scroll and selected GO regressions (isolated silent adapter)
+        run: |
+          python scripts/browser_cue_controls_regressions.py
+          python scripts/browser_cue_controls_regressions.py --engine webkit
       - name: Audit boundary and media-race browser regressions (guarded audio)
         run: python scripts/browser_audit_regressions.py
       - uses: actions/upload-artifact@v4

@@ -110,5 +110,10 @@
     "input device preference reset for new computer",
     "machine calibration disabled"
   ],
-  "source_project_saved_at": "2026-10-27T08:16:07.289657+00:00"
+  "source_project_saved_at": "2026-10-27T08:16:07.289657+00:00",
+  "speaker_geometry_update": {
+    "edge_1_2_m": 8.65,
+    "edge_2_3_m": 6.47,
+    "note": "Speaker-only update; original cue/layer programming, center, channel mapping and orientation preserved."
+  }
 }

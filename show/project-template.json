@@ -7,29 +7,29 @@
   "speakers": [
     {
       "name": "L · IBO PS15 front left",
-      "angle_deg": 315.0,
-      "distance_m": 4.2426,
+      "angle_deg": 306.7956391322309,
+      "distance_m": 5.401004536195096,
       "output_channel": 1,
       "trim_db": 0.0
     },
     {
       "name": "R · IBO PS15 front right",
-      "angle_deg": 45.0,
-      "distance_m": 4.2426,
+      "angle_deg": 53.20436086776904,
+      "distance_m": 5.401004536195095,
       "output_channel": 2,
       "trim_db": 0.0
     },
     {
       "name": "RR · IBO PS15 rear right",
-      "angle_deg": 135.0,
-      "distance_m": 4.2426,
+      "angle_deg": 126.79563913223096,
+      "distance_m": 5.401004536195096,
       "output_channel": 3,
       "trim_db": 0.0
     },
     {
       "name": "RL · IBO PS15 rear left",
-      "angle_deg": 225.0,
-      "distance_m": 4.2426,
+      "angle_deg": 233.20436086776903,
+      "distance_m": 5.401004536195096,
       "output_channel": 4,
       "trim_db": 0.0
     }
