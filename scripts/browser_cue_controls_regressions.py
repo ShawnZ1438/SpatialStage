@@ -38,6 +38,8 @@ def main():
         with patch.object(SimulationStream,'start',lambda s:setattr(s,'active',True)), TestClient(create_app(store.root),base_url='http://127.0.0.1:8765') as client, sync_playwright() as pw:
             browser=getattr(pw,args.engine).launch(headless=True,**({'executable_path':args.browser_path} if args.browser_path else {}))
             page=browser.new_page(viewport={'width':1570,'height':950});errors=[];page.on('pageerror',lambda e:(errors.append(str(e)),print('PAGE ERROR:',e)))
+            page.add_init_script("""window.__testIntervals=[];const originalInterval=window.setInterval;
+                window.setInterval=(...args)=>{const id=originalInterval(...args);window.__testIntervals.push(id);return id;};""")
             def route(req):
                 q=req.request
                 r=client.request(q.method,q.url,content=q.post_data_buffer,headers={k:v for k,v in q.headers.items() if k not in ['host','content-length']})
@@ -54,6 +56,8 @@ def main():
                     assert page.locator('#themeSelect').get_attribute('aria-label')==label
                     page.locator('#modeEdit').click();page.locator('#modePerform').click()
                     page.locator('#sidebarToggle').click()
+                    page.evaluate('window.__testIntervals.forEach(clearInterval)')
+                    page.wait_for_load_state('networkidle')
                     page.reload();expect(page.locator('.perf-cue')).to_have_count(30)
                     assert page.locator('#themeSelect').input_value()==theme
                     assert page.get_attribute('html','data-theme')==theme
