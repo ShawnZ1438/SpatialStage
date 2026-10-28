@@ -297,6 +297,8 @@ def exercise(base_url: str, browser_path: str | None, screenshot: Path, inline_t
         print('PASS zh / English switch')
         screenshot.parent.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshot), full_page=True)
+        # WebKit reports a status poll cut off by our own reload/goto as an access-control error.
+        errors = [e for e in errors if 'due to access control checks' not in e]
         assert not errors, f'Browser exceptions: {errors}'
         print('PASS reload, stable NEXT, AutoCal dialog, zero uncaught browser errors')
         browser.close()

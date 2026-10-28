@@ -182,6 +182,7 @@ function renderCueList(force) {
   if (!force && (host.dataset.signature === sig || pointerHeld)) return;
   host.dataset.signature = sig;
   const focusedId = host.contains(document.activeElement) ? document.activeElement.dataset.cueId : null;
+  const scroll = $('cueListBody')?.scrollTop ?? 0;  // a rebuild must not jump the list back to the top
   const lock = runMode() ? 'disabled' : '';
   host.innerHTML = `<div class="section-heading perf-cues-head"><span>${h(t('cueList'))} <span class="count">${h(t('cueCount', {n:state.project.cues.length}))}</span></span>
       <span><button data-cl="new" class="quiet" ${lock}>＋ ${h(t('newCue'))}</button>
@@ -199,6 +200,7 @@ function renderCueList(force) {
         <span class="ctrl"><button class="cue-play" data-play title="${h(t('playTip'))}" aria-label="${h(t('playCue'))}">▶</button><button class="cue-stop" data-stop title="${h(t('stopTip', {s:fmt(c.stop_fade_s ?? 2, 1)}))}" aria-label="${h(t('stopCue'))}">■</button></span></div>`;
     }).join('')}${runMode() ? '' : `<div class="cue-dropzone" data-cl="drop-new">${h(t('dropNewCue'))}</div>`}</div>`;
   host.querySelectorAll('.perf-cue').forEach(row => cueProgress(row, state.project.cues.find(x => x.id === row.dataset.cueId), voices));
+  $('cueListBody').scrollTop = scroll;
   if (focusedId) host.querySelector(`[data-cue-id="${focusedId}"]`)?.focus({preventScroll:true});
 }
 
@@ -543,6 +545,7 @@ $('performCues').addEventListener('click', e => {
   if (e.target.closest('[data-stop]')) { stopCue(row.dataset.cueId); return; }
   selectCue(row.dataset.cueId);
   render(true);
+  renderTransport();  // the GO hint names the selected cue at once
 });
 $('performCues').addEventListener('keydown', e => {
   const row = e.target.closest('.perf-cue');
@@ -787,4 +790,11 @@ $('modeEdit').setAttribute('aria-pressed', String(!runMode()));
 $('modePerform').setAttribute('aria-pressed', String(runMode()));
 if (urlMode) history.replaceState(null, '', location.pathname);
 requestAnimationFrame(animate);
-globalThis.SpatialEditor = {render, setMode};
+// Show mode: a cue picked in the list (not NEXT) is where FADE GO / CUT GO starts;
+// the sequence then continues after it. ▶ / ■ never change this.
+function goTarget() {
+  const id = state.selectedCueId, next = state.status?.next_cue_id;
+  return runMode() && !ed.follow && id && id !== next && cueIndex(id) >= 0 ? id : null;
+}
+function afterGo() { ed.follow = true; ed.lastNext = undefined; }
+globalThis.SpatialEditor = {render, setMode, goTarget, afterGo};

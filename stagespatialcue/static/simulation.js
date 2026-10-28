@@ -58,8 +58,10 @@ function drawSimulation() {
   const extent=Math.max(4,...project.speakers.map(s=>s.distance_m+0.8)), scale=150/extent;
   const xy=(x,y)=>[210+x*scale,180-y*scale];
   g.clearRect(0,0,c.width,c.height); g.font='12px sans-serif';
-  g.strokeStyle='#71828e';g.setLineDash([5,5]);g.strokeRect(...xy(-3,3),6*scale,6*scale);g.setLineDash([]);
-  g.fillStyle='#c5d1dc';g.fillText(t('mapFront'),150,18);g.fillText(t('simFootprint'),125,348);
+  const pts=project.speakers.map(s=>{const a=s.angle_deg*Math.PI/180;return [s.distance_m*Math.sin(a),s.distance_m*Math.cos(a)];});
+  const w=Math.max(...pts.map(q=>Math.abs(q[0]))), d=Math.max(...pts.map(q=>Math.abs(q[1])));
+  g.strokeStyle='#71828e';g.setLineDash([5,5]);g.strokeRect(...xy(-w,d),2*w*scale,2*d*scale);g.setLineDash([]);
+  g.fillStyle='#c5d1dc';g.fillText(t('mapFront'),150,18);g.fillText(t('simFootprint',{w:fmt(2*w,2),d:fmt(2*d,2)}),125,348);
   for(const s of project.speakers) {
     const a=s.angle_deg*Math.PI/180,[x,y]=xy(s.distance_m*Math.sin(a),s.distance_m*Math.cos(a));
     g.strokeStyle='#375e68';g.beginPath();g.moveTo(x,y);g.lineTo(210,180);g.stroke();

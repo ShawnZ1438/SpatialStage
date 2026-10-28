@@ -42,6 +42,7 @@ class ProjectPayload(BaseModel):
 
 class GoPayload(ProjectPayload):
     cut: bool = False
+    cue_id: str | None = None  # start the sequence here instead of NEXT
 
 
 class MediaAuditionPayload(ProjectPayload):
@@ -410,7 +411,7 @@ def create_app(data_root: Path | None = None) -> FastAPI:
 
     @app.post("/api/audio/go")
     def go(payload: GoPayload):
-        return stage.go(payload.project_id, cut=payload.cut)
+        return stage.go(payload.project_id, cut=payload.cut, cue_id=payload.cue_id)
 
     @app.post("/api/audio/skip")
     def skip():

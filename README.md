@@ -1,4 +1,4 @@
-> **Full deployment manual (GitHub → show night, Chinese): [docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.1 on `main`: 20-cue show package, opens in Show mode, ▶ / ■ per cue, audio library + layered cues, 中 / EN. [Audio rights record](show/RIGHTS.md).
+> **Full deployment manual (GitHub → show night, Chinese): [docs/DEPLOY.zh-CN.md](docs/DEPLOY.zh-CN.md)** · v0.4.2 on `main`: 20-cue show package, opens in Show mode, ▶ / ■ per cue, audio library + layered cues, 中 / EN. [Audio rights record](show/RIGHTS.md).
 
 # SpatialStage
 
@@ -46,7 +46,7 @@ cd SpatialStage
 ./run_mac.command
 ```
 
-**Show audio in the repository:** the launcher imports every file in `show/audio/` into a project called *Show audio (repository)*, with the speaker layout from `show/stage.json` (6 m × 6 m corners). It is copied into the data folder once; files added to `show/audio/` later (e.g. after `git pull`) are appended on the next launch. Cues you delete, reorder or reposition in the app are never overwritten. The bundled files are FLAC (lossless; files above 48 kHz were downsampled to the engine's 48 kHz).
+**Show audio in the repository:** the launcher imports every file in `show/audio/` into a project called *Show audio (repository)*, with the speaker layout from `show/stage.json` (rectangle: front L–R 8.65 m, L–rear L 6.47 m). It is copied into the data folder once; files added to `show/audio/` later (e.g. after `git pull`) are appended on the next launch. Cues you delete, reorder or reposition in the app are never overwritten. The bundled files are FLAC (lossless; files above 48 kHz were downsampled to the engine's 48 kHz).
 
 **Double-click launch:** in Finder, double-click **`Start SpatialStage.command`** in the project folder. It installs on first run, keeps the Mac awake while the engine runs (`caffeinate`), and opens the full interface in the browser (Design / Show and 中 / EN switches at the top right; both are remembered). Double-clicking again while it runs just reopens the browser. Keep the Terminal window open during the show; closing it stops the engine. If the folder came from a ZIP download and macOS blocks the file, right-click → Open once.
 
@@ -146,6 +146,7 @@ The workspace has three columns: **audio library** (left), **stage map** (centre
 - **Stage map.** The selected layer is editable (move point / add path point, Shift+click appends); the cue's other layers are shown in their own colours — click one to edit it. Bearing still comes from the centre; on or beyond the dashed speaker edge = that speaker pair only (identical to VBAP), toward the centre the sound spreads to all four, power stays constant. Layers can also use angle + keyframes or angle ADSR.
 - **Store / Recall / Reset** act on all layers of the cue. The list marks ✓ stored, ● changed since stored, — none; **Store all / Recall all** act on every cue.
 - **Design | Show** (top right): every launch opens in **Show** mode (`?mode=edit` opens Design). Show mode hides the library and locks every edit; GO / STOP / PANIC, ▶ / ■, setting NEXT and Recall keep working.
+- **GO from a picked cue (Show mode):** click a cue in the list, then FADE GO / CUT GO starts there and the sequence continues after it — skip ahead or go back. ▶ / ■ are unaffected.
 - **▶ / ■ on every cue:** ▶ plays that cue from the top **on top of** everything else (pressing it while it plays restarts it; pre-wait skipped, layer delays kept; NEXT unchanged). ■ fades **only that cue** out over its *Stop fade* (default 2 s). The top STOP still stops everything.
 - **Nothing fades out by itself:** with *Let cues fade other sounds out* off (default, per project), a sound only ends on its own or with ■ / STOP / PANIC — replace cues play as layer and CUT GO only skips waits. Turn it on for the classic replace / CUT GO behaviour.
 - **Launch:** the last output used (device name, silent simulation or headphone monitor) reconnects automatically and the show is preflighted; MAIN MUTE always stays on. Disconnect audio to forget the device.

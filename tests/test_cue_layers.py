@@ -277,3 +277,31 @@ def test_play_and_stop_cue_api(tmp_path):
         assert c.post('/api/audio/stop-cue', json={**body, 'cue_id': 'nope'}).status_code == 400
         assert 'cue-play-stop' in c.get('/api/health').json()['features']
         c.post('/api/audio/panic')
+
+
+def test_go_from_a_chosen_cue_jumps_forward_or_back_and_continues_after_it(tmp_path):
+    stage, project = layered_stage(tmp_path, [dict(position_deg=315)], media_fields={'loop': True})
+    for title in ('B', 'C', 'D'):
+        project.cues.append(Cue(title=title, layers=[CueLayer(media_id=project.media[0].id)]))
+    stage.store.save(project)
+    stage.sync(project)
+    ids = [c.id for c in project.cues]
+    assert stage.go(project.id, cue_id=ids[2])['next_index'] == 3      # skip ahead to C, NEXT = D
+    assert stage.go(project.id, cut=True, cue_id=ids[0])['next_index'] == 1  # back to the first, NEXT = B
+    assert [v.cue.cue_id for v in stage.mixer.voices] == [ids[2], ids[0]]  # nothing faded (auto_replace off)
+    assert stage.go(project.id)['next_index'] == 2  # plain GO continues from there
+    with pytest.raises(ValueError, match='Cue missing'):
+        stage.go(project.id, cue_id='nope')
+    assert stage.status()['next_index'] == 2
+
+
+def test_repository_stage_is_the_8_65_by_6_47_m_rectangle():
+    import math
+    data = json.loads((REPO / 'show' / 'stage.json').read_text(encoding='utf-8'))
+    xy = {s['output_channel']: (s['distance_m'] * math.sin(math.radians(s['angle_deg'])),
+                                s['distance_m'] * math.cos(math.radians(s['angle_deg']))) for s in data['speakers']}
+    gap = lambda a, b: math.dist(xy[a], xy[b])
+    assert gap(1, 2) == pytest.approx(8.65, abs=.01) and gap(4, 3) == pytest.approx(8.65, abs=.01)
+    assert gap(1, 4) == pytest.approx(6.47, abs=.01) and gap(2, 3) == pytest.approx(6.47, abs=.01)
+    template = json.loads((REPO / 'show' / 'project-template.json').read_text(encoding='utf-8'))
+    assert template['speakers'] == data['speakers']

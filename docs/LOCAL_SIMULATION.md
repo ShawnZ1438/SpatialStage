@@ -60,7 +60,7 @@ records frames and clipping count. The UI capture instead records actual live ed
 
 ## Scope and known limits
 
-Known site facts: indoor venue, approximately 6 × 6 m stage, four **IBO PS 15**,
+Known site facts: indoor venue, speakers on an 8.65 × 6.47 m rectangle, four **IBO PS 15**,
 onsite console handles leveling. Exact specifications, speaker coordinates/heights,
 room boundaries and interface remain unknown. The dashed stage footprint is not
 a room boundary. Existing default speaker polar positions (3 m radius) are editable

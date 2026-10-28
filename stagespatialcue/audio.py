@@ -505,7 +505,8 @@ class StageController:
         return {"ok": not problems, "issues": problems, "decoded_mib": round(total / 1048576, 1),
                 "count": len(project.cues), "files": len(decoded)}
 
-    def go(self, project_id: str, *, cut: bool = False) -> dict:
+    def go(self, project_id: str, *, cut: bool = False, cue_id: str | None = None) -> dict:
+        """GO from NEXT, or from `cue_id` (jump forward or back; NEXT continues after it)."""
         with self.lock:
             if self.measurement_active:
                 raise ValueError("AutoCal measurement active")
@@ -517,6 +518,17 @@ class StageController:
                 raise ValueError("Arm this project first")
             project = self.store.get(project_id)
             self.mixer.update_project(project)
+            if cue_id is not None:
+                index = next((i for i, c in enumerate(project.cues) if c.id == cue_id), None)
+                if index is None:
+                    raise ValueError("Cue missing")
+                previous = self.next_cue_id
+                self.next_index = index
+                try:
+                    self._sources(project, project.cues[index], allow_decode=False)
+                except Exception:
+                    self.next_cue_id = previous  # a rejected GO never moves NEXT
+                    raise
             if self.needs_rearm:
                 raise ValueError("NEXT cue was removed. Select and ARM a cue explicitly")
             if self.next_index >= len(project.cues):

@@ -175,6 +175,7 @@ function renderTransport() {
   if (!p) return;
   const idx=state.status?.next_index ?? 0;
   const next=p.cues[idx];
+  const target=globalThis.SpatialEditor?.goTarget?.()??null, targetIndex=target?p.cues.findIndex(c=>c.id===target):-1;
   $('showName').textContent=p.name;
   $('nextCue').textContent=state.status?.needs_rearm ? t('nextRemoved') : next ? `#${idx+1} · ${next.title}` : t('endOfShow');
   const connected=!!state.status?.connected;
@@ -184,11 +185,13 @@ function renderTransport() {
   else if(state.status?.prepare_error)hint=I18N.error(state.status.prepare_error);
   else if(state.status?.preparing)hint=t('hintPreparing');
   if(state.status?.error)hint=I18N.error(state.status.error);
+  else if(target && connected && !mute)hint=t('hintGoFrom',{n:targetIndex+1,title:p.cues[targetIndex].title});
   $('playbackHint').textContent=hint;
+  $('playbackHint').classList.toggle('go-from',!!target && connected && !mute && !state.status?.error);
   $('systemState').innerHTML=`<i></i> ${h(connected ? (mute ? t('connectedMuted'):t('engineReady')) : t('engineOffline'))}`;
   $('systemState').className='status'+(connected && !mute?' ready':'');
-  $('goButton').disabled=!next || !connected || mute || state.status?.ready===false || !!state.status?.error;
-  $('cutGoButton').disabled=!next || !connected || mute || !!state.status?.error;
+  $('goButton').disabled=!(next||target) || !connected || mute || (!target && state.status?.ready===false) || !!state.status?.error;
+  $('cutGoButton').disabled=!(next||target) || !connected || mute || !!state.status?.error;
   $('connectAudio').textContent=state.status?.connected ? t('disconnectAudio') : t('connectAudio');
 }
 function renderMaster() {
@@ -328,8 +331,17 @@ $('globalEnvelopeFields').addEventListener('click',e=>{
 });
 $('distanceComp').addEventListener('change',e=>{if(!state.project)return;state.project.distance_compensation=e.target.checked;scheduleSave();});
 $('autoReplace').addEventListener('change',e=>{if(!state.project)return;state.project.auto_replace=e.target.checked;scheduleSave();renderEverything();});
-$('goButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:false},t('fadeGoDone'));});
-$('cutGoButton').addEventListener('click',()=>{if(state.project)action('/audio/go',{project_id:state.project.id,cut:true},t('cutGoDone'));});
+async function goFrom(cut) {
+  if(!state.project)return;
+  const target=globalThis.SpatialEditor?.goTarget?.()??null;
+  const payload={project_id:state.project.id,cut};
+  if(target)payload.cue_id=target;
+  const title=target?state.project.cues.find(c=>c.id===target)?.title:'';
+  if(await action('/audio/go',payload,target?t('goFromDone',{title}):t(cut?'cutGoDone':'fadeGoDone'))&&target)
+    {globalThis.SpatialEditor.afterGo();globalThis.SpatialEditor.render(true);}
+}
+$('goButton').addEventListener('click',()=>goFrom(false));
+$('cutGoButton').addEventListener('click',()=>goFrom(true));
 $('stopButton').addEventListener('click',()=>action('/audio/stop',{},t('stopDone')));
 $('skipButton').addEventListener('click',()=>action('/audio/skip',{},t('skipDone')));
 $('panicButton').addEventListener('click',()=>action('/audio/panic',{},t('panicDone')));
